@@ -23,13 +23,16 @@ export default function HomePage() {
     <main className="min-h-screen bg-slate-50">
       <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/90 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-brand-600 text-xl font-black text-white">C</div>
-            <div>
-              <p className="text-lg font-black text-slate-950">CaissePro</p>
-              <p className="text-xs font-medium text-slate-500">POS & commerce pour l’Afrique</p>
-            </div>
-          </div>
+    <div className="flex items-center">
+  <Image
+    src="/caissepro-logo.svg"
+    alt="CaissePro Logo"
+    width={190}
+    height={52}
+    priority
+    className="h-auto w-[170px] sm:w-[190px]"
+  />
+</div>
           <nav className="hidden items-center gap-8 text-sm font-semibold text-slate-600 md:flex">
             <a href="#features" className="hover:text-brand-700">Fonctionnalités</a>
             <a href="#demo" className="hover:text-brand-700">Démo</a>
