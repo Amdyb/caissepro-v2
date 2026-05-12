@@ -58,7 +58,7 @@ export default function HomePage() {
             <h1 className="mt-6 text-4xl font-black tracking-tight text-slate-950 md:text-6xl">Gérez votre boutique plus simplement.</h1>
             <p className="mt-6 max-w-2xl text-xl leading-8 text-slate-600">CaissePro aide les commerces en Afrique de l’Ouest à gérer la caisse, le stock, les vendeurs, les rapports et une boutique en ligne partageable — sans logiciel compliqué.</p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <a href="#pricing" className="rounded-2xl bg-brand-600 px-7 py-4 text-center font-black text-white shadow-lg shadow-brand-600/20 hover:bg-brand-700">Essayer gratuitement</a>
+              href="/register" className="rounded-2xl bg-brand-600 px-7 py-4 text-center font-black text-white shadow-lg shadow-brand-600/20 hover:bg-brand-700">Essayer gratuitement</a>
               <a href="#demo" className="rounded-2xl border border-slate-300 bg-white px-7 py-4 text-center font-black text-slate-900 hover:border-brand-600">Voir la démo</a>
             </div>
             <div className="mt-8 grid gap-3 text-sm font-semibold text-slate-600 sm:grid-cols-3">
