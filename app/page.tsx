@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import { BarChart3, CheckCircle2, Clock3, CreditCard, Layers3, LockKeyhole, Package, ReceiptText, ShieldCheck, Smartphone, Store, Users } from 'lucide-react'
 import DemoShop from '@/components/DemoShop'
 
