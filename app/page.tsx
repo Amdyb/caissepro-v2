@@ -44,7 +44,7 @@ export default function HomePage() {
       <a href="#pricing" className="hover:text-brand-700">Tarifs</a>
     </nav>
 
-    <a href="#pricing" className="rounded-full bg-slate-950 px-5 py-3 text-sm font-bold text-white hover:bg-brand-700">
+   <a href="/register" className="rounded-full bg-slate-950 px-5 py-3 text-sm font-bold text-white hover:bg-brand-700">
       Commencer
     </a>
   </div>
