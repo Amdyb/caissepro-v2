@@ -22,31 +22,33 @@ export default function HomePage() {
   return (
     <main className="min-h-screen bg-slate-50">
       <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/90 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-   <div className="flex items-center gap-3">
-  <Image
-    src="/caissepro-logo.png"
-    alt="CaissePro Logo"
-    width={64}
-    height={64}
-    priority
-    className="h-12 w-12 rounded-2xl object-cover"
-  />
-  <div>
-    <p className="text-lg font-black text-slate-950">CaissePro</p>
-    <p className="text-xs font-medium text-slate-500">POS & commerce pour l’Afrique</p>
-  </div>
-</div>
-</div>
-          <nav className="hidden items-center gap-8 text-sm font-semibold text-slate-600 md:flex">
-            <a href="#features" className="hover:text-brand-700">Fonctionnalités</a>
-            <a href="#demo" className="hover:text-brand-700">Démo</a>
-            <a href="#pricing" className="hover:text-brand-700">Tarifs</a>
-          </nav>
-          <a href="#pricing" className="rounded-full bg-slate-950 px-5 py-3 text-sm font-bold text-white hover:bg-brand-700">Commencer</a>
-        </div>
-      </header>
+  <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
+    <div className="flex items-center gap-3">
+      <Image
+        src="/caissepro-logo.png"
+        alt="CaissePro Logo"
+        width={64}
+        height={64}
+        priority
+        className="h-12 w-12 rounded-2xl object-cover"
+      />
+      <div>
+        <p className="text-lg font-black text-slate-950">CaissePro</p>
+        <p className="text-xs font-medium text-slate-500">POS & commerce pour l’Afrique</p>
+      </div>
+    </div>
 
+    <nav className="hidden items-center gap-8 text-sm font-semibold text-slate-600 md:flex">
+      <a href="#features" className="hover:text-brand-700">Fonctionnalités</a>
+      <a href="#demo" className="hover:text-brand-700">Démo</a>
+      <a href="#pricing" className="hover:text-brand-700">Tarifs</a>
+    </nav>
+
+    <a href="#pricing" className="rounded-full bg-slate-950 px-5 py-3 text-sm font-bold text-white hover:bg-brand-700">
+      Commencer
+    </a>
+  </div>
+</header>
       <section className="overflow-hidden bg-gradient-to-br from-white via-brand-50 to-slate-100">
         <div className="mx-auto grid max-w-7xl gap-12 px-6 py-20 lg:grid-cols-[1.05fr_.95fr] lg:items-center">
           <div>
