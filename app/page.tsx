@@ -25,7 +25,7 @@ export default function HomePage() {
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
     <div className="flex items-center">
   <Image
-    src="/caissepro-logo.svg"
+    src="/caissepro-logo.png"
     alt="CaissePro Logo"
     width={190}
     height={52}
