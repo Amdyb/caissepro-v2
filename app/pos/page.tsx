@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Minus, Plus, Search, ShoppingCart, Trash2, UserRound } from 'lucide-react'
+import { ArrowLeft, Barcode, Minus, Plus, Search, ShoppingCart, Trash2, UserRound, Zap } from 'lucide-react'
 import { supabase } from '@/lib/supabaseClient'
 
 type Product = {
@@ -24,6 +24,7 @@ type Customer = {
   phone: string | null
   points: number | null
   total_spent: number | null
+  debt_balance?: number | null
 }
 
 type CartItem = {
@@ -34,6 +35,8 @@ type CartItem = {
 
 export default function POSPage() {
   const router = useRouter()
+  const barcodeInputRef = useRef<HTMLInputElement | null>(null)
+
   const [businessId, setBusinessId] = useState<string | null>(null)
   const [cashierId, setCashierId] = useState<string | null>(null)
   const [businessName, setBusinessName] = useState('CaissePro')
@@ -42,6 +45,7 @@ export default function POSPage() {
   const [selectedCustomerId, setSelectedCustomerId] = useState('')
   const [cart, setCart] = useState<CartItem[]>([])
   const [search, setSearch] = useState('')
+  const [barcodeInput, setBarcodeInput] = useState('')
   const [paymentMethod, setPaymentMethod] = useState('cash')
   const [loading, setLoading] = useState(true)
   const [checkoutLoading, setCheckoutLoading] = useState(false)
@@ -96,6 +100,10 @@ export default function POSPage() {
       ])
 
       setLoading(false)
+
+      setTimeout(() => {
+        barcodeInputRef.current?.focus()
+      }, 300)
     }
 
     init()
@@ -119,7 +127,7 @@ export default function POSPage() {
   async function loadCustomers(id: string) {
     const { data, error } = await supabase
       .from('customers')
-      .select('id, full_name, phone, points, total_spent')
+      .select('id, full_name, phone, points, total_spent, debt_balance')
       .eq('business_id', id)
       .order('full_name')
 
@@ -164,6 +172,49 @@ export default function POSPage() {
         }
       ]
     })
+
+    barcodeInputRef.current?.focus()
+  }
+
+  function handleBarcodeSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    const code = barcodeInput.trim()
+
+    if (!code) return
+
+    const exactBarcodeMatch = products.find((product) =>
+      (product.barcode || '').trim().toLowerCase() === code.toLowerCase()
+    )
+
+    if (exactBarcodeMatch) {
+      addToCart(exactBarcodeMatch)
+      setBarcodeInput('')
+      setSearch('')
+      setMessage(`Produit ajouté: ${exactBarcodeMatch.name}`)
+      return
+    }
+
+    const nameMatches = products.filter((product) =>
+      product.name.toLowerCase().includes(code.toLowerCase()) ||
+      (product.category || '').toLowerCase().includes(code.toLowerCase())
+    )
+
+    if (nameMatches.length === 1) {
+      addToCart(nameMatches[0])
+      setBarcodeInput('')
+      setSearch('')
+      setMessage(`Produit ajouté: ${nameMatches[0].name}`)
+      return
+    }
+
+    if (nameMatches.length > 1) {
+      setSearch(code)
+      setMessage(`${nameMatches.length} produits trouvés. Touchez le bon produit.`)
+      return
+    }
+
+    setSearch(code)
+    setMessage('Aucun produit trouvé avec ce code ou ce nom.')
   }
 
   function updateQuantity(productId: string, quantity: number) {
@@ -202,6 +253,11 @@ export default function POSPage() {
       return
     }
 
+    if (paymentMethod === 'credit' && !selectedCustomerId) {
+      setMessage('Sélectionnez un client pour une vente Client Doit.')
+      return
+    }
+
     setCheckoutLoading(true)
     setMessage('')
 
@@ -214,10 +270,10 @@ export default function POSPage() {
         cashier_id: cashierId,
         customer_id: customerId,
         total: subtotal,
-paid_amount: paymentMethod === 'credit' ? 0 : subtotal,
-remaining_amount: paymentMethod === 'credit' ? subtotal : 0,
-payment_method: paymentMethod,
-status: paymentMethod === 'credit' ? 'pending' : 'completed'
+        paid_amount: paymentMethod === 'credit' ? 0 : subtotal,
+        remaining_amount: paymentMethod === 'credit' ? subtotal : 0,
+        payment_method: paymentMethod,
+        status: paymentMethod === 'credit' ? 'pending' : 'completed'
       })
       .select()
       .single()
@@ -254,32 +310,26 @@ status: paymentMethod === 'credit' ? 'pending' : 'completed'
     }
 
     if (customerId && selectedCustomer) {
-      const newTotalSpent =
-  Number(selectedCustomer.total_spent || 0) + subtotal
+      const newTotalSpent = Number(selectedCustomer.total_spent || 0) + subtotal
+      const newPoints = Number(selectedCustomer.points || 0) + earnedPoints
+      const currentDebt = Number(selectedCustomer.debt_balance || 0)
+      const newDebt = paymentMethod === 'credit' ? currentDebt + subtotal : currentDebt
 
-const newPoints =
-  Number(selectedCustomer.points || 0) + earnedPoints
-
-const currentDebt =
-  Number((selectedCustomer as any).debt_balance || 0)
-
-const newDebt =
-  paymentMethod === 'credit'
-    ? currentDebt + subtotal
-    : currentDebt
-
-await supabase
-  .from('customers')
-  .update({
-    total_spent: newTotalSpent,
-    points: newPoints,
-    debt_balance: newDebt
-  })
-  .eq('id', customerId)
+      await supabase
+        .from('customers')
+        .update({
+          total_spent: newTotalSpent,
+          points: newPoints,
+          debt_balance: newDebt
+        })
+        .eq('id', customerId)
     }
 
     setCart([])
     setSelectedCustomerId('')
+    setBarcodeInput('')
+    setSearch('')
+
     await Promise.all([
       loadProducts(businessId),
       loadCustomers(businessId)
@@ -287,6 +337,7 @@ await supabase
 
     setMessage(`Vente enregistrée avec succès.${customerId ? ` ${earnedPoints} point(s) fidélité ajouté(s).` : ''}`)
     setCheckoutLoading(false)
+    barcodeInputRef.current?.focus()
   }
 
   async function logout() {
@@ -310,7 +361,7 @@ await supabase
             <Link href="/dashboard" className="inline-flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-brand-700">
               <ArrowLeft size={16} /> Tableau de bord
             </Link>
-            <h1 className="mt-1 text-2xl font-black text-slate-950">Caisse</h1>
+            <h1 className="mt-1 text-2xl font-black text-slate-950">Caisse rapide</h1>
             <p className="text-sm font-semibold text-slate-500">{businessName}</p>
           </div>
 
@@ -321,59 +372,91 @@ await supabase
       </header>
 
       <section className="mx-auto grid max-w-7xl gap-8 px-6 py-10 lg:grid-cols-[1.2fr_.8fr]">
-        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-              <h2 className="text-2xl font-black text-slate-950">Produits</h2>
-              <p className="text-sm text-slate-500">Touchez un produit pour l’ajouter au panier.</p>
+        <div className="space-y-6">
+          <div className="rounded-3xl border border-brand-200 bg-white p-5 shadow-sm">
+            <div className="mb-4 flex items-center gap-3">
+              <div className="rounded-2xl bg-brand-50 p-3 text-brand-700">
+                <Barcode />
+              </div>
+              <div>
+                <h2 className="text-xl font-black text-slate-950">Scanner / Recherche rapide</h2>
+                <p className="text-sm text-slate-500">Compatible avec scanner USB: scannez puis Entrée ajoute au panier.</p>
+              </div>
             </div>
 
-            <div className="relative">
-              <Search className="absolute left-4 top-3.5 text-slate-400" size={18} />
+            <form onSubmit={handleBarcodeSubmit} className="grid gap-3 md:grid-cols-[1fr_auto]">
               <input
-                className="w-full rounded-2xl border border-slate-300 py-3 pl-11 pr-4 outline-none focus:border-brand-600 md:w-80"
-                placeholder="Rechercher produit ou code-barres..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                ref={barcodeInputRef}
+                className="w-full rounded-2xl border border-slate-300 px-4 py-4 text-lg font-bold outline-none focus:border-brand-600"
+                placeholder="Scanner code-barres ou taper le nom du produit..."
+                value={barcodeInput}
+                onChange={(e) => setBarcodeInput(e.target.value)}
               />
-            </div>
+
+              <button className="inline-flex items-center justify-center gap-2 rounded-2xl bg-brand-600 px-6 py-4 font-black text-white hover:bg-brand-700">
+                <Zap size={18} />
+                Ajouter
+              </button>
+            </form>
           </div>
 
-          {message && (
-            <div className="mb-5 rounded-2xl bg-brand-50 p-3 text-sm font-bold text-brand-700">
-              {message}
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div>
+                <h2 className="text-2xl font-black text-slate-950">Produits</h2>
+                <p className="text-sm text-slate-500">Touchez un produit pour l’ajouter au panier.</p>
+              </div>
+
+              <div className="relative">
+                <Search className="absolute left-4 top-3.5 text-slate-400" size={18} />
+                <input
+                  className="w-full rounded-2xl border border-slate-300 py-3 pl-11 pr-4 outline-none focus:border-brand-600 md:w-80"
+                  placeholder="Filtrer produits..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
             </div>
-          )}
 
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {filteredProducts.map((product) => (
-              <button
-                key={product.id}
-                onClick={() => addToCart(product)}
-                className="overflow-hidden rounded-3xl border border-slate-200 bg-white text-left shadow-sm transition hover:-translate-y-1 hover:shadow-md"
-              >
-                <div className="h-36 bg-slate-100">
-                  {product.image ? (
-                    <img src={product.image} alt={product.name} className="h-full w-full object-cover" />
-                  ) : (
-                    <div className="flex h-full items-center justify-center text-4xl">📦</div>
-                  )}
-                </div>
+            {message && (
+              <div className="mb-5 rounded-2xl bg-brand-50 p-3 text-sm font-bold text-brand-700">
+                {message}
+              </div>
+            )}
 
-                <div className="p-4">
-                  <p className="text-xs font-bold uppercase tracking-wide text-brand-700">
-                    {product.category || 'Produit'}
-                  </p>
-                  <h3 className="mt-1 font-black text-slate-950">{product.name}</h3>
-                  <p className="mt-2 text-lg font-black text-slate-950">
-                    {Number(product.sell_price || 0).toLocaleString('fr-FR')} CFA
-                  </p>
-                  <p className={`mt-1 text-sm font-bold ${Number(product.stock || 0) <= 5 ? 'text-red-600' : 'text-slate-500'}`}>
-                    Stock: {product.stock || 0}
-                  </p>
-                </div>
-              </button>
-            ))}
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {filteredProducts.map((product) => (
+                <button
+                  key={product.id}
+                  onClick={() => addToCart(product)}
+                  className="overflow-hidden rounded-3xl border border-slate-200 bg-white text-left shadow-sm transition hover:-translate-y-1 hover:shadow-md"
+                >
+                  <div className="h-36 bg-slate-100">
+                    {product.image ? (
+                      <img src={product.image} alt={product.name} className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="flex h-full items-center justify-center text-4xl">📦</div>
+                    )}
+                  </div>
+
+                  <div className="p-4">
+                    <p className="text-xs font-bold uppercase tracking-wide text-brand-700">
+                      {product.category || 'Produit'}
+                    </p>
+                    <h3 className="mt-1 font-black text-slate-950">{product.name}</h3>
+                    <p className="mt-1 text-xs font-semibold text-slate-400">
+                      {product.barcode || 'Sans code-barres'}
+                    </p>
+                    <p className="mt-2 text-lg font-black text-slate-950">
+                      {Number(product.sell_price || 0).toLocaleString('fr-FR')} CFA
+                    </p>
+                    <p className={`mt-1 text-sm font-bold ${Number(product.stock || 0) <= 5 ? 'text-red-600' : 'text-slate-500'}`}>
+                      Stock: {product.stock || 0}
+                    </p>
+                  </div>
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -411,7 +494,7 @@ await supabase
               <div className="mt-3 rounded-2xl bg-white p-3 text-sm">
                 <p className="font-black text-slate-950">{selectedCustomer.full_name}</p>
                 <p className="font-semibold text-slate-500">
-                  Points: {selectedCustomer.points || 0} • Dépensé: {Number(selectedCustomer.total_spent || 0).toLocaleString('fr-FR')} CFA
+                  Points: {selectedCustomer.points || 0} • Dette: {Number(selectedCustomer.debt_balance || 0).toLocaleString('fr-FR')} CFA
                 </p>
                 <p className="mt-1 font-bold text-brand-700">
                   Cette vente ajoutera {earnedPoints} point(s).
@@ -424,7 +507,7 @@ await supabase
             <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-10 text-center">
               <p className="text-4xl">🛒</p>
               <h3 className="mt-3 text-xl font-black text-slate-950">Panier vide</h3>
-              <p className="mt-2 text-sm text-slate-500">Ajoutez un produit pour commencer une vente.</p>
+              <p className="mt-2 text-sm text-slate-500">Scannez ou ajoutez un produit.</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -478,33 +561,32 @@ await supabase
                 </div>
               ))}
 
-              <div className="space-y-3">
-  <select
-    className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 font-bold outline-none focus:border-brand-600"
-    value={paymentMethod}
-    onChange={(e) => setPaymentMethod(e.target.value)}
-  >
-    <option value="cash">Cash</option>
-    <option value="wave">Wave</option>
-    <option value="orange_money">Orange Money</option>
-    <option value="card">Carte</option>
-    <option value="credit">Client Doit</option>
-  </select>
+              <div className="border-t border-slate-200 pt-5">
+                <label className="text-sm font-bold text-slate-700">Méthode de paiement</label>
+                <select
+                  className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 font-bold outline-none focus:border-brand-600"
+                  value={paymentMethod}
+                  onChange={(e) => setPaymentMethod(e.target.value)}
+                >
+                  <option value="cash">Cash</option>
+                  <option value="wave">Wave</option>
+                  <option value="orange_money">Orange Money</option>
+                  <option value="card">Carte</option>
+                  <option value="credit">Client Doit</option>
+                </select>
 
-  {paymentMethod === 'credit' && (
-    <div className="rounded-2xl bg-red-50 p-4">
-      <p className="text-sm font-bold text-red-700">
-        Vente enregistrée comme dette client.
-      </p>
-
-      {selectedCustomer && (
-        <p className="mt-2 text-sm font-semibold text-red-600">
-          Dette ajoutée à {selectedCustomer.full_name}
-        </p>
-      )}
-    </div>
-  )}
-</div>
+                {paymentMethod === 'credit' && (
+                  <div className="mt-3 rounded-2xl bg-red-50 p-4">
+                    <p className="text-sm font-bold text-red-700">
+                      Vente enregistrée comme dette client.
+                    </p>
+                    {!selectedCustomer && (
+                      <p className="mt-1 text-sm font-semibold text-red-600">
+                        Sélectionnez un client pour continuer.
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="rounded-3xl bg-slate-950 p-5 text-white">
