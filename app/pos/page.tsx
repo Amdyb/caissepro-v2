@@ -254,16 +254,28 @@ status: paymentMethod === 'credit' ? 'pending' : 'completed'
     }
 
     if (customerId && selectedCustomer) {
-      const newTotalSpent = Number(selectedCustomer.total_spent || 0) + subtotal
-      const newPoints = Number(selectedCustomer.points || 0) + earnedPoints
+      const newTotalSpent =
+  Number(selectedCustomer.total_spent || 0) + subtotal
 
-      await supabase
-        .from('customers')
-        .update({
-          total_spent: newTotalSpent,
-          points: newPoints
-        })
-        .eq('id', customerId)
+const newPoints =
+  Number(selectedCustomer.points || 0) + earnedPoints
+
+const currentDebt =
+  Number((selectedCustomer as any).debt_balance || 0)
+
+const newDebt =
+  paymentMethod === 'credit'
+    ? currentDebt + subtotal
+    : currentDebt
+
+await supabase
+  .from('customers')
+  .update({
+    total_spent: newTotalSpent,
+    points: newPoints,
+    debt_balance: newDebt
+  })
+  .eq('id', customerId)
     }
 
     setCart([])
