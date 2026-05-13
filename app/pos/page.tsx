@@ -8,7 +8,7 @@ import { supabase } from '@/lib/supabaseClient'
 
 type Product = {
   id: string
-  business_id: stringa
+  business_id: string
   name: string
   barcode: string | null
   category: string | null
