@@ -205,7 +205,7 @@ export default function DashboardPage() {
       return
     }
 
-    setSales((data || []) as Sale[])
+    setSales((data || []) as unknown as Sale[])
   }
 
   async function loadMembersCount(id: string) {
