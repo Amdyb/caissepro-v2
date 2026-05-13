@@ -60,68 +60,81 @@ const features = [
     icon: ReceiptText
   },
   {
-    title: 'Multi-boutiques',
-    text: 'Gérez plusieurs magasins, branches, équipes et stocks.',
+    title: 'Multi-succursales',
+    text: 'Gérez plusieurs magasins, équipes, stocks et rapports.',
     icon: Building2
   }
 ]
 
 const plans = [
   {
-    name: 'Starter',
-    price: '5 000',
-    period: 'CFA / mois',
-    description: 'Pour commencer avec une seule boutique.',
-    badge: 'Simple',
+    name: 'Gratuit',
+    price: '0',
+    period: 'XOF',
+    audience: 'Démarrer, tester',
+    description: 'Pour découvrir CaissePro sans risque.',
+    badge: 'Test',
     icon: Store,
     features: [
-      '1 boutique',
-      'Caisse POS',
-      'Produits & stock',
-      'Historique des ventes',
-      'Clients de base',
-      'Reçus simples'
+      '1 utilisateur',
+      '10 produits max',
+      'Caisse basique',
+      'Publicités affichées'
     ],
-    cta: 'Commencer'
+    cta: 'Commencer gratuit'
   },
   {
-    name: 'Pro',
-    price: '12 000',
-    period: 'CFA / mois',
-    description: 'Pour les boutiques sérieuses qui veulent grandir.',
+    name: 'Starter',
+    price: '5 000',
+    period: 'XOF / mois',
+    audience: 'Petites boutiques',
+    description: 'Pour les petites boutiques qui veulent vendre proprement.',
+    badge: 'Simple',
+    icon: ShoppingCart,
+    features: [
+      'Produits illimités',
+      'Reçus WhatsApp',
+      'Client Doit',
+      'Rapports',
+      'Sans publicité'
+    ],
+    cta: 'Choisir Starter'
+  },
+  {
+    name: 'Business',
+    price: '15 000',
+    period: 'XOF / mois',
+    audience: 'Boutiques en croissance',
+    description: 'Pour les boutiques qui veulent vendre en ligne et gérer une équipe.',
     badge: 'Populaire',
     icon: Crown,
     featured: true,
     features: [
-      'Tout Starter',
-      'Client Doit',
-      'Fidélité clients',
-      'Dépenses & profits',
-      'Fournisseurs',
-      'Achats / réassort',
-      'Analytics avancés',
-      'Branding boutique'
+      'Tout Starter +',
+      'Boutique en ligne',
+      '5 employés',
+      'Paiements mobiles',
+      'Tontine: 5 groupes / 100 membres'
     ],
-    cta: 'Choisir Pro'
+    cta: 'Choisir Business'
   },
   {
-    name: 'Business',
-    price: '25 000',
-    period: 'CFA / mois',
-    description: 'Pour multi-boutiques, franchises et équipes.',
+    name: 'Premium',
+    price: '35 000',
+    period: 'XOF / mois',
+    audience: 'Multi-succursales',
+    description: 'Pour les grandes boutiques, franchises et réseaux de magasins.',
     badge: 'Premium',
     icon: ShieldCheck,
     features: [
-      'Tout Pro',
-      'Multi-boutiques',
-      'Employés & permissions',
-      'Rapports complets',
-      'Support prioritaire',
-      'Options personnalisées',
-      'Préparation boutique en ligne',
-      'Accompagnement setup'
+      'Tout Business +',
+      'Multi-succursales',
+      'Domaine personnalisé',
+      'Employés illimités',
+      'Tontine illimitée + export PDF',
+      'Support prioritaire'
     ],
-    cta: 'Contacter'
+    cta: 'Choisir Premium'
   }
 ]
 
@@ -130,7 +143,7 @@ const paymentLogos = [
   { name: 'Orange Money', className: 'bg-orange-50 text-orange-700 border-orange-100' },
   { name: 'Free Money', className: 'bg-red-50 text-red-700 border-red-100' },
   { name: 'Cash', className: 'bg-emerald-50 text-emerald-700 border-emerald-100' },
-  { name: 'Carte', className: 'bg-slate-100 text-slate-700 border-slate-200' },
+  { name: 'Carte bancaire', className: 'bg-slate-100 text-slate-700 border-slate-200' },
   { name: 'Client Doit', className: 'bg-amber-50 text-amber-700 border-amber-100' }
 ]
 
@@ -154,7 +167,7 @@ export default function LandingPage() {
             <a href="#features" className="hover:text-emerald-700">Fonctions</a>
             <a href="#business" className="hover:text-emerald-700">Business</a>
             <a href="#payments" className="hover:text-emerald-700">Paiements</a>
-            <a href="#pricing" className="hover:text-emerald-700">Prix</a>
+            <a href="#pricing" className="hover:text-emerald-700">Tarifs</a>
           </nav>
 
           <div className="flex items-center gap-3">
@@ -200,7 +213,7 @@ export default function LandingPage() {
                 href="/login"
                 className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-7 py-4 font-black text-white shadow-xl shadow-emerald-600/20 hover:bg-emerald-700"
               >
-                Essayer maintenant
+                Essayer gratuitement
                 <ArrowRight size={18} />
               </Link>
 
@@ -208,22 +221,22 @@ export default function LandingPage() {
                 href="#pricing"
                 className="inline-flex items-center justify-center rounded-2xl border border-slate-300 bg-white px-7 py-4 font-black text-slate-700 shadow-sm hover:bg-slate-50"
               >
-                Voir les prix
+                Voir les tarifs
               </a>
             </div>
 
             <div className="mt-8 grid max-w-xl grid-cols-3 gap-4">
               <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+                <p className="text-2xl font-black text-slate-950">0 XOF</p>
+                <p className="mt-1 text-xs font-bold text-slate-500">pour tester</p>
+              </div>
+              <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
                 <p className="text-2xl font-black text-slate-950">POS</p>
-                <p className="mt-1 text-xs font-bold text-slate-500">Caisse rapide</p>
+                <p className="mt-1 text-xs font-bold text-slate-500">caisse rapide</p>
               </div>
               <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
-                <p className="text-2xl font-black text-slate-950">Stock</p>
-                <p className="mt-1 text-xs font-bold text-slate-500">Alertes & réassort</p>
-              </div>
-              <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
-                <p className="text-2xl font-black text-slate-950">CFA</p>
-                <p className="mt-1 text-xs font-bold text-slate-500">Pensé local</p>
+                <p className="text-2xl font-black text-slate-950">XOF</p>
+                <p className="mt-1 text-xs font-bold text-slate-500">pensé local</p>
               </div>
             </div>
           </div>
@@ -234,7 +247,7 @@ export default function LandingPage() {
                 <div className="mb-5 flex items-center justify-between">
                   <div>
                     <p className="text-sm font-bold text-emerald-300">Aujourd’hui</p>
-                    <p className="text-3xl font-black">245 000 CFA</p>
+                    <p className="text-3xl font-black">245 000 XOF</p>
                   </div>
                   <div className="rounded-2xl bg-white/10 p-3">
                     <BarChart3 />
@@ -258,31 +271,31 @@ export default function LandingPage() {
                 <div className="mt-4 rounded-3xl bg-white p-4 text-slate-950">
                   <div className="mb-3 flex items-center justify-between">
                     <p className="font-black">Dernière vente</p>
-                    <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-700">Wave</span>
+                    <span className="rounded-full bg-sky-50 px-3 py-1 text-xs font-black text-sky-700">Wave</span>
                   </div>
 
                   <div className="space-y-3">
                     <div className="flex items-center justify-between rounded-2xl bg-slate-50 p-3">
                       <span className="font-bold">Produit premium</span>
-                      <span className="font-black">15 000 CFA</span>
+                      <span className="font-black">15 000 XOF</span>
                     </div>
                     <div className="flex items-center justify-between rounded-2xl bg-slate-50 p-3">
                       <span className="font-bold">Accessoire</span>
-                      <span className="font-black">5 000 CFA</span>
+                      <span className="font-black">5 000 XOF</span>
                     </div>
                   </div>
 
                   <div className="mt-4 flex items-center justify-between border-t border-dashed border-slate-300 pt-4">
                     <span className="font-black">Total</span>
-                    <span className="text-2xl font-black text-emerald-700">20 000 CFA</span>
+                    <span className="text-2xl font-black text-emerald-700">20 000 XOF</span>
                   </div>
                 </div>
               </div>
             </div>
 
             <div className="absolute -bottom-8 -left-8 hidden rounded-3xl border border-slate-200 bg-white p-5 shadow-xl md:block">
-              <p className="text-sm font-bold text-slate-500">Stock faible</p>
-              <p className="mt-1 text-2xl font-black text-amber-600">7 produits</p>
+              <p className="text-sm font-bold text-slate-500">Plan disponible</p>
+              <p className="mt-1 text-2xl font-black text-emerald-600">Gratuit</p>
             </div>
           </div>
         </div>
@@ -294,7 +307,7 @@ export default function LandingPage() {
             <div>
               <h2 className="text-3xl font-black">Paiements adaptés au marché local</h2>
               <p className="mt-2 font-semibold text-slate-600">
-                CaissePro prépare votre commerce pour Cash, Wave, Orange Money, Free Money, carte et Client Doit.
+                Tout est payable par Wave, Orange Money ou carte bancaire.
               </p>
             </div>
 
@@ -358,23 +371,6 @@ export default function LandingPage() {
                 Que vous vendiez des produits, services, repas, accessoires ou articles en boutique,
                 CaissePro reste simple pour vos employés et puissant pour le propriétaire.
               </p>
-
-              <div className="mt-8 flex flex-col gap-4 sm:flex-row">
-                <Link
-                  href="/login"
-                  className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-7 py-4 font-black text-white hover:bg-emerald-700"
-                >
-                  Créer ma boutique
-                  <ArrowRight size={18} />
-                </Link>
-
-                <a
-                  href="#pricing"
-                  className="inline-flex items-center justify-center rounded-2xl bg-white/10 px-7 py-4 font-black text-white hover:bg-white/15"
-                >
-                  Comparer les plans
-                </a>
-              </div>
             </div>
 
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -392,14 +388,30 @@ export default function LandingPage() {
       <section id="pricing" className="mx-auto max-w-7xl px-6 py-20">
         <div className="mb-12 text-center">
           <h2 className="text-4xl font-black tracking-tight md:text-5xl">
-            Plans simples pour chaque niveau.
+            CaissePro — Plans & Tarifs
           </h2>
           <p className="mt-4 text-lg font-semibold text-slate-600">
-            Vous pourrez ajuster les prix selon vos abonnés et vos marchés.
+            Choisissez le plan adapté à votre commerce. Vous pouvez commencer gratuitement.
           </p>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-3">
+        <div className="mb-10 overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
+          <div className="grid grid-cols-3 bg-slate-50 px-5 py-4 text-sm font-black uppercase tracking-wide text-slate-500">
+            <div>Plan</div>
+            <div>Prix</div>
+            <div>Pour qui</div>
+          </div>
+
+          {plans.map((plan) => (
+            <div key={plan.name} className="grid grid-cols-3 border-t border-slate-100 px-5 py-4 font-bold text-slate-700">
+              <div className="font-black text-slate-950">{plan.name}</div>
+              <div>{plan.price} {plan.period}</div>
+              <div>{plan.audience}</div>
+            </div>
+          ))}
+        </div>
+
+        <div className="grid gap-6 lg:grid-cols-4">
           {plans.map((plan) => {
             const Icon = plan.icon
 
@@ -416,7 +428,7 @@ export default function LandingPage() {
                   <Icon size={30} />
                 </div>
 
-                <div className="mb-4 flex items-center justify-between">
+                <div className="mb-4 flex items-center justify-between gap-2">
                   <h3 className="text-3xl font-black">{plan.name}</h3>
                   <span className={`rounded-full px-3 py-1 text-xs font-black ${plan.featured ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-700'}`}>
                     {plan.badge}
@@ -425,6 +437,10 @@ export default function LandingPage() {
 
                 <p className={`font-semibold leading-7 ${plan.featured ? 'text-white/70' : 'text-slate-600'}`}>
                   {plan.description}
+                </p>
+
+                <p className={`mt-3 text-sm font-black ${plan.featured ? 'text-emerald-300' : 'text-emerald-700'}`}>
+                  {plan.audience}
                 </p>
 
                 <div className="mt-7">
@@ -459,6 +475,16 @@ export default function LandingPage() {
             )
           })}
         </div>
+
+        <div className="mt-10 rounded-[2rem] border border-emerald-200 bg-emerald-50 p-6 text-center">
+          <Wallet className="mx-auto text-emerald-700" size={34} />
+          <h3 className="mt-4 text-2xl font-black text-slate-950">
+            Paiement simple
+          </h3>
+          <p className="mx-auto mt-2 max-w-2xl font-semibold text-slate-700">
+            Tous les abonnements sont payables par Wave, Orange Money ou carte bancaire.
+          </p>
+        </div>
       </section>
 
       <section className="mx-auto max-w-7xl px-6 pb-20">
@@ -478,7 +504,7 @@ export default function LandingPage() {
               href="/login"
               className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-7 py-4 font-black text-emerald-700 hover:bg-slate-50"
             >
-              Commencer maintenant
+              Commencer gratuitement
               <ArrowRight size={18} />
             </Link>
 
@@ -502,7 +528,7 @@ export default function LandingPage() {
           </div>
 
           <p className="text-sm font-semibold text-slate-500">
-            POS, stock, clients et analytics pour commerces modernes.
+            POS, stock, clients, tontine et analytics pour commerces modernes.
           </p>
         </div>
       </footer>
