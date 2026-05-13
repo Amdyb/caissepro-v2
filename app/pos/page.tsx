@@ -3,12 +3,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Minus, Plus, Search, ShoppingCart, Trash2 } from 'lucide-react'
+import { ArrowLeft, Minus, Plus, Search, ShoppingCart, Trash2, UserRound } from 'lucide-react'
 import { supabase } from '@/lib/supabaseClient'
 
 type Product = {
   id: string
-  business_id: string
+  business_id: stringa
   name: string
   barcode: string | null
   category: string | null
@@ -16,6 +16,14 @@ type Product = {
   minimum_price: number | null
   stock: number | null
   image: string | null
+}
+
+type Customer = {
+  id: string
+  full_name: string
+  phone: string | null
+  points: number | null
+  total_spent: number | null
 }
 
 type CartItem = {
@@ -30,6 +38,8 @@ export default function POSPage() {
   const [cashierId, setCashierId] = useState<string | null>(null)
   const [businessName, setBusinessName] = useState('CaissePro')
   const [products, setProducts] = useState<Product[]>([])
+  const [customers, setCustomers] = useState<Customer[]>([])
+  const [selectedCustomerId, setSelectedCustomerId] = useState('')
   const [cart, setCart] = useState<CartItem[]>([])
   const [search, setSearch] = useState('')
   const [paymentMethod, setPaymentMethod] = useState('cash')
@@ -48,7 +58,9 @@ export default function POSPage() {
     )
   }, [products, search])
 
+  const selectedCustomer = customers.find((customer) => customer.id === selectedCustomerId) || null
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0)
+  const earnedPoints = Math.floor(subtotal / 1000)
 
   useEffect(() => {
     async function init() {
@@ -77,7 +89,12 @@ export default function POSPage() {
       const member: any = membership
       setBusinessId(member.business_id)
       setBusinessName(member.businesses?.name || 'Ma Boutique')
-      await loadProducts(member.business_id)
+
+      await Promise.all([
+        loadProducts(member.business_id),
+        loadCustomers(member.business_id)
+      ])
+
       setLoading(false)
     }
 
@@ -97,6 +114,21 @@ export default function POSPage() {
     }
 
     setProducts((data || []) as Product[])
+  }
+
+  async function loadCustomers(id: string) {
+    const { data, error } = await supabase
+      .from('customers')
+      .select('id, full_name, phone, points, total_spent')
+      .eq('business_id', id)
+      .order('full_name')
+
+    if (error) {
+      setMessage(error.message)
+      return
+    }
+
+    setCustomers((data || []) as Customer[])
   }
 
   function addToCart(product: Product) {
@@ -173,11 +205,14 @@ export default function POSPage() {
     setCheckoutLoading(true)
     setMessage('')
 
+    const customerId = selectedCustomerId || null
+
     const { data: sale, error: saleError } = await supabase
       .from('sales')
       .insert({
         business_id: businessId,
         cashier_id: cashierId,
+        customer_id: customerId,
         total: subtotal,
         payment_method: paymentMethod,
         status: 'completed'
@@ -216,9 +251,27 @@ export default function POSPage() {
         .eq('id', item.product.id)
     }
 
+    if (customerId && selectedCustomer) {
+      const newTotalSpent = Number(selectedCustomer.total_spent || 0) + subtotal
+      const newPoints = Number(selectedCustomer.points || 0) + earnedPoints
+
+      await supabase
+        .from('customers')
+        .update({
+          total_spent: newTotalSpent,
+          points: newPoints
+        })
+        .eq('id', customerId)
+    }
+
     setCart([])
-    await loadProducts(businessId)
-    setMessage('Vente enregistrée avec succès.')
+    setSelectedCustomerId('')
+    await Promise.all([
+      loadProducts(businessId),
+      loadCustomers(businessId)
+    ])
+
+    setMessage(`Vente enregistrée avec succès.${customerId ? ` ${earnedPoints} point(s) fidélité ajouté(s).` : ''}`)
     setCheckoutLoading(false)
   }
 
@@ -321,6 +374,38 @@ export default function POSPage() {
             </div>
           </div>
 
+          <div className="mb-5 rounded-3xl border border-slate-200 bg-slate-50 p-4">
+            <label className="flex items-center gap-2 text-sm font-bold text-slate-700">
+              <UserRound size={17} />
+              Client
+            </label>
+
+            <select
+              className="mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 font-bold outline-none focus:border-brand-600"
+              value={selectedCustomerId}
+              onChange={(e) => setSelectedCustomerId(e.target.value)}
+            >
+              <option value="">Vente sans client</option>
+              {customers.map((customer) => (
+                <option key={customer.id} value={customer.id}>
+                  {customer.full_name} {customer.phone ? `• ${customer.phone}` : ''}
+                </option>
+              ))}
+            </select>
+
+            {selectedCustomer && (
+              <div className="mt-3 rounded-2xl bg-white p-3 text-sm">
+                <p className="font-black text-slate-950">{selectedCustomer.full_name}</p>
+                <p className="font-semibold text-slate-500">
+                  Points: {selectedCustomer.points || 0} • Dépensé: {Number(selectedCustomer.total_spent || 0).toLocaleString('fr-FR')} CFA
+                </p>
+                <p className="mt-1 font-bold text-brand-700">
+                  Cette vente ajoutera {earnedPoints} point(s).
+                </p>
+              </div>
+            )}
+          </div>
+
           {cart.length === 0 ? (
             <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-10 text-center">
               <p className="text-4xl">🛒</p>
@@ -399,6 +484,12 @@ export default function POSPage() {
                   <p className="text-sm font-bold text-slate-300">Total</p>
                   <p className="text-3xl font-black">{subtotal.toLocaleString('fr-FR')} CFA</p>
                 </div>
+
+                {selectedCustomer && (
+                  <p className="mt-2 text-sm font-bold text-brand-300">
+                    +{earnedPoints} point(s) fidélité
+                  </p>
+                )}
 
                 <button
                   onClick={checkout}
