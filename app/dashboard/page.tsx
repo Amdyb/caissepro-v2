@@ -14,7 +14,9 @@ import {
   Store,
   TrendingUp,
   Users,
-  UserRoundCog
+  UserRoundCog,
+  Wallet,
+  WalletCards
 } from 'lucide-react'
 import { supabase } from '@/lib/supabaseClient'
 
@@ -45,6 +47,22 @@ type Sale = {
 type Customer = {
   id: string
   debt_balance: number | null
+}
+
+type Expense = {
+  id: string
+  title: string
+  amount: number | null
+  category: string | null
+  expense_date: string | null
+  created_at: string
+}
+
+type Shift = {
+  id: string
+  status: string | null
+  opening_cash: number | null
+  opened_at: string
 }
 
 function startOfDay(date: Date) {
@@ -89,6 +107,8 @@ export default function DashboardPage() {
   const [products, setProducts] = useState<Product[]>([])
   const [sales, setSales] = useState<Sale[]>([])
   const [customers, setCustomers] = useState<Customer[]>([])
+  const [expenses, setExpenses] = useState<Expense[]>([])
+  const [shifts, setShifts] = useState<Shift[]>([])
   const [membersCount, setMembersCount] = useState(1)
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState('')
@@ -103,10 +123,25 @@ export default function DashboardPage() {
     const weekSales = sales.filter((sale) => new Date(sale.created_at) >= weekStart)
     const monthSales = sales.filter((sale) => new Date(sale.created_at) >= monthStart)
 
-    const sum = (items: Sale[]) => items.reduce((total, sale) => total + Number(sale.total || 0), 0)
+    const todayExpenses = expenses.filter((expense) => new Date(expense.expense_date || expense.created_at) >= todayStart)
+    const weekExpenses = expenses.filter((expense) => new Date(expense.expense_date || expense.created_at) >= weekStart)
+    const monthExpenses = expenses.filter((expense) => new Date(expense.expense_date || expense.created_at) >= monthStart)
+
+    const sumSales = (items: Sale[]) => items.reduce((total, sale) => total + Number(sale.total || 0), 0)
+    const sumExpenses = (items: Expense[]) => items.reduce((total, expense) => total + Number(expense.amount || 0), 0)
+
+    const todayRevenue = sumSales(todaySales)
+    const weekRevenue = sumSales(weekSales)
+    const monthRevenue = sumSales(monthSales)
+
+    const todayExpenseTotal = sumExpenses(todayExpenses)
+    const weekExpenseTotal = sumExpenses(weekExpenses)
+    const monthExpenseTotal = sumExpenses(monthExpenses)
+
     const lowStock = products.filter((product) => Number(product.stock || 0) <= 5)
     const totalDebt = customers.reduce((sum, customer) => sum + Number(customer.debt_balance || 0), 0)
     const customersWithDebt = customers.filter((customer) => Number(customer.debt_balance || 0) > 0)
+    const openShift = shifts.find((shift) => shift.status === 'open') || null
 
     const topMap = new Map<string, { name: string; qty: number; total: number }>()
 
@@ -125,18 +160,25 @@ export default function DashboardPage() {
       .slice(0, 5)
 
     return {
-      todayRevenue: sum(todaySales),
-      weekRevenue: sum(weekSales),
-      monthRevenue: sum(monthSales),
+      todayRevenue,
+      weekRevenue,
+      monthRevenue,
+      todayExpenseTotal,
+      weekExpenseTotal,
+      monthExpenseTotal,
+      todayNet: todayRevenue - todayExpenseTotal,
+      weekNet: weekRevenue - weekExpenseTotal,
+      monthNet: monthRevenue - monthExpenseTotal,
       todayCount: todaySales.length,
       weekCount: weekSales.length,
       monthCount: monthSales.length,
       lowStock,
       totalDebt,
       customersWithDebt,
+      openShift,
       topProducts
     }
-  }, [sales, products, customers])
+  }, [sales, products, customers, expenses, shifts])
 
   useEffect(() => {
     async function init() {
@@ -169,6 +211,8 @@ export default function DashboardPage() {
         loadProducts(member.business_id),
         loadSales(member.business_id),
         loadCustomers(member.business_id),
+        loadExpenses(member.business_id),
+        loadShifts(member.business_id),
         loadMembersCount(member.business_id)
       ])
 
@@ -236,6 +280,38 @@ export default function DashboardPage() {
     setCustomers((data || []) as Customer[])
   }
 
+  async function loadExpenses(id: string) {
+    const { data, error } = await supabase
+      .from('expenses')
+      .select('id, title, amount, category, expense_date, created_at')
+      .eq('business_id', id)
+      .order('created_at', { ascending: false })
+      .limit(100)
+
+    if (error) {
+      setMessage(error.message)
+      return
+    }
+
+    setExpenses((data || []) as Expense[])
+  }
+
+  async function loadShifts(id: string) {
+    const { data, error } = await supabase
+      .from('cash_register_shifts')
+      .select('id, status, opening_cash, opened_at')
+      .eq('business_id', id)
+      .order('opened_at', { ascending: false })
+      .limit(10)
+
+    if (error) {
+      setMessage(error.message)
+      return
+    }
+
+    setShifts((data || []) as Shift[])
+  }
+
   async function loadMembersCount(id: string) {
     const { count } = await supabase
       .from('business_members')
@@ -261,31 +337,45 @@ export default function DashboardPage() {
     },
     {
       title: 'Produits',
-      text: 'Gérer le stock, les images et les prix.',
+      text: 'Stock, images, prix et code-barres.',
       href: '/products',
       icon: Package,
       value: `${products.length} produit(s)`
     },
     {
       title: 'Ventes',
-      text: 'Voir l’historique et les reçus.',
+      text: 'Historique, reçus et WhatsApp.',
       href: '/sales',
       icon: ReceiptText,
       value: `${sales.length} vente(s)`
     },
     {
       title: 'Clients',
-      text: 'Base clients et fidélité.',
+      text: 'Fidélité et base clients.',
       href: '/customers',
       icon: Users,
       value: `${customers.length} client(s)`
     },
     {
       title: 'Client Doit',
-      text: 'Suivre les dettes et paiements.',
+      text: 'Crédits et paiements clients.',
       href: '/debts',
       icon: HandCoins,
       value: `${analytics.totalDebt.toLocaleString('fr-FR')} CFA dû`
+    },
+    {
+      title: 'Dépenses',
+      text: 'Charges, achats et profits.',
+      href: '/expenses',
+      icon: Wallet,
+      value: `${analytics.monthExpenseTotal.toLocaleString('fr-FR')} CFA/mois`
+    },
+    {
+      title: 'Caisse journalière',
+      text: 'Ouverture et fermeture caisse.',
+      href: '/register-shifts',
+      icon: WalletCards,
+      value: analytics.openShift ? 'Ouverte' : 'Fermée'
     },
     {
       title: 'Employés',
@@ -313,7 +403,7 @@ export default function DashboardPage() {
               <Store />
             </div>
             <div>
-              <p className="text-sm font-bold uppercase tracking-wide text-brand-600">Tableau de bord</p>
+              <p className="text-sm font-bold uppercase tracking-wide text-brand-600">Centre de contrôle</p>
               <h1 className="text-2xl font-black text-slate-950">{businessName}</h1>
             </div>
           </div>
@@ -336,9 +426,9 @@ export default function DashboardPage() {
 
         <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
-            <h2 className="text-4xl font-black tracking-tight text-slate-950">Centre de contrôle</h2>
+            <h2 className="text-4xl font-black tracking-tight text-slate-950">Command Center</h2>
             <p className="mt-2 max-w-2xl text-slate-600">
-              Accédez rapidement aux modules essentiels de votre boutique.
+              Suivez vos ventes, vos dépenses, vos dettes clients, votre caisse et votre stock en un seul endroit.
             </p>
           </div>
 
@@ -347,7 +437,41 @@ export default function DashboardPage() {
           </Link>
         </div>
 
-        <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <ReceiptText className="text-brand-600" />
+            <p className="mt-5 text-sm font-bold text-slate-500">Ventes aujourd’hui</p>
+            <p className="mt-2 text-3xl font-black text-slate-950">{analytics.todayRevenue.toLocaleString('fr-FR')} CFA</p>
+            <p className="mt-1 text-sm font-semibold text-slate-500">{analytics.todayCount} vente(s)</p>
+          </div>
+
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <Wallet className="text-red-600" />
+            <p className="mt-5 text-sm font-bold text-slate-500">Dépenses aujourd’hui</p>
+            <p className="mt-2 text-3xl font-black text-slate-950">{analytics.todayExpenseTotal.toLocaleString('fr-FR')} CFA</p>
+            <p className="mt-1 text-sm font-semibold text-slate-500">net: {analytics.todayNet.toLocaleString('fr-FR')} CFA</p>
+          </div>
+
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <TrendingUp className={analytics.monthNet >= 0 ? 'text-brand-600' : 'text-red-600'} />
+            <p className="mt-5 text-sm font-bold text-slate-500">Profit net du mois</p>
+            <p className={`mt-2 text-3xl font-black ${analytics.monthNet >= 0 ? 'text-slate-950' : 'text-red-700'}`}>
+              {analytics.monthNet.toLocaleString('fr-FR')} CFA
+            </p>
+            <p className="mt-1 text-sm font-semibold text-slate-500">
+              ventes - dépenses
+            </p>
+          </div>
+
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <HandCoins className="text-red-600" />
+            <p className="mt-5 text-sm font-bold text-slate-500">Client Doit</p>
+            <p className="mt-2 text-3xl font-black text-slate-950">{analytics.totalDebt.toLocaleString('fr-FR')} CFA</p>
+            <p className="mt-1 text-sm font-semibold text-red-600">{analytics.customersWithDebt.length} client(s)</p>
+          </div>
+        </div>
+
+        <div className="mt-8 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
           {navCards.map((card) => {
             const Icon = card.icon
             return (
@@ -376,36 +500,6 @@ export default function DashboardPage() {
               </Link>
             )
           })}
-        </div>
-
-        <div className="mt-8 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <ReceiptText className="text-brand-600" />
-            <p className="mt-5 text-sm font-bold text-slate-500">Aujourd’hui</p>
-            <p className="mt-2 text-3xl font-black text-slate-950">{analytics.todayRevenue.toLocaleString('fr-FR')} CFA</p>
-            <p className="mt-1 text-sm font-semibold text-slate-500">{analytics.todayCount} vente(s)</p>
-          </div>
-
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <CalendarDays className="text-brand-600" />
-            <p className="mt-5 text-sm font-bold text-slate-500">Cette semaine</p>
-            <p className="mt-2 text-3xl font-black text-slate-950">{analytics.weekRevenue.toLocaleString('fr-FR')} CFA</p>
-            <p className="mt-1 text-sm font-semibold text-slate-500">{analytics.weekCount} vente(s)</p>
-          </div>
-
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <TrendingUp className="text-brand-600" />
-            <p className="mt-5 text-sm font-bold text-slate-500">Ce mois</p>
-            <p className="mt-2 text-3xl font-black text-slate-950">{analytics.monthRevenue.toLocaleString('fr-FR')} CFA</p>
-            <p className="mt-1 text-sm font-semibold text-slate-500">{analytics.monthCount} vente(s)</p>
-          </div>
-
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <HandCoins className="text-red-600" />
-            <p className="mt-5 text-sm font-bold text-slate-500">Client Doit</p>
-            <p className="mt-2 text-3xl font-black text-slate-950">{analytics.totalDebt.toLocaleString('fr-FR')} CFA</p>
-            <p className="mt-1 text-sm font-semibold text-red-600">{analytics.customersWithDebt.length} client(s)</p>
-          </div>
         </div>
 
         <div className="mt-8 grid gap-8 lg:grid-cols-[1.1fr_.9fr]">
@@ -448,53 +542,72 @@ export default function DashboardPage() {
             <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
               <div className="mb-6 flex items-center justify-between">
                 <div>
-                  <h2 className="text-2xl font-black text-slate-950">Top produits</h2>
-                  <p className="text-sm text-slate-500">Classés par quantité vendue.</p>
+                  <h2 className="text-2xl font-black text-slate-950">Résumé business</h2>
+                  <p className="text-sm text-slate-500">Situation actuelle.</p>
                 </div>
-                <TrendingUp className="text-brand-600" />
+                <CalendarDays className="text-brand-600" />
               </div>
 
-              {analytics.topProducts.length === 0 ? (
-                <p className="rounded-2xl bg-slate-50 p-5 text-sm font-semibold text-slate-500">Aucune donnée pour le moment.</p>
-              ) : (
-                <div className="space-y-3">
-                  {analytics.topProducts.map((item, index) => (
-                    <div key={item.name} className="flex items-center justify-between rounded-2xl bg-slate-50 p-4">
-                      <div>
-                        <p className="font-black text-slate-950">#{index + 1} {item.name}</p>
-                        <p className="text-sm font-semibold text-slate-500">{item.qty} vendu(s)</p>
-                      </div>
-                      <p className="font-black text-slate-950">{item.total.toLocaleString('fr-FR')} CFA</p>
-                    </div>
-                  ))}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between rounded-2xl bg-slate-50 p-4">
+                  <span className="font-bold text-slate-600">Caisse journalière</span>
+                  <span className={`font-black ${analytics.openShift ? 'text-brand-700' : 'text-slate-500'}`}>
+                    {analytics.openShift ? 'Ouverte' : 'Fermée'}
+                  </span>
                 </div>
-              )}
+
+                <div className="flex items-center justify-between rounded-2xl bg-slate-50 p-4">
+                  <span className="font-bold text-slate-600">Stock bas</span>
+                  <span className="font-black text-red-600">{analytics.lowStock.length}</span>
+                </div>
+
+                <div className="flex items-center justify-between rounded-2xl bg-slate-50 p-4">
+                  <span className="font-bold text-slate-600">Dépenses du mois</span>
+                  <span className="font-black text-slate-950">{analytics.monthExpenseTotal.toLocaleString('fr-FR')} CFA</span>
+                </div>
+
+                <div className="flex items-center justify-between rounded-2xl bg-slate-50 p-4">
+                  <span className="font-bold text-slate-600">Ventes du mois</span>
+                  <span className="font-black text-slate-950">{analytics.monthRevenue.toLocaleString('fr-FR')} CFA</span>
+                </div>
+              </div>
             </div>
 
             <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
               <div className="mb-6 flex items-center justify-between">
                 <div>
-                  <h2 className="text-2xl font-black text-slate-950">Stock bas</h2>
-                  <p className="text-sm text-slate-500">Produits à réapprovisionner.</p>
+                  <h2 className="text-2xl font-black text-slate-950">Alertes</h2>
+                  <p className="text-sm text-slate-500">Points à surveiller.</p>
                 </div>
                 <AlertTriangle className="text-red-600" />
               </div>
 
-              {analytics.lowStock.length === 0 ? (
-                <p className="rounded-2xl bg-brand-50 p-5 text-sm font-bold text-brand-700">Aucun stock bas.</p>
-              ) : (
-                <div className="space-y-3">
-                  {analytics.lowStock.slice(0, 6).map((product) => (
-                    <Link key={product.id} href="/products" className="flex items-center justify-between rounded-2xl bg-red-50 p-4">
-                      <div>
-                        <p className="font-black text-slate-950">{product.name}</p>
-                        <p className="text-sm font-semibold text-red-600">Stock restant: {product.stock || 0}</p>
-                      </div>
-                      <p className="font-black text-slate-950">{Number(product.sell_price || 0).toLocaleString('fr-FR')} CFA</p>
-                    </Link>
-                  ))}
-                </div>
-              )}
+              <div className="space-y-3">
+                {analytics.lowStock.length > 0 && (
+                  <Link href="/products" className="block rounded-2xl bg-red-50 p-4">
+                    <p className="font-black text-red-700">Stock bas</p>
+                    <p className="text-sm font-semibold text-red-600">{analytics.lowStock.length} produit(s) à réapprovisionner.</p>
+                  </Link>
+                )}
+
+                {analytics.totalDebt > 0 && (
+                  <Link href="/debts" className="block rounded-2xl bg-yellow-50 p-4">
+                    <p className="font-black text-yellow-800">Client Doit</p>
+                    <p className="text-sm font-semibold text-yellow-700">{analytics.totalDebt.toLocaleString('fr-FR')} CFA en attente.</p>
+                  </Link>
+                )}
+
+                {!analytics.openShift && (
+                  <Link href="/register-shifts" className="block rounded-2xl bg-slate-50 p-4">
+                    <p className="font-black text-slate-950">Caisse fermée</p>
+                    <p className="text-sm font-semibold text-slate-500">Ouvrir la caisse avant de commencer la journée.</p>
+                  </Link>
+                )}
+
+                {analytics.lowStock.length === 0 && analytics.totalDebt === 0 && analytics.openShift && (
+                  <p className="rounded-2xl bg-brand-50 p-4 font-bold text-brand-700">Tout semble en ordre.</p>
+                )}
+              </div>
             </div>
           </div>
         </div>
