@@ -3,12 +3,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Boxes, PackagePlus, Plus, ReceiptText, Trash2, Truck } from 'lucide-react'
+import { ArrowLeft, Boxes, PackagePlus, Plus, ReceiptText, Trash2, Truck, Wallet } from 'lucide-react'
 import { supabase } from '@/lib/supabaseClient'
 
 type Supplier = {
   id: string
   name: string
+  balance: number | null
 }
 
 type Product = {
@@ -28,6 +29,9 @@ type PurchaseItemDraft = {
 type PurchaseOrder = {
   id: string
   total: number | null
+  paid_amount: number | null
+  remaining_amount: number | null
+  payment_status: string | null
   note: string | null
   created_at: string
   suppliers?: {
@@ -55,6 +59,7 @@ export default function PurchasesPage() {
   const [orders, setOrders] = useState<PurchaseOrder[]>([])
   const [supplierId, setSupplierId] = useState('')
   const [note, setNote] = useState('')
+  const [paidAmount, setPaidAmount] = useState('')
   const [items, setItems] = useState<PurchaseItemDraft[]>([
     { product_id: '', quantity: '1', cost_price: '0' }
   ])
@@ -67,6 +72,12 @@ export default function PurchasesPage() {
       return sum + Number(item.quantity || 0) * Number(item.cost_price || 0)
     }, 0)
   }, [items])
+
+  const paid = Number(paidAmount || 0)
+  const remaining = Math.max(total - paid, 0)
+
+  const totalPurchases = orders.reduce((sum, order) => sum + Number(order.total || 0), 0)
+  const totalSupplierDebt = suppliers.reduce((sum, supplier) => sum + Number(supplier.balance || 0), 0)
 
   useEffect(() => {
     async function init() {
@@ -111,7 +122,7 @@ export default function PurchasesPage() {
   async function loadSuppliers(id: string) {
     const { data, error } = await supabase
       .from('suppliers')
-      .select('id, name')
+      .select('id, name, balance')
       .eq('business_id', id)
       .order('name')
 
@@ -144,6 +155,9 @@ export default function PurchasesPage() {
       .select(`
         id,
         total,
+        paid_amount,
+        remaining_amount,
+        payment_status,
         note,
         created_at,
         suppliers (
@@ -161,7 +175,7 @@ export default function PurchasesPage() {
       `)
       .eq('business_id', id)
       .order('created_at', { ascending: false })
-      .limit(30)
+      .limit(50)
 
     if (error) {
       setMessage(error.message)
@@ -202,6 +216,11 @@ export default function PurchasesPage() {
       return
     }
 
+    if (paid > total) {
+      setMessage('Le montant payé ne peut pas dépasser le total.')
+      return
+    }
+
     setSaving(true)
     setMessage('')
 
@@ -212,6 +231,9 @@ export default function PurchasesPage() {
         supplier_id: supplierId || null,
         created_by: userId,
         total,
+        paid_amount: paid,
+        remaining_amount: remaining,
+        payment_status: remaining > 0 ? 'partial' : 'paid',
         note: note || null
       })
       .select()
@@ -254,16 +276,30 @@ export default function PurchasesPage() {
         .eq('id', item.product_id)
     }
 
+    if (supplierId && remaining > 0) {
+      const supplier = suppliers.find((s) => s.id === supplierId)
+      const newBalance = Number(supplier?.balance || 0) + remaining
+
+      await supabase
+        .from('suppliers')
+        .update({
+          balance: newBalance
+        })
+        .eq('id', supplierId)
+    }
+
     setSupplierId('')
     setNote('')
+    setPaidAmount('')
     setItems([{ product_id: '', quantity: '1', cost_price: '0' }])
 
     await Promise.all([
       loadProducts(businessId),
-      loadOrders(businessId)
+      loadOrders(businessId),
+      loadSuppliers(businessId)
     ])
 
-    setMessage('Achat enregistré et stock mis à jour.')
+    setMessage('Achat enregistré, stock mis à jour, solde fournisseur ajusté.')
     setSaving(false)
   }
 
@@ -299,12 +335,18 @@ export default function PurchasesPage() {
             </p>
           </div>
 
-          <button
-            onClick={logout}
-            className="rounded-full bg-slate-950 px-5 py-3 text-sm font-bold text-white"
-          >
-            Déconnexion
-          </button>
+          <div className="flex gap-3">
+            <Link href="/suppliers" className="rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-100">
+              Fournisseurs
+            </Link>
+
+            <button
+              onClick={logout}
+              className="rounded-full bg-slate-950 px-5 py-3 text-sm font-bold text-white"
+            >
+              Déconnexion
+            </button>
+          </div>
         </div>
       </header>
 
@@ -315,7 +357,7 @@ export default function PurchasesPage() {
           </div>
         )}
 
-        <div className="grid gap-5 md:grid-cols-3">
+        <div className="grid gap-5 md:grid-cols-4">
           <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
             <Truck className="text-brand-600" />
             <p className="mt-5 text-sm font-bold text-slate-500">Fournisseurs</p>
@@ -330,8 +372,14 @@ export default function PurchasesPage() {
 
           <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
             <ReceiptText className="text-brand-600" />
-            <p className="mt-5 text-sm font-bold text-slate-500">Achats récents</p>
-            <p className="mt-2 text-3xl font-black text-slate-950">{orders.length}</p>
+            <p className="mt-5 text-sm font-bold text-slate-500">Total achats</p>
+            <p className="mt-2 text-3xl font-black text-slate-950">{totalPurchases.toLocaleString('fr-FR')}</p>
+          </div>
+
+          <div className="rounded-3xl border border-red-200 bg-white p-6 shadow-sm">
+            <Wallet className="text-red-600" />
+            <p className="mt-5 text-sm font-bold text-slate-500">Dette fournisseur</p>
+            <p className="mt-2 text-3xl font-black text-red-700">{totalSupplierDebt.toLocaleString('fr-FR')}</p>
           </div>
         </div>
 
@@ -429,6 +477,27 @@ export default function PurchasesPage() {
                 Ajouter une ligne
               </button>
 
+              <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <label className="text-sm font-bold text-slate-700">Montant payé</label>
+                  <input
+                    type="number"
+                    min="0"
+                    className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-brand-600"
+                    placeholder="Ex: 50000"
+                    value={paidAmount}
+                    onChange={(e) => setPaidAmount(e.target.value)}
+                  />
+                </div>
+
+                <div className="rounded-2xl bg-red-50 p-4">
+                  <p className="text-sm font-bold text-red-700">Reste fournisseur</p>
+                  <p className="mt-1 text-2xl font-black text-red-700">
+                    {remaining.toLocaleString('fr-FR')} CFA
+                  </p>
+                </div>
+              </div>
+
               <div>
                 <label className="text-sm font-bold text-slate-700">Note</label>
                 <input
@@ -481,9 +550,17 @@ export default function PurchasesPage() {
                             {order.note ? ` • ${order.note}` : ''}
                           </p>
                         </div>
-                        <p className="text-xl font-black text-slate-950">
-                          {Number(order.total || 0).toLocaleString('fr-FR')} CFA
-                        </p>
+
+                        <div className="text-right">
+                          <p className="text-xl font-black text-slate-950">
+                            {Number(order.total || 0).toLocaleString('fr-FR')} CFA
+                          </p>
+                          {Number(order.remaining_amount || 0) > 0 && (
+                            <p className="text-sm font-bold text-red-700">
+                              Reste: {Number(order.remaining_amount || 0).toLocaleString('fr-FR')} CFA
+                            </p>
+                          )}
+                        </div>
                       </div>
 
                       <div className="mt-4 space-y-2">
