@@ -65,6 +65,7 @@ export default function POSPage() {
   const selectedCustomer = customers.find((customer) => customer.id === selectedCustomerId) || null
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0)
   const earnedPoints = Math.floor(subtotal / 1000)
+  const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0)
 
   useEffect(() => {
     async function init() {
@@ -226,7 +227,6 @@ export default function POSPage() {
     setCart((current) =>
       current.map((item) => {
         if (item.product.id !== productId) return item
-
         const maxStock = Number(item.product.stock || 0)
         return { ...item, quantity: Math.min(quantity, maxStock) }
       })
@@ -248,6 +248,7 @@ export default function POSPage() {
 
   async function checkout() {
     if (!businessId || !cashierId) return
+
     if (cart.length === 0) {
       setMessage('Le panier est vide.')
       return
@@ -354,63 +355,69 @@ export default function POSPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50">
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
+    <main className="min-h-screen bg-slate-50 pb-28 lg:pb-0">
+      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
           <div>
-            <Link href="/dashboard" className="inline-flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-brand-700">
-              <ArrowLeft size={16} /> Tableau de bord
+            <Link href="/dashboard" className="inline-flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-brand-700 sm:text-sm">
+              <ArrowLeft size={15} /> Tableau de bord
             </Link>
-            <h1 className="mt-1 text-2xl font-black text-slate-950">Caisse rapide</h1>
-            <p className="text-sm font-semibold text-slate-500">{businessName}</p>
+            <h1 className="mt-1 text-xl font-black text-slate-950 sm:text-2xl">Caisse rapide</h1>
+            <p className="text-xs font-semibold text-slate-500 sm:text-sm">{businessName}</p>
           </div>
 
-          <button onClick={logout} className="rounded-full bg-slate-950 px-5 py-3 text-sm font-bold text-white">
+          <button onClick={logout} className="rounded-full bg-slate-950 px-4 py-3 text-xs font-bold text-white sm:px-5 sm:text-sm">
             Déconnexion
           </button>
         </div>
       </header>
 
-      <section className="mx-auto grid max-w-7xl gap-8 px-6 py-10 lg:grid-cols-[1.2fr_.8fr]">
-        <div className="space-y-6">
-          <div className="rounded-3xl border border-brand-200 bg-white p-5 shadow-sm">
+      <section className="mx-auto grid max-w-7xl gap-5 px-4 py-5 sm:px-6 lg:grid-cols-[1.15fr_.85fr] lg:gap-8 lg:py-10">
+        <div className="space-y-5">
+          <div className="rounded-3xl border border-brand-200 bg-white p-4 shadow-sm sm:p-5">
             <div className="mb-4 flex items-center gap-3">
               <div className="rounded-2xl bg-brand-50 p-3 text-brand-700">
                 <Barcode />
               </div>
               <div>
-                <h2 className="text-xl font-black text-slate-950">Scanner / Recherche rapide</h2>
-                <p className="text-sm text-slate-500">Compatible avec scanner USB: scannez puis Entrée ajoute au panier.</p>
+                <h2 className="text-lg font-black text-slate-950 sm:text-xl">Scanner / Recherche rapide</h2>
+                <p className="text-xs text-slate-500 sm:text-sm">Scanner USB ou recherche rapide avec Entrée.</p>
               </div>
             </div>
 
-            <form onSubmit={handleBarcodeSubmit} className="grid gap-3 md:grid-cols-[1fr_auto]">
+            <form onSubmit={handleBarcodeSubmit} className="grid gap-3 sm:grid-cols-[1fr_auto]">
               <input
                 ref={barcodeInputRef}
-                className="w-full rounded-2xl border border-slate-300 px-4 py-4 text-lg font-bold outline-none focus:border-brand-600"
-                placeholder="Scanner code-barres ou taper le nom du produit..."
+                className="w-full rounded-2xl border border-slate-300 px-4 py-4 text-base font-bold outline-none focus:border-brand-600 sm:text-lg"
+                placeholder="Scanner ou taper un produit..."
                 value={barcodeInput}
                 onChange={(e) => setBarcodeInput(e.target.value)}
               />
 
-              <button className="inline-flex items-center justify-center gap-2 rounded-2xl bg-brand-600 px-6 py-4 font-black text-white hover:bg-brand-700">
+              <button className="inline-flex min-h-[54px] items-center justify-center gap-2 rounded-2xl bg-brand-600 px-6 py-4 font-black text-white hover:bg-brand-700">
                 <Zap size={18} />
                 Ajouter
               </button>
             </form>
           </div>
 
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          {message && (
+            <div className="rounded-2xl bg-brand-50 p-3 text-sm font-bold text-brand-700">
+              {message}
+            </div>
+          )}
+
+          <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+            <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h2 className="text-2xl font-black text-slate-950">Produits</h2>
-                <p className="text-sm text-slate-500">Touchez un produit pour l’ajouter au panier.</p>
+                <p className="text-sm text-slate-500">{filteredProducts.length} produit(s) affiché(s)</p>
               </div>
 
               <div className="relative">
                 <Search className="absolute left-4 top-3.5 text-slate-400" size={18} />
                 <input
-                  className="w-full rounded-2xl border border-slate-300 py-3 pl-11 pr-4 outline-none focus:border-brand-600 md:w-80"
+                  className="w-full rounded-2xl border border-slate-300 py-3 pl-11 pr-4 outline-none focus:border-brand-600 sm:w-80"
                   placeholder="Filtrer produits..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
@@ -418,39 +425,33 @@ export default function POSPage() {
               </div>
             </div>
 
-            {message && (
-              <div className="mb-5 rounded-2xl bg-brand-50 p-3 text-sm font-bold text-brand-700">
-                {message}
-              </div>
-            )}
-
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-3">
               {filteredProducts.map((product) => (
                 <button
                   key={product.id}
                   onClick={() => addToCart(product)}
-                  className="overflow-hidden rounded-3xl border border-slate-200 bg-white text-left shadow-sm transition hover:-translate-y-1 hover:shadow-md"
+                  className="overflow-hidden rounded-3xl border border-slate-200 bg-white text-left shadow-sm transition active:scale-[.98] hover:shadow-md"
                 >
-                  <div className="h-36 bg-slate-100">
+                  <div className="h-28 bg-slate-100 sm:h-36">
                     {product.image ? (
                       <img src={product.image} alt={product.name} className="h-full w-full object-cover" />
                     ) : (
-                      <div className="flex h-full items-center justify-center text-4xl">📦</div>
+                      <div className="flex h-full items-center justify-center text-3xl sm:text-4xl">📦</div>
                     )}
                   </div>
 
-                  <div className="p-4">
-                    <p className="text-xs font-bold uppercase tracking-wide text-brand-700">
+                  <div className="p-3 sm:p-4">
+                    <p className="line-clamp-1 text-[10px] font-bold uppercase tracking-wide text-brand-700 sm:text-xs">
                       {product.category || 'Produit'}
                     </p>
-                    <h3 className="mt-1 font-black text-slate-950">{product.name}</h3>
-                    <p className="mt-1 text-xs font-semibold text-slate-400">
+                    <h3 className="mt-1 line-clamp-2 text-sm font-black text-slate-950 sm:text-base">{product.name}</h3>
+                    <p className="mt-1 line-clamp-1 text-[10px] font-semibold text-slate-400 sm:text-xs">
                       {product.barcode || 'Sans code-barres'}
                     </p>
-                    <p className="mt-2 text-lg font-black text-slate-950">
+                    <p className="mt-2 text-base font-black text-slate-950 sm:text-lg">
                       {Number(product.sell_price || 0).toLocaleString('fr-FR')} CFA
                     </p>
-                    <p className={`mt-1 text-sm font-bold ${Number(product.stock || 0) <= 5 ? 'text-red-600' : 'text-slate-500'}`}>
+                    <p className={`mt-1 text-xs font-bold sm:text-sm ${Number(product.stock || 0) <= 5 ? 'text-red-600' : 'text-slate-500'}`}>
                       Stock: {product.stock || 0}
                     </p>
                   </div>
@@ -460,14 +461,14 @@ export default function POSPage() {
           </div>
         </div>
 
-        <aside className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="mb-6 flex items-center gap-3">
+        <aside className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6 lg:sticky lg:top-28 lg:max-h-[calc(100vh-8rem)] lg:overflow-y-auto">
+          <div className="mb-5 flex items-center gap-3">
             <div className="rounded-2xl bg-brand-50 p-3 text-brand-700">
               <ShoppingCart />
             </div>
             <div>
               <h2 className="text-2xl font-black text-slate-950">Panier</h2>
-              <p className="text-sm text-slate-500">{cart.length} produit(s)</p>
+              <p className="text-sm text-slate-500">{totalItems} article(s)</p>
             </div>
           </div>
 
@@ -497,14 +498,14 @@ export default function POSPage() {
                   Points: {selectedCustomer.points || 0} • Dette: {Number(selectedCustomer.debt_balance || 0).toLocaleString('fr-FR')} CFA
                 </p>
                 <p className="mt-1 font-bold text-brand-700">
-                  Cette vente ajoutera {earnedPoints} point(s).
+                  +{earnedPoints} point(s) sur cette vente.
                 </p>
               </div>
             )}
           </div>
 
           {cart.length === 0 ? (
-            <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-10 text-center">
+            <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
               <p className="text-4xl">🛒</p>
               <h3 className="mt-3 text-xl font-black text-slate-950">Panier vide</h3>
               <p className="mt-2 text-sm text-slate-500">Scannez ou ajoutez un produit.</p>
@@ -535,7 +536,7 @@ export default function POSPage() {
                       <input
                         type="number"
                         min={Number(item.product.minimum_price || 0)}
-                        className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 font-bold outline-none focus:border-brand-600"
+                        className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-3 font-bold outline-none focus:border-brand-600"
                         value={item.price}
                         onChange={(e) => updatePrice(item.product.id, Number(e.target.value || 0))}
                       />
@@ -543,7 +544,7 @@ export default function POSPage() {
 
                     <div>
                       <label className="text-xs font-bold text-slate-500">Quantité</label>
-                      <div className="mt-1 flex items-center justify-between rounded-xl border border-slate-300 px-2 py-1">
+                      <div className="mt-1 flex min-h-[46px] items-center justify-between rounded-xl border border-slate-300 px-2 py-1">
                         <button onClick={() => updateQuantity(item.product.id, item.quantity - 1)} className="rounded-lg p-2 hover:bg-slate-100">
                           <Minus size={15} />
                         </button>
@@ -588,31 +589,48 @@ export default function POSPage() {
                   </div>
                 )}
               </div>
-
-              <div className="rounded-3xl bg-slate-950 p-5 text-white">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-bold text-slate-300">Total</p>
-                  <p className="text-3xl font-black">{subtotal.toLocaleString('fr-FR')} CFA</p>
-                </div>
-
-                {selectedCustomer && (
-                  <p className="mt-2 text-sm font-bold text-brand-300">
-                    +{earnedPoints} point(s) fidélité
-                  </p>
-                )}
-
-                <button
-                  onClick={checkout}
-                  disabled={checkoutLoading}
-                  className="mt-5 w-full rounded-2xl bg-brand-600 py-4 text-lg font-black text-white hover:bg-brand-700 disabled:opacity-60"
-                >
-                  {checkoutLoading ? 'Enregistrement...' : 'Encaisser'}
-                </button>
-              </div>
             </div>
           )}
         </aside>
       </section>
+
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 p-3 shadow-2xl backdrop-blur lg:hidden">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3">
+          <div>
+            <p className="text-xs font-bold text-slate-500">{totalItems} article(s)</p>
+            <p className="text-xl font-black text-slate-950">{subtotal.toLocaleString('fr-FR')} CFA</p>
+          </div>
+
+          <button
+            onClick={checkout}
+            disabled={checkoutLoading || cart.length === 0}
+            className="rounded-2xl bg-brand-600 px-6 py-4 text-sm font-black text-white disabled:opacity-40"
+          >
+            {checkoutLoading ? '...' : 'Encaisser'}
+          </button>
+        </div>
+      </div>
+
+      <div className="hidden lg:block">
+        {cart.length > 0 && (
+          <div className="fixed bottom-6 right-6 z-40 rounded-3xl bg-slate-950 p-5 text-white shadow-2xl">
+            <div className="flex min-w-[320px] items-center justify-between">
+              <div>
+                <p className="text-sm font-bold text-slate-300">Total</p>
+                <p className="text-3xl font-black">{subtotal.toLocaleString('fr-FR')} CFA</p>
+              </div>
+
+              <button
+                onClick={checkout}
+                disabled={checkoutLoading}
+                className="rounded-2xl bg-brand-600 px-6 py-4 text-sm font-black text-white hover:bg-brand-700 disabled:opacity-60"
+              >
+                {checkoutLoading ? 'Enregistrement...' : 'Encaisser'}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </main>
   )
 }
