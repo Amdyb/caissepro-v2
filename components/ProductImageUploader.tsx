@@ -57,7 +57,7 @@ export default function ProductImageUploader({
             <img
               src={value}
               alt="Produit"
-              className="h-48 w-full object-cover"
+              className="h-28 w-full object-contain bg-white"
             />
           </div>
         ) : (
