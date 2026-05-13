@@ -352,7 +352,7 @@ export default function ProductsPage() {
                     <div key={product.id} className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
                       <div className="relative h-40 bg-slate-100">
                         {product.image ? (
-                          <img src={product.image} alt={product.name} className="h-full w-full object-cover" />
+                          <img src={product.image} alt={product.name} className="h-28 w-full object-contain bg-white" />
                         ) : (
                           <div className="flex h-full items-center justify-center text-slate-400">
                             <ImageIcon size={42} />
