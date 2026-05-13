@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Package, Plus, Search, Trash2 } from 'lucide-react'
+import { ArrowLeft, ImageIcon, Package, Plus, Search, Trash2 } from 'lucide-react'
 import { supabase } from '@/lib/supabaseClient'
 
 type Product = {
@@ -14,6 +14,7 @@ type Product = {
   category: string | null
   cost_price: number | null
   sell_price: number | null
+  minimum_price: number | null
   stock: number | null
   image: string | null
   created_at: string
@@ -28,7 +29,16 @@ export default function ProductsPage() {
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
   const [search, setSearch] = useState('')
-  const [form, setForm] = useState({ name: '', category: '', barcode: '', cost_price: '', sell_price: '', stock: '' })
+  const [form, setForm] = useState({
+    name: '',
+    category: '',
+    barcode: '',
+    cost_price: '',
+    sell_price: '',
+    minimum_price: '',
+    stock: '',
+    image: ''
+  })
 
   const filteredProducts = useMemo(() => {
     const q = search.toLowerCase().trim()
@@ -100,7 +110,9 @@ export default function ProductsPage() {
       barcode: form.barcode || null,
       cost_price: Number(form.cost_price || 0),
       sell_price: Number(form.sell_price || 0),
-      stock: Number(form.stock || 0)
+      minimum_price: Number(form.minimum_price || form.sell_price || 0),
+      stock: Number(form.stock || 0),
+      image: form.image || null
     })
 
     if (error) {
@@ -109,7 +121,7 @@ export default function ProductsPage() {
       return
     }
 
-    setForm({ name: '', category: '', barcode: '', cost_price: '', sell_price: '', stock: '' })
+    setForm({ name: '', category: '', barcode: '', cost_price: '', sell_price: '', minimum_price: '', stock: '', image: '' })
     await loadProducts(businessId)
     setSaving(false)
   }
@@ -130,7 +142,11 @@ export default function ProductsPage() {
   }
 
   if (loading) {
-    return <main className="flex min-h-screen items-center justify-center bg-slate-50"><p className="font-bold text-slate-600">Chargement...</p></main>
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-slate-50">
+        <p className="font-bold text-slate-600">Chargement...</p>
+      </main>
+    )
   }
 
   return (
@@ -154,7 +170,7 @@ export default function ProductsPage() {
             <div className="rounded-2xl bg-brand-50 p-3 text-brand-700"><Plus /></div>
             <div>
               <h2 className="text-2xl font-black text-slate-950">Ajouter un produit</h2>
-              <p className="text-sm text-slate-500">Prix en CFA, stock et catégorie.</p>
+              <p className="text-sm text-slate-500">Photo, prix minimum, stock et catégorie.</p>
             </div>
           </div>
 
@@ -162,6 +178,12 @@ export default function ProductsPage() {
             <div>
               <label className="text-sm font-bold text-slate-700">Nom du produit</label>
               <input required className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-brand-600" placeholder="Ex: T-shirt Premium" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+            </div>
+
+            <div>
+              <label className="text-sm font-bold text-slate-700">Image URL</label>
+              <input className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-brand-600" placeholder="https://image-du-produit.jpg" value={form.image} onChange={(e) => setForm({ ...form, image: e.target.value })} />
+              <p className="mt-1 text-xs text-slate-500">Pour l’instant, collez un lien d’image. L’upload direct viendra après.</p>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
@@ -175,11 +197,18 @@ export default function ProductsPage() {
               </div>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-2">
               <div>
                 <label className="text-sm font-bold text-slate-700">Prix achat</label>
                 <input type="number" min="0" className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-brand-600" placeholder="0" value={form.cost_price} onChange={(e) => setForm({ ...form, cost_price: e.target.value })} />
               </div>
+              <div>
+                <label className="text-sm font-bold text-slate-700">Prix minimum</label>
+                <input type="number" min="0" className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-brand-600" placeholder="Prix le plus bas autorisé" value={form.minimum_price} onChange={(e) => setForm({ ...form, minimum_price: e.target.value })} />
+              </div>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
               <div>
                 <label className="text-sm font-bold text-slate-700">Prix vente</label>
                 <input type="number" min="0" className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-brand-600" placeholder="0" value={form.sell_price} onChange={(e) => setForm({ ...form, sell_price: e.target.value })} />
@@ -189,6 +218,12 @@ export default function ProductsPage() {
                 <input type="number" min="0" className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-brand-600" placeholder="0" value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} />
               </div>
             </div>
+
+            {form.image && (
+              <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
+                <img src={form.image} alt="Aperçu produit" className="h-40 w-full object-cover" />
+              </div>
+            )}
 
             {message && <div className="rounded-2xl bg-red-50 p-3 text-sm font-semibold text-red-700">{message}</div>}
 
@@ -217,29 +252,48 @@ export default function ProductsPage() {
               <p className="mt-2 text-slate-500">Ajoutez votre premier produit pour commencer.</p>
             </div>
           ) : (
-            <div className="overflow-x-auto rounded-2xl border border-slate-200">
-              <table className="w-full min-w-[700px] text-sm">
-                <thead className="bg-slate-50 text-left text-xs font-black uppercase tracking-wide text-slate-500">
-                  <tr>
-                    <th className="px-4 py-3">Produit</th>
-                    <th className="px-4 py-3">Catégorie</th>
-                    <th className="px-4 py-3">Prix</th>
-                    <th className="px-4 py-3">Stock</th>
-                    <th className="px-4 py-3"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredProducts.map((product) => (
-                    <tr key={product.id} className="border-t border-slate-100">
-                      <td className="px-4 py-4"><p className="font-black text-slate-950">{product.name}</p><p className="text-xs text-slate-500">{product.barcode || 'Sans code-barres'}</p></td>
-                      <td className="px-4 py-4 font-semibold text-slate-600">{product.category || '-'}</td>
-                      <td className="px-4 py-4 font-black text-slate-950">{Number(product.sell_price || 0).toLocaleString('fr-FR')} CFA</td>
-                      <td className={`px-4 py-4 font-black ${Number(product.stock || 0) <= 5 ? 'text-red-600' : 'text-brand-700'}`}>{product.stock || 0}</td>
-                      <td className="px-4 py-4 text-right"><button onClick={() => deleteProduct(product.id)} className="rounded-xl p-2 text-slate-400 hover:bg-red-50 hover:text-red-600"><Trash2 size={18} /></button></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="grid gap-4 md:grid-cols-2">
+              {filteredProducts.map((product) => (
+                <div key={product.id} className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+                  <div className="relative h-40 bg-slate-100">
+                    {product.image ? (
+                      <img src={product.image} alt={product.name} className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="flex h-full items-center justify-center text-slate-400">
+                        <ImageIcon size={42} />
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-xs font-bold uppercase tracking-wide text-brand-700">{product.category || 'Sans catégorie'}</p>
+                        <h3 className="mt-1 text-lg font-black text-slate-950">{product.name}</h3>
+                        <p className="mt-1 text-xs text-slate-500">{product.barcode || 'Sans code-barres'}</p>
+                      </div>
+                      <button onClick={() => deleteProduct(product.id)} className="rounded-xl p-2 text-slate-400 hover:bg-red-50 hover:text-red-600">
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
+
+                    <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+                      <div className="rounded-2xl bg-slate-50 p-3">
+                        <p className="text-xs font-bold text-slate-500">Vente</p>
+                        <p className="mt-1 text-sm font-black text-slate-950">{Number(product.sell_price || 0).toLocaleString('fr-FR')} CFA</p>
+                      </div>
+                      <div className="rounded-2xl bg-slate-50 p-3">
+                        <p className="text-xs font-bold text-slate-500">Minimum</p>
+                        <p className="mt-1 text-sm font-black text-slate-950">{Number(product.minimum_price || 0).toLocaleString('fr-FR')} CFA</p>
+                      </div>
+                      <div className="rounded-2xl bg-slate-50 p-3">
+                        <p className="text-xs font-bold text-slate-500">Stock</p>
+                        <p className={`mt-1 text-sm font-black ${Number(product.stock || 0) <= 5 ? 'text-red-600' : 'text-brand-700'}`}>{product.stock || 0}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>
