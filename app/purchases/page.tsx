@@ -3,13 +3,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, PackagePlus, Plus, ReceiptText, Search, Trash2, Truck, WalletCards } from 'lucide-react'
+import { ArrowLeft, Boxes, PackagePlus, Plus, ReceiptText, Trash2, Truck } from 'lucide-react'
 import { supabase } from '@/lib/supabaseClient'
 
 type Supplier = {
   id: string
   name: string
-  balance: number | null
 }
 
 type Product = {
@@ -20,14 +19,15 @@ type Product = {
   sell_price: number | null
 }
 
+type PurchaseItemDraft = {
+  product_id: string
+  quantity: string
+  cost_price: string
+}
+
 type PurchaseOrder = {
   id: string
-  business_id: string
-  supplier_id: string | null
   total: number | null
-  paid_amount: number | null
-  remaining_amount: number | null
-  status: string | null
   note: string | null
   created_at: string
   suppliers?: {
@@ -44,14 +44,6 @@ type PurchaseOrder = {
   }[]
 }
 
-type CartItem = {
-  product_id: string
-  product_name: string
-  current_stock: number
-  quantity: number
-  cost_price: number
-}
-
 export default function PurchasesPage() {
   const router = useRouter()
 
@@ -62,36 +54,19 @@ export default function PurchasesPage() {
   const [products, setProducts] = useState<Product[]>([])
   const [orders, setOrders] = useState<PurchaseOrder[]>([])
   const [supplierId, setSupplierId] = useState('')
-  const [selectedProductId, setSelectedProductId] = useState('')
-  const [quantity, setQuantity] = useState('1')
-  const [costPrice, setCostPrice] = useState('')
-  const [paidAmount, setPaidAmount] = useState('')
   const [note, setNote] = useState('')
-  const [items, setItems] = useState<CartItem[]>([])
-  const [search, setSearch] = useState('')
+  const [items, setItems] = useState<PurchaseItemDraft[]>([
+    { product_id: '', quantity: '1', cost_price: '0' }
+  ])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
 
-  const selectedProduct = products.find((product) => product.id === selectedProductId) || null
-  const selectedSupplier = suppliers.find((supplier) => supplier.id === supplierId) || null
-
-  const total = items.reduce((sum, item) => sum + item.quantity * item.cost_price, 0)
-  const paid = Number(paidAmount || 0)
-  const remaining = Math.max(total - paid, 0)
-
-  const filteredOrders = useMemo(() => {
-    const q = search.toLowerCase().trim()
-    if (!q) return orders
-    return orders.filter((order) =>
-      (order.suppliers?.name || '').toLowerCase().includes(q) ||
-      (order.note || '').toLowerCase().includes(q) ||
-      order.id.toLowerCase().includes(q)
-    )
-  }, [orders, search])
-
-  const totalPurchased = orders.reduce((sum, order) => sum + Number(order.total || 0), 0)
-  const totalRemaining = orders.reduce((sum, order) => sum + Number(order.remaining_amount || 0), 0)
+  const total = useMemo(() => {
+    return items.reduce((sum, item) => {
+      return sum + Number(item.quantity || 0) * Number(item.cost_price || 0)
+    }, 0)
+  }, [items])
 
   useEffect(() => {
     async function init() {
@@ -136,7 +111,7 @@ export default function PurchasesPage() {
   async function loadSuppliers(id: string) {
     const { data, error } = await supabase
       .from('suppliers')
-      .select('id, name, balance')
+      .select('id, name')
       .eq('business_id', id)
       .order('name')
 
@@ -167,7 +142,10 @@ export default function PurchasesPage() {
     const { data, error } = await supabase
       .from('purchase_orders')
       .select(`
-        *,
+        id,
+        total,
+        note,
+        created_at,
         suppliers (
           name
         ),
@@ -183,7 +161,7 @@ export default function PurchasesPage() {
       `)
       .eq('business_id', id)
       .order('created_at', { ascending: false })
-      .limit(50)
+      .limit(30)
 
     if (error) {
       setMessage(error.message)
@@ -193,65 +171,33 @@ export default function PurchasesPage() {
     setOrders((data || []) as unknown as PurchaseOrder[])
   }
 
-  function addItem(e: React.FormEvent) {
-    e.preventDefault()
-
-    if (!selectedProduct) {
-      setMessage('Sélectionnez un produit.')
-      return
-    }
-
-    const qty = Number(quantity || 0)
-    const cost = Number(costPrice || selectedProduct.cost_price || 0)
-
-    if (qty <= 0 || cost < 0) {
-      setMessage('Quantité ou prix invalide.')
-      return
-    }
-
-    setItems((current) => {
-      const existing = current.find((item) => item.product_id === selectedProduct.id)
-
-      if (existing) {
-        return current.map((item) =>
-          item.product_id === selectedProduct.id
-            ? {
-                ...item,
-                quantity: item.quantity + qty,
-                cost_price: cost
-              }
-            : item
-        )
-      }
-
-      return [
-        ...current,
-        {
-          product_id: selectedProduct.id,
-          product_name: selectedProduct.name,
-          current_stock: Number(selectedProduct.stock || 0),
-          quantity: qty,
-          cost_price: cost
-        }
-      ]
-    })
-
-    setSelectedProductId('')
-    setQuantity('1')
-    setCostPrice('')
-    setMessage('')
+  function updateItem(index: number, field: keyof PurchaseItemDraft, value: string) {
+    setItems((current) =>
+      current.map((item, i) =>
+        i === index ? { ...item, [field]: value } : item
+      )
+    )
   }
 
-  function removeItem(productId: string) {
-    setItems((current) => current.filter((item) => item.product_id !== productId))
+  function addItemRow() {
+    setItems((current) => [
+      ...current,
+      { product_id: '', quantity: '1', cost_price: '0' }
+    ])
   }
 
-  async function savePurchase(e: React.FormEvent) {
+  function removeItemRow(index: number) {
+    setItems((current) => current.filter((_, i) => i !== index))
+  }
+
+  async function createPurchase(e: React.FormEvent) {
     e.preventDefault()
 
     if (!businessId || !userId) return
 
-    if (items.length === 0) {
+    const validItems = items.filter((item) => item.product_id && Number(item.quantity || 0) > 0)
+
+    if (validItems.length === 0) {
       setMessage('Ajoutez au moins un produit.')
       return
     }
@@ -266,26 +212,23 @@ export default function PurchasesPage() {
         supplier_id: supplierId || null,
         created_by: userId,
         total,
-        paid_amount: paid,
-        remaining_amount: remaining,
-        status: remaining > 0 ? 'partial' : 'paid',
         note: note || null
       })
       .select()
       .single()
 
     if (orderError || !order) {
-      setMessage(orderError?.message || 'Erreur achat.')
+      setMessage(orderError?.message || 'Erreur lors de la création.')
       setSaving(false)
       return
     }
 
-    const purchaseItems = items.map((item) => ({
+    const purchaseItems = validItems.map((item) => ({
       purchase_order_id: order.id,
       product_id: item.product_id,
-      quantity: item.quantity,
-      cost_price: item.cost_price,
-      total: item.quantity * item.cost_price
+      quantity: Number(item.quantity || 0),
+      cost_price: Number(item.cost_price || 0),
+      total: Number(item.quantity || 0) * Number(item.cost_price || 0)
     }))
 
     const { error: itemsError } = await supabase
@@ -298,35 +241,25 @@ export default function PurchasesPage() {
       return
     }
 
-    for (const item of items) {
-      const newStock = item.current_stock + item.quantity
+    for (const item of validItems) {
+      const product = products.find((p) => p.id === item.product_id)
+      const newStock = Number(product?.stock || 0) + Number(item.quantity || 0)
 
       await supabase
         .from('products')
         .update({
           stock: newStock,
-          cost_price: item.cost_price
+          cost_price: Number(item.cost_price || 0)
         })
         .eq('id', item.product_id)
     }
 
-    if (supplierId && selectedSupplier && remaining > 0) {
-      await supabase
-        .from('suppliers')
-        .update({
-          balance: Number(selectedSupplier.balance || 0) + remaining
-        })
-        .eq('id', supplierId)
-    }
-
-    setItems([])
     setSupplierId('')
-    setPaidAmount('')
     setNote('')
+    setItems([{ product_id: '', quantity: '1', cost_price: '0' }])
 
     await Promise.all([
       loadProducts(businessId),
-      loadSuppliers(businessId),
       loadOrders(businessId)
     ])
 
@@ -358,7 +291,7 @@ export default function PurchasesPage() {
             </Link>
 
             <h1 className="mt-1 text-2xl font-black text-slate-950">
-              Achats & réapprovisionnement
+              Achats & réassort
             </h1>
 
             <p className="text-sm font-semibold text-slate-500">
@@ -366,7 +299,10 @@ export default function PurchasesPage() {
             </p>
           </div>
 
-          <button onClick={logout} className="rounded-full bg-slate-950 px-5 py-3 text-sm font-bold text-white">
+          <button
+            onClick={logout}
+            className="rounded-full bg-slate-950 px-5 py-3 text-sm font-bold text-white"
+          >
             Déconnexion
           </button>
         </div>
@@ -381,21 +317,21 @@ export default function PurchasesPage() {
 
         <div className="grid gap-5 md:grid-cols-3">
           <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <PackagePlus className="text-brand-600" />
-            <p className="mt-5 text-sm font-bold text-slate-500">Achats enregistrés</p>
-            <p className="mt-2 text-3xl font-black text-slate-950">{orders.length}</p>
+            <Truck className="text-brand-600" />
+            <p className="mt-5 text-sm font-bold text-slate-500">Fournisseurs</p>
+            <p className="mt-2 text-3xl font-black text-slate-950">{suppliers.length}</p>
+          </div>
+
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <Boxes className="text-brand-600" />
+            <p className="mt-5 text-sm font-bold text-slate-500">Produits</p>
+            <p className="mt-2 text-3xl font-black text-slate-950">{products.length}</p>
           </div>
 
           <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
             <ReceiptText className="text-brand-600" />
-            <p className="mt-5 text-sm font-bold text-slate-500">Total acheté</p>
-            <p className="mt-2 text-3xl font-black text-slate-950">{totalPurchased.toLocaleString('fr-FR')} CFA</p>
-          </div>
-
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <WalletCards className="text-red-600" />
-            <p className="mt-5 text-sm font-bold text-slate-500">Reste fournisseur</p>
-            <p className="mt-2 text-3xl font-black text-slate-950">{totalRemaining.toLocaleString('fr-FR')} CFA</p>
+            <p className="mt-5 text-sm font-bold text-slate-500">Achats récents</p>
+            <p className="mt-2 text-3xl font-black text-slate-950">{orders.length}</p>
           </div>
         </div>
 
@@ -403,16 +339,15 @@ export default function PurchasesPage() {
           <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="mb-6 flex items-center gap-3">
               <div className="rounded-2xl bg-brand-50 p-3 text-brand-700">
-                <Truck />
+                <PackagePlus />
               </div>
-
               <div>
-                <h2 className="text-2xl font-black text-slate-950">Nouvel achat</h2>
-                <p className="text-sm text-slate-500">Ajoutez les produits achetés pour augmenter le stock.</p>
+                <h2 className="text-2xl font-black text-slate-950">Nouveau réassort</h2>
+                <p className="text-sm text-slate-500">Ajoutez des produits achetés et augmentez le stock.</p>
               </div>
             </div>
 
-            <form onSubmit={savePurchase} className="space-y-5">
+            <form onSubmit={createPurchase} className="space-y-4">
               <div>
                 <label className="text-sm font-bold text-slate-700">Fournisseur</label>
                 <select
@@ -422,122 +357,83 @@ export default function PurchasesPage() {
                 >
                   <option value="">Aucun fournisseur</option>
                   {suppliers.map((supplier) => (
-                    <option key={supplier.id} value={supplier.id}>
-                      {supplier.name}
-                    </option>
+                    <option key={supplier.id} value={supplier.id}>{supplier.name}</option>
                   ))}
                 </select>
               </div>
 
-              <div className="rounded-3xl bg-slate-50 p-4">
-                <form onSubmit={addItem} className="space-y-4">
-                  <div>
-                    <label className="text-sm font-bold text-slate-700">Produit</label>
-                    <select
-                      className="mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 font-bold outline-none focus:border-brand-600"
-                      value={selectedProductId}
-                      onChange={(e) => {
-                        const nextId = e.target.value
-                        setSelectedProductId(nextId)
-                        const product = products.find((p) => p.id === nextId)
-                        setCostPrice(product?.cost_price ? String(product.cost_price) : '')
-                      }}
-                    >
-                      <option value="">Sélectionner produit</option>
-                      {products.map((product) => (
-                        <option key={product.id} value={product.id}>
-                          {product.name} — stock {product.stock || 0}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <div>
-                      <label className="text-sm font-bold text-slate-700">Quantité</label>
-                      <input
-                        type="number"
-                        min="1"
-                        className="mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 outline-none focus:border-brand-600"
-                        value={quantity}
-                        onChange={(e) => setQuantity(e.target.value)}
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-sm font-bold text-slate-700">Prix achat unité</label>
-                      <input
-                        type="number"
-                        min="0"
-                        className="mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 outline-none focus:border-brand-600"
-                        placeholder="0"
-                        value={costPrice}
-                        onChange={(e) => setCostPrice(e.target.value)}
-                      />
-                    </div>
-                  </div>
-
-                  <button className="w-full rounded-2xl border border-brand-600 bg-white py-3 font-black text-brand-700 hover:bg-brand-50">
-                    Ajouter produit à l’achat
-                  </button>
-                </form>
-              </div>
-
-              {items.length > 0 && (
-                <div className="space-y-3">
-                  {items.map((item) => (
-                    <div key={item.product_id} className="flex items-center justify-between rounded-2xl border border-slate-200 p-4">
+              <div className="space-y-4">
+                {items.map((item, index) => (
+                  <div key={index} className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
+                    <div className="grid gap-3 md:grid-cols-[1.4fr_.6fr_.8fr_auto]">
                       <div>
-                        <p className="font-black text-slate-950">{item.product_name}</p>
-                        <p className="text-sm font-semibold text-slate-500">
-                          {item.quantity} × {item.cost_price.toLocaleString('fr-FR')} CFA
-                        </p>
-                      </div>
-
-                      <div className="flex items-center gap-3">
-                        <p className="font-black text-slate-950">
-                          {(item.quantity * item.cost_price).toLocaleString('fr-FR')} CFA
-                        </p>
-
-                        <button
-                          type="button"
-                          onClick={() => removeItem(item.product_id)}
-                          className="rounded-xl p-2 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                        <label className="text-xs font-bold text-slate-500">Produit</label>
+                        <select
+                          required
+                          className="mt-1 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 font-bold outline-none focus:border-brand-600"
+                          value={item.product_id}
+                          onChange={(e) => updateItem(index, 'product_id', e.target.value)}
                         >
-                          <Trash2 size={17} />
-                        </button>
+                          <option value="">Choisir</option>
+                          {products.map((product) => (
+                            <option key={product.id} value={product.id}>
+                              {product.name} — stock {product.stock || 0}
+                            </option>
+                          ))}
+                        </select>
                       </div>
+
+                      <div>
+                        <label className="text-xs font-bold text-slate-500">Qté</label>
+                        <input
+                          type="number"
+                          min="1"
+                          required
+                          className="mt-1 w-full rounded-2xl border border-slate-300 px-4 py-3 font-bold outline-none focus:border-brand-600"
+                          value={item.quantity}
+                          onChange={(e) => updateItem(index, 'quantity', e.target.value)}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-bold text-slate-500">Coût unité</label>
+                        <input
+                          type="number"
+                          min="0"
+                          required
+                          className="mt-1 w-full rounded-2xl border border-slate-300 px-4 py-3 font-bold outline-none focus:border-brand-600"
+                          value={item.cost_price}
+                          onChange={(e) => updateItem(index, 'cost_price', e.target.value)}
+                        />
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => removeItemRow(index)}
+                        disabled={items.length === 1}
+                        className="mt-5 rounded-2xl p-3 text-slate-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-30"
+                      >
+                        <Trash2 size={18} />
+                      </button>
                     </div>
-                  ))}
-                </div>
-              )}
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <div>
-                  <label className="text-sm font-bold text-slate-700">Montant payé</label>
-                  <input
-                    type="number"
-                    min="0"
-                    className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-brand-600"
-                    placeholder="0"
-                    value={paidAmount}
-                    onChange={(e) => setPaidAmount(e.target.value)}
-                  />
-                </div>
-
-                <div>
-                  <label className="text-sm font-bold text-slate-700">Reste à payer</label>
-                  <div className="mt-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 font-black text-red-700">
-                    {remaining.toLocaleString('fr-FR')} CFA
                   </div>
-                </div>
+                ))}
               </div>
+
+              <button
+                type="button"
+                onClick={addItemRow}
+                className="inline-flex items-center gap-2 rounded-2xl border border-slate-300 bg-white px-5 py-3 text-sm font-black text-slate-700 hover:bg-slate-100"
+              >
+                <Plus size={16} />
+                Ajouter une ligne
+              </button>
 
               <div>
                 <label className="text-sm font-bold text-slate-700">Note</label>
                 <input
                   className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-brand-600"
-                  placeholder="Facture, livraison, remarques..."
+                  placeholder="Ex: livraison matin, facture #..."
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
                 />
@@ -545,78 +441,62 @@ export default function PurchasesPage() {
 
               <div className="rounded-3xl bg-slate-950 p-5 text-white">
                 <div className="flex items-center justify-between">
-                  <p className="font-bold text-slate-300">Total achat</p>
+                  <p className="text-sm font-bold text-slate-300">Total achat</p>
                   <p className="text-3xl font-black">{total.toLocaleString('fr-FR')} CFA</p>
                 </div>
 
                 <button
-                  disabled={saving || items.length === 0}
+                  disabled={saving}
                   className="mt-5 w-full rounded-2xl bg-brand-600 py-4 font-black text-white hover:bg-brand-700 disabled:opacity-60"
                 >
-                  {saving ? 'Enregistrement...' : 'Enregistrer achat'}
+                  {saving ? 'Enregistrement...' : 'Enregistrer réassort'}
                 </button>
               </div>
             </form>
           </div>
 
           <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              <div>
-                <h2 className="text-2xl font-black text-slate-950">Historique achats</h2>
-                <p className="text-sm text-slate-500">{orders.length} achat(s)</p>
-              </div>
+            <h2 className="text-2xl font-black text-slate-950">Historique des achats</h2>
+            <p className="mt-1 text-sm text-slate-500">Derniers réassorts enregistrés.</p>
 
-              <div className="relative">
-                <Search className="absolute left-4 top-3.5 text-slate-400" size={18} />
-                <input
-                  className="w-full rounded-2xl border border-slate-300 py-3 pl-11 pr-4 outline-none focus:border-brand-600 md:w-72"
-                  placeholder="Rechercher..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-              </div>
-            </div>
-
-            {filteredOrders.length === 0 ? (
-              <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-10 text-center">
-                <Truck className="mx-auto text-slate-400" size={42} />
+            {orders.length === 0 ? (
+              <div className="mt-6 rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-10 text-center">
+                <ReceiptText className="mx-auto text-slate-400" size={42} />
                 <h3 className="mt-4 text-xl font-black text-slate-950">Aucun achat</h3>
-                <p className="mt-2 text-slate-500">Les achats enregistrés apparaîtront ici.</p>
+                <p className="mt-2 text-slate-500">Les achats fournisseurs apparaîtront ici.</p>
               </div>
             ) : (
-              <div className="space-y-4">
-                {filteredOrders.map((order) => {
+              <div className="mt-6 space-y-4">
+                {orders.map((order) => {
                   const date = new Date(order.created_at)
-
                   return (
                     <div key={order.id} className="rounded-3xl border border-slate-200 p-5">
-                      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                         <div>
                           <p className="font-black text-slate-950">
-                            Achat #{order.id.slice(0, 8)}
+                            {order.suppliers?.name || 'Aucun fournisseur'}
                           </p>
-                          <p className="mt-1 text-sm font-semibold text-slate-500">
-                            {date.toLocaleDateString('fr-FR')} • {order.suppliers?.name || 'Aucun fournisseur'}
+                          <p className="text-sm font-semibold text-slate-500">
+                            {date.toLocaleDateString('fr-FR')} à {date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                            {order.note ? ` • ${order.note}` : ''}
                           </p>
+                        </div>
+                        <p className="text-xl font-black text-slate-950">
+                          {Number(order.total || 0).toLocaleString('fr-FR')} CFA
+                        </p>
+                      </div>
 
-                          <div className="mt-3 space-y-1">
-                            {(order.purchase_items || []).map((item) => (
-                              <p key={item.id} className="text-sm text-slate-600">
-                                {item.products?.name || 'Produit'} — {item.quantity || 0} × {Number(item.cost_price || 0).toLocaleString('fr-FR')}
-                              </p>
-                            ))}
+                      <div className="mt-4 space-y-2">
+                        {(order.purchase_items || []).map((item) => (
+                          <div key={item.id} className="flex items-center justify-between rounded-2xl bg-slate-50 p-3 text-sm">
+                            <span className="font-bold text-slate-700">
+                              {item.products?.name || 'Produit supprimé'} x{item.quantity || 0}
+                            </span>
+                            <span className="font-black text-slate-950">
+                              {Number(item.total || 0).toLocaleString('fr-FR')} CFA
+                            </span>
                           </div>
-                        </div>
-
-                        <div className="rounded-2xl bg-slate-50 px-5 py-4 text-center">
-                          <p className="text-xs font-bold text-slate-500">Total</p>
-                          <p className="text-xl font-black text-slate-950">{Number(order.total || 0).toLocaleString('fr-FR')} CFA</p>
-                          {Number(order.remaining_amount || 0) > 0 && (
-                            <p className="mt-1 text-xs font-bold text-red-600">
-                              Reste: {Number(order.remaining_amount || 0).toLocaleString('fr-FR')}
-                            </p>
-                          )}
-                        </div>
+                        ))}
                       </div>
                     </div>
                   )
