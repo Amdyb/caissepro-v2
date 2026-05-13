@@ -412,3 +412,36 @@ export default function ProductsPage() {
     </main>
   )
 }
+function profitPerUnit(product: Product) {
+  return Number(product.sell_price || 0) - Number(product.cost_price || 0)
+}
+
+function marginPercent(product: Product) {
+  const sell = Number(product.sell_price || 0)
+  const cost = Number(product.cost_price || 0)
+
+  if (sell <= 0) return 0
+
+  return ((sell - cost) / sell) * 100
+}
+
+function marginStatus(percent: number) {
+  if (percent >= 40) {
+    return {
+      label: 'Marge forte',
+      className: 'bg-brand-50 text-brand-700'
+    }
+  }
+
+  if (percent >= 20) {
+    return {
+      label: 'Marge correcte',
+      className: 'bg-yellow-50 text-yellow-700'
+    }
+  }
+
+  return {
+    label: 'Marge faible',
+    className: 'bg-red-50 text-red-700'
+  }
+}
