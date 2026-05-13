@@ -20,7 +20,10 @@ type Sale = {
   id: string
   business_id: string
   cashier_id: string | null
+  customer_id: string | null
   total: number | null
+  paid_amount: number | null
+  remaining_amount: number | null
   payment_method: string | null
   status: string | null
   created_at: string
@@ -31,6 +34,10 @@ type Sale = {
     email: string | null
     address: string | null
     currency: string | null
+  } | null
+  customers?: {
+    full_name: string
+    phone: string | null
   } | null
 }
 
@@ -45,7 +52,7 @@ function paymentLabel(method: string | null) {
     case 'card':
       return 'Carte'
     case 'credit':
-      return 'Crédit client'
+      return 'Client Doit'
     default:
       return method || 'Non précisé'
   }
@@ -59,6 +66,7 @@ export default function ReceiptPage() {
   const [sale, setSale] = useState<Sale | null>(null)
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState('')
+  const [paperSize, setPaperSize] = useState<'58mm' | '80mm'>('80mm')
 
   const receiptText = useMemo(() => {
     if (!sale) return ''
@@ -70,9 +78,17 @@ export default function ReceiptPage() {
         const name = item.products?.name || 'Produit'
         return `- ${name} x${item.quantity || 0}: ${Number(item.total || 0).toLocaleString('fr-FR')} CFA`
       })
-      .join('\n')
+      .join('\\n')
 
-    return `Reçu ${business}\nVente #${sale.id.slice(0, 8)}\nDate: ${date.toLocaleDateString('fr-FR')} ${date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}\n\n${lines}\n\nTotal: ${Number(sale.total || 0).toLocaleString('fr-FR')} CFA\nPaiement: ${paymentLabel(sale.payment_method)}\nMerci pour votre achat.`
+    const customerLine = sale.customers?.full_name
+      ? `Client: ${sale.customers.full_name}${sale.customers.phone ? ` (${sale.customers.phone})` : ''}\\n`
+      : ''
+
+    const debtLine = Number(sale.remaining_amount || 0) > 0
+      ? `Reste à payer: ${Number(sale.remaining_amount || 0).toLocaleString('fr-FR')} CFA\\n`
+      : ''
+
+    return `Reçu ${business}\\nVente #${sale.id.slice(0, 8)}\\nDate: ${date.toLocaleDateString('fr-FR')} ${date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}\\n${customerLine}\\n${lines}\\n\\nTotal: ${Number(sale.total || 0).toLocaleString('fr-FR')} CFA\\nPaiement: ${paymentLabel(sale.payment_method)}\\n${debtLine}Merci pour votre achat.`
   }, [sale])
 
   useEffect(() => {
@@ -102,6 +118,10 @@ export default function ReceiptPage() {
           email,
           address,
           currency
+        ),
+        customers (
+          full_name,
+          phone
         ),
         sale_items (
           id,
@@ -157,16 +177,71 @@ export default function ReceiptPage() {
   }
 
   const date = new Date(sale.created_at)
+  const receiptWidthClass = paperSize === '58mm' ? 'max-w-[260px]' : 'max-w-[360px]'
 
   return (
     <main className="min-h-screen bg-slate-50">
-      <header className="print:hidden border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
+      <style jsx global>{`
+        @media print {
+          @page {
+            size: ${paperSize};
+            margin: 4mm;
+          }
+
+          html,
+          body {
+            background: white !important;
+            margin: 0 !important;
+            padding: 0 !important;
+          }
+
+          .no-print {
+            display: none !important;
+          }
+
+          .receipt-shell {
+            border: none !important;
+            box-shadow: none !important;
+            margin: 0 auto !important;
+            padding: 0 !important;
+            width: ${paperSize === '58mm' ? '58mm' : '80mm'} !important;
+            max-width: ${paperSize === '58mm' ? '58mm' : '80mm'} !important;
+          }
+
+          .receipt-paper {
+            border: none !important;
+            box-shadow: none !important;
+            padding: 0 !important;
+            font-size: ${paperSize === '58mm' ? '10px' : '12px'} !important;
+            line-height: 1.25 !important;
+          }
+
+          .thermal-title {
+            font-size: ${paperSize === '58mm' ? '16px' : '20px'} !important;
+          }
+
+          .thermal-total {
+            font-size: ${paperSize === '58mm' ? '18px' : '22px'} !important;
+          }
+        }
+      `}</style>
+
+      <header className="no-print border-b border-slate-200 bg-white">
+        <div className="mx-auto flex max-w-5xl flex-col gap-4 px-6 py-4 md:flex-row md:items-center md:justify-between">
           <Link href="/sales" className="inline-flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-brand-700">
             <ArrowLeft size={16} /> Historique des ventes
           </Link>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <select
+              className="rounded-full border border-slate-300 bg-white px-4 py-3 text-sm font-black text-slate-700 outline-none"
+              value={paperSize}
+              onChange={(e) => setPaperSize(e.target.value as '58mm' | '80mm')}
+            >
+              <option value="80mm">Thermal 80mm</option>
+              <option value="58mm">Thermal 58mm</option>
+            </select>
+
             <button onClick={shareWhatsApp} className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-black text-slate-700 hover:bg-slate-100">
               <MessageCircle size={17} /> WhatsApp
             </button>
@@ -178,84 +253,108 @@ export default function ReceiptPage() {
         </div>
       </header>
 
-      <section className="mx-auto max-w-3xl px-6 py-10">
-        <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm print:border-0 print:shadow-none">
-          <div className="text-center">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-600 text-2xl font-black text-white">
-              C
-            </div>
+      <section className="mx-auto max-w-5xl px-6 py-10">
+        <div className={`receipt-shell mx-auto ${receiptWidthClass}`}>
+          <div className="receipt-paper rounded-3xl border border-slate-200 bg-white p-5 font-mono shadow-sm">
+            <div className="text-center">
+              <h1 className="thermal-title text-2xl font-black uppercase tracking-tight text-slate-950">
+                {sale.businesses?.name || 'CaissePro'}
+              </h1>
 
-            <h1 className="mt-4 text-3xl font-black text-slate-950">
-              {sale.businesses?.name || 'CaissePro'}
-            </h1>
+              {sale.businesses?.address && (
+                <p className="mt-1 text-xs font-bold text-slate-600">{sale.businesses.address}</p>
+              )}
 
-            <p className="mt-1 text-sm font-semibold text-slate-500">
-              {sale.businesses?.phone || ''} {sale.businesses?.email ? `• ${sale.businesses.email}` : ''}
-            </p>
-
-            {sale.businesses?.address && (
-              <p className="mt-1 text-sm text-slate-500">{sale.businesses.address}</p>
-            )}
-          </div>
-
-          <div className="my-8 border-t border-dashed border-slate-300" />
-
-          <div className="grid gap-4 rounded-3xl bg-slate-50 p-5 md:grid-cols-2">
-            <div>
-              <p className="text-xs font-black uppercase tracking-wide text-slate-400">Reçu</p>
-              <p className="mt-1 font-black text-slate-950">#{sale.id.slice(0, 8)}</p>
-            </div>
-
-            <div>
-              <p className="text-xs font-black uppercase tracking-wide text-slate-400">Date</p>
-              <p className="mt-1 font-black text-slate-950">
-                {date.toLocaleDateString('fr-FR')} à {date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+              <p className="mt-1 text-xs font-bold text-slate-600">
+                {sale.businesses?.phone || ''} {sale.businesses?.email ? `• ${sale.businesses.email}` : ''}
               </p>
             </div>
 
-            <div>
-              <p className="text-xs font-black uppercase tracking-wide text-slate-400">Paiement</p>
-              <p className="mt-1 font-black text-slate-950">{paymentLabel(sale.payment_method)}</p>
-            </div>
+            <div className="my-4 border-t border-dashed border-slate-400" />
 
-            <div>
-              <p className="text-xs font-black uppercase tracking-wide text-slate-400">Statut</p>
-              <p className="mt-1 font-black text-brand-700">{sale.status || 'completed'}</p>
-            </div>
-          </div>
-
-          <div className="mt-8">
-            <h2 className="mb-4 text-xl font-black text-slate-950">Articles</h2>
-
-            <div className="overflow-hidden rounded-2xl border border-slate-200">
-              <div className="grid grid-cols-[1.4fr_.5fr_.7fr_.7fr] bg-slate-50 px-4 py-3 text-xs font-black uppercase tracking-wide text-slate-500">
-                <span>Produit</span>
-                <span>Qté</span>
-                <span>Prix</span>
-                <span className="text-right">Total</span>
+            <div className="space-y-1 text-xs font-bold text-slate-700">
+              <div className="flex justify-between gap-2">
+                <span>REÇU</span>
+                <span>#{sale.id.slice(0, 8)}</span>
               </div>
 
+              <div className="flex justify-between gap-2">
+                <span>DATE</span>
+                <span>{date.toLocaleDateString('fr-FR')}</span>
+              </div>
+
+              <div className="flex justify-between gap-2">
+                <span>HEURE</span>
+                <span>{date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
+              </div>
+
+              <div className="flex justify-between gap-2">
+                <span>PAIEMENT</span>
+                <span>{paymentLabel(sale.payment_method)}</span>
+              </div>
+
+              {sale.customers?.full_name && (
+                <div className="flex justify-between gap-2">
+                  <span>CLIENT</span>
+                  <span className="text-right">{sale.customers.full_name}</span>
+                </div>
+              )}
+            </div>
+
+            <div className="my-4 border-t border-dashed border-slate-400" />
+
+            <div className="space-y-3">
               {(sale.sale_items || []).map((item) => (
-                <div key={item.id} className="grid grid-cols-[1.4fr_.5fr_.7fr_.7fr] border-t border-slate-100 px-4 py-4 text-sm">
-                  <span className="font-black text-slate-950">{item.products?.name || 'Produit supprimé'}</span>
-                  <span className="font-bold text-slate-600">{item.quantity || 0}</span>
-                  <span className="font-bold text-slate-600">{Number(item.price || 0).toLocaleString('fr-FR')}</span>
-                  <span className="text-right font-black text-slate-950">{Number(item.total || 0).toLocaleString('fr-FR')}</span>
+                <div key={item.id}>
+                  <div className="font-black text-slate-950">
+                    {item.products?.name || 'Produit supprimé'}
+                  </div>
+
+                  <div className="mt-1 flex justify-between gap-2 text-xs font-bold text-slate-700">
+                    <span>{item.quantity || 0} x {Number(item.price || 0).toLocaleString('fr-FR')}</span>
+                    <span>{Number(item.total || 0).toLocaleString('fr-FR')}</span>
+                  </div>
                 </div>
               ))}
             </div>
-          </div>
 
-          <div className="mt-8 rounded-3xl bg-slate-950 p-6 text-white">
-            <div className="flex items-center justify-between">
-              <p className="text-lg font-bold text-slate-300">Total payé</p>
-              <p className="text-4xl font-black">{Number(sale.total || 0).toLocaleString('fr-FR')} CFA</p>
+            <div className="my-4 border-t border-dashed border-slate-400" />
+
+            <div className="space-y-2 text-sm font-black">
+              <div className="flex justify-between">
+                <span>TOTAL</span>
+                <span>{Number(sale.total || 0).toLocaleString('fr-FR')} CFA</span>
+              </div>
+
+              {Number(sale.paid_amount || 0) > 0 && (
+                <div className="flex justify-between text-xs">
+                  <span>PAYÉ</span>
+                  <span>{Number(sale.paid_amount || 0).toLocaleString('fr-FR')} CFA</span>
+                </div>
+              )}
+
+              {Number(sale.remaining_amount || 0) > 0 && (
+                <div className="flex justify-between text-xs text-red-700">
+                  <span>RESTE</span>
+                  <span>{Number(sale.remaining_amount || 0).toLocaleString('fr-FR')} CFA</span>
+                </div>
+              )}
+            </div>
+
+            <div className="my-4 border-t border-dashed border-slate-400" />
+
+            <p className="text-center text-xs font-bold text-slate-700">
+              Merci pour votre achat.
+            </p>
+
+            <p className="mt-2 text-center text-[10px] font-bold text-slate-500">
+              Reçu généré par CaissePro
+            </p>
+
+            <div className="mt-4 text-center text-xs">
+              --------------------
             </div>
           </div>
-
-          <p className="mt-8 text-center text-sm font-semibold text-slate-500">
-            Merci pour votre achat. Reçu généré par CaissePro.
-          </p>
         </div>
       </section>
     </main>
