@@ -1,27 +1,36 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Building2, Mail, MapPin, Phone, Save, Settings, WalletCards } from 'lucide-react'
+import Link from 'next/link'
+import {
+  ArrowLeft,
+  Building2,
+  ImageIcon,
+  Palette,
+  Save,
+  Phone,
+  MapPin,
+  Quote
+} from 'lucide-react'
 import { supabase } from '@/lib/supabaseClient'
 
 type Business = {
   id: string
   name: string
-  phone: string | null
-  email: string | null
-  address: string | null
-  currency: string | null
+  logo_url: string | null
+  banner_url: string | null
+  primary_color: string | null
+  secondary_color: string | null
   receipt_footer: string | null
-  whatsapp: string | null
-  public_slug: string | null
+  business_phone: string | null
+  business_address: string | null
+  slogan: string | null
 }
 
 export default function SettingsPage() {
   const router = useRouter()
 
-  const [businessId, setBusinessId] = useState<string | null>(null)
   const [business, setBusiness] = useState<Business | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -29,13 +38,14 @@ export default function SettingsPage() {
 
   const [form, setForm] = useState({
     name: '',
-    phone: '',
-    email: '',
-    address: '',
-    currency: 'CFA',
-    receipt_footer: 'Merci pour votre achat.',
-    whatsapp: '',
-    public_slug: ''
+    logo_url: '',
+    banner_url: '',
+    primary_color: '#16a34a',
+    secondary_color: '#0f172a',
+    receipt_footer: '',
+    business_phone: '',
+    business_address: '',
+    slogan: ''
   })
 
   useEffect(() => {
@@ -51,61 +61,45 @@ export default function SettingsPage() {
         .from('business_members')
         .select('business_id')
         .eq('user_id', userData.user.id)
-        .limit(1)
         .single()
 
       if (error || !membership) {
-        setMessage('Aucune boutique trouvée.')
         setLoading(false)
         return
       }
 
-      const member: any = membership
-      setBusinessId(member.business_id)
-      await loadBusiness(member.business_id)
+      const { data: businessData } = await supabase
+        .from('businesses')
+        .select('*')
+        .eq('id', membership.business_id)
+        .single()
+
+      if (businessData) {
+        setBusiness(businessData)
+
+        setForm({
+          name: businessData.name || '',
+          logo_url: businessData.logo_url || '',
+          banner_url: businessData.banner_url || '',
+          primary_color: businessData.primary_color || '#16a34a',
+          secondary_color: businessData.secondary_color || '#0f172a',
+          receipt_footer: businessData.receipt_footer || '',
+          business_phone: businessData.business_phone || '',
+          business_address: businessData.business_address || '',
+          slogan: businessData.slogan || ''
+        })
+      }
+
       setLoading(false)
     }
 
     init()
   }, [router])
 
-  async function loadBusiness(id: string) {
-    const { data, error } = await supabase
-      .from('businesses')
-      .select('id, name, phone, email, address, currency, receipt_footer, whatsapp, public_slug')
-      .eq('id', id)
-      .single()
-
-    if (error) {
-      setMessage(error.message)
-      return
-    }
-
-    const b = data as Business
-    setBusiness(b)
-    setForm({
-      name: b.name || '',
-      phone: b.phone || '',
-      email: b.email || '',
-      address: b.address || '',
-      currency: b.currency || 'CFA',
-      receipt_footer: b.receipt_footer || 'Merci pour votre achat.',
-      whatsapp: b.whatsapp || '',
-      public_slug: b.public_slug || ''
-    })
-  }
-
-  function cleanSlug(value: string) {
-    return value
-      .toLowerCase()
-      .trim()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '')
-  }
-
   async function saveSettings(e: React.FormEvent) {
     e.preventDefault()
-    if (!businessId) return
+
+    if (!business) return
 
     setSaving(true)
     setMessage('')
@@ -114,15 +108,16 @@ export default function SettingsPage() {
       .from('businesses')
       .update({
         name: form.name,
-        phone: form.phone || null,
-        email: form.email || null,
-        address: form.address || null,
-        currency: form.currency || 'CFA',
-        receipt_footer: form.receipt_footer || null,
-        whatsapp: form.whatsapp || null,
-        public_slug: form.public_slug ? cleanSlug(form.public_slug) : null
+        logo_url: form.logo_url,
+        banner_url: form.banner_url,
+        primary_color: form.primary_color,
+        secondary_color: form.secondary_color,
+        receipt_footer: form.receipt_footer,
+        business_phone: form.business_phone,
+        business_address: form.business_address,
+        slogan: form.slogan
       })
-      .eq('id', businessId)
+      .eq('id', business.id)
 
     if (error) {
       setMessage(error.message)
@@ -130,8 +125,7 @@ export default function SettingsPage() {
       return
     }
 
-    await loadBusiness(businessId)
-    setMessage('Paramètres enregistrés avec succès.')
+    setMessage('Branding mis à jour avec succès.')
     setSaving(false)
   }
 
@@ -143,7 +137,7 @@ export default function SettingsPage() {
   if (loading) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-slate-50">
-        <p className="font-bold text-slate-600">Chargement des paramètres...</p>
+        <p className="font-bold text-slate-600">Chargement...</p>
       </main>
     )
   }
@@ -153,18 +147,14 @@ export default function SettingsPage() {
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           <div>
-            <Link href="/dashboard" className="inline-flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-brand-700">
+            <Link href="/dashboard" className="inline-flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-green-700">
               <ArrowLeft size={16} />
               Tableau de bord
             </Link>
 
             <h1 className="mt-1 text-2xl font-black text-slate-950">
-              Paramètres boutique
+              Branding & paramètres
             </h1>
-
-            <p className="text-sm font-semibold text-slate-500">
-              Profil, reçus et informations publiques
-            </p>
           </div>
 
           <button
@@ -176,228 +166,281 @@ export default function SettingsPage() {
         </div>
       </header>
 
-      <section className="mx-auto grid max-w-7xl gap-8 px-6 py-10 lg:grid-cols-[.9fr_1.1fr]">
-        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="mb-6 flex items-center gap-3">
-            <div className="rounded-2xl bg-brand-50 p-3 text-brand-700">
-              <Settings />
-            </div>
-
-            <div>
-              <h2 className="text-2xl font-black text-slate-950">
-                Informations boutique
-              </h2>
-              <p className="text-sm text-slate-500">
-                Ces informations apparaîtront sur les reçus et rapports.
-              </p>
-            </div>
+      <section className="mx-auto max-w-7xl px-6 py-10">
+        {message && (
+          <div className="mb-6 rounded-2xl bg-green-50 p-4 text-sm font-bold text-green-700">
+            {message}
           </div>
+        )}
 
-          <form onSubmit={saveSettings} className="space-y-4">
-            <div>
-              <label className="text-sm font-bold text-slate-700">Nom de la boutique</label>
-              <input
-                required
-                className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-brand-600"
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-              />
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-2">
-              <div>
-                <label className="text-sm font-bold text-slate-700">Téléphone</label>
-                <input
-                  className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-brand-600"
-                  placeholder="78 000 00 00"
-                  value={form.phone}
-                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                />
-              </div>
-
-              <div>
-                <label className="text-sm font-bold text-slate-700">WhatsApp</label>
-                <input
-                  className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-brand-600"
-                  placeholder="221780000000"
-                  value={form.whatsapp}
-                  onChange={(e) => setForm({ ...form, whatsapp: e.target.value })}
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="text-sm font-bold text-slate-700">Email</label>
-              <input
-                type="email"
-                className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-brand-600"
-                placeholder="contact@boutique.com"
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
-              />
-            </div>
-
-            <div>
-              <label className="text-sm font-bold text-slate-700">Adresse</label>
-              <input
-                className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-brand-600"
-                placeholder="Dakar, Sénégal"
-                value={form.address}
-                onChange={(e) => setForm({ ...form, address: e.target.value })}
-              />
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-2">
-              <div>
-                <label className="text-sm font-bold text-slate-700">Devise</label>
-                <select
-                  className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 font-bold outline-none focus:border-brand-600"
-                  value={form.currency}
-                  onChange={(e) => setForm({ ...form, currency: e.target.value })}
-                >
-                  <option value="CFA">CFA</option>
-                  <option value="XOF">XOF</option>
-                  <option value="USD">USD</option>
-                  <option value="EUR">EUR</option>
-                  <option value="GNF">GNF</option>
-                  <option value="GMD">GMD</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="text-sm font-bold text-slate-700">Lien public</label>
-                <input
-                  className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-brand-600"
-                  placeholder="ma-boutique"
-                  value={form.public_slug}
-                  onChange={(e) => setForm({ ...form, public_slug: cleanSlug(e.target.value) })}
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="text-sm font-bold text-slate-700">Message bas de reçu</label>
-              <textarea
-                className="mt-2 min-h-28 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-brand-600"
-                value={form.receipt_footer}
-                onChange={(e) => setForm({ ...form, receipt_footer: e.target.value })}
-              />
-            </div>
-
-            {message && (
-              <div className="rounded-2xl bg-brand-50 p-3 text-sm font-bold text-brand-700">
-                {message}
-              </div>
-            )}
-
-            <button
-              disabled={saving}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-brand-600 py-4 font-black text-white hover:bg-brand-700 disabled:opacity-60"
-            >
-              <Save size={18} />
-              {saving ? 'Enregistrement...' : 'Enregistrer paramètres'}
-            </button>
-          </form>
-        </div>
-
-        <div className="space-y-8">
+        <div className="grid gap-8 lg:grid-cols-[.9fr_1.1fr]">
           <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="mb-6 flex items-center gap-3">
-              <div className="rounded-2xl bg-brand-50 p-3 text-brand-700">
+              <div className="rounded-2xl bg-green-50 p-3 text-green-700">
                 <Building2 />
               </div>
 
               <div>
                 <h2 className="text-2xl font-black text-slate-950">
-                  Aperçu reçu
+                  Informations boutique
                 </h2>
+
                 <p className="text-sm text-slate-500">
-                  Aperçu des informations visibles sur les reçus.
+                  Personnalisez votre marque.
                 </p>
               </div>
             </div>
 
-            <div className="mx-auto max-w-sm rounded-3xl border border-slate-200 bg-slate-50 p-6 font-mono">
-              <div className="text-center">
-                <h3 className="text-xl font-black uppercase text-slate-950">
-                  {form.name || 'Ma Boutique'}
-                </h3>
-                {form.address && (
-                  <p className="mt-1 text-xs font-bold text-slate-600">{form.address}</p>
-                )}
-                <p className="mt-1 text-xs font-bold text-slate-600">
-                  {form.phone || 'Téléphone'} {form.email ? `• ${form.email}` : ''}
-                </p>
+            <form onSubmit={saveSettings} className="space-y-5">
+              <div>
+                <label className="text-sm font-bold text-slate-700">
+                  Nom boutique
+                </label>
+
+                <input
+                  required
+                  className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-green-600"
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                />
               </div>
 
-              <div className="my-4 border-t border-dashed border-slate-400" />
+              <div>
+                <label className="flex items-center gap-2 text-sm font-bold text-slate-700">
+                  <ImageIcon size={16} />
+                  Logo URL
+                </label>
 
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span>Produit Démo</span>
-                  <span>5 000 {form.currency}</span>
+                <input
+                  className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-green-600"
+                  placeholder="https://..."
+                  value={form.logo_url}
+                  onChange={(e) => setForm({ ...form, logo_url: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <label className="flex items-center gap-2 text-sm font-bold text-slate-700">
+                  <ImageIcon size={16} />
+                  Banner URL
+                </label>
+
+                <input
+                  className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-green-600"
+                  placeholder="https://..."
+                  value={form.banner_url}
+                  onChange={(e) => setForm({ ...form, banner_url: e.target.value })}
+                />
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <label className="flex items-center gap-2 text-sm font-bold text-slate-700">
+                    <Palette size={16} />
+                    Couleur principale
+                  </label>
+
+                  <input
+                    type="color"
+                    className="mt-2 h-14 w-full rounded-2xl border border-slate-300"
+                    value={form.primary_color}
+                    onChange={(e) => setForm({ ...form, primary_color: e.target.value })}
+                  />
                 </div>
-                <div className="flex justify-between font-black">
-                  <span>TOTAL</span>
-                  <span>5 000 {form.currency}</span>
+
+                <div>
+                  <label className="flex items-center gap-2 text-sm font-bold text-slate-700">
+                    <Palette size={16} />
+                    Couleur secondaire
+                  </label>
+
+                  <input
+                    type="color"
+                    className="mt-2 h-14 w-full rounded-2xl border border-slate-300"
+                    value={form.secondary_color}
+                    onChange={(e) => setForm({ ...form, secondary_color: e.target.value })}
+                  />
                 </div>
               </div>
 
-              <div className="my-4 border-t border-dashed border-slate-400" />
+              <div>
+                <label className="flex items-center gap-2 text-sm font-bold text-slate-700">
+                  <Phone size={16} />
+                  Téléphone
+                </label>
 
-              <p className="text-center text-xs font-bold text-slate-600">
-                {form.receipt_footer || 'Merci pour votre achat.'}
-              </p>
-            </div>
+                <input
+                  className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-green-600"
+                  value={form.business_phone}
+                  onChange={(e) => setForm({ ...form, business_phone: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <label className="flex items-center gap-2 text-sm font-bold text-slate-700">
+                  <MapPin size={16} />
+                  Adresse
+                </label>
+
+                <input
+                  className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-green-600"
+                  value={form.business_address}
+                  onChange={(e) => setForm({ ...form, business_address: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <label className="flex items-center gap-2 text-sm font-bold text-slate-700">
+                  <Quote size={16} />
+                  Slogan
+                </label>
+
+                <input
+                  className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-green-600"
+                  placeholder="Ex: Technologie + performance"
+                  value={form.slogan}
+                  onChange={(e) => setForm({ ...form, slogan: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-bold text-slate-700">
+                  Footer reçu
+                </label>
+
+                <textarea
+                  rows={3}
+                  className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-green-600"
+                  placeholder="Merci pour votre achat"
+                  value={form.receipt_footer}
+                  onChange={(e) => setForm({ ...form, receipt_footer: e.target.value })}
+                />
+              </div>
+
+              <button
+                disabled={saving}
+                className="flex w-full items-center justify-center gap-2 rounded-2xl py-4 font-black text-white"
+                style={{ backgroundColor: form.primary_color }}
+              >
+                <Save size={18} />
+                {saving ? 'Enregistrement...' : 'Enregistrer branding'}
+              </button>
+            </form>
           </div>
 
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 className="text-2xl font-black text-slate-950">
-              Résumé
-            </h2>
+          <div className="space-y-8">
+            <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+              <div
+                className="h-40 w-full"
+                style={{
+                  backgroundColor: form.secondary_color,
+                  backgroundImage: form.banner_url ? `url(${form.banner_url})` : 'none',
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center'
+                }}
+              />
 
-            <div className="mt-5 space-y-4">
-              <div className="flex items-center gap-3 rounded-2xl bg-slate-50 p-4">
-                <Phone className="text-brand-600" />
-                <div>
-                  <p className="text-sm font-bold text-slate-500">Téléphone</p>
-                  <p className="font-black text-slate-950">{form.phone || 'Non renseigné'}</p>
+              <div className="relative px-6 pb-6">
+                <div
+                  className="absolute -top-14 flex h-28 w-28 items-center justify-center overflow-hidden rounded-3xl border-4 border-white bg-white shadow-lg"
+                >
+                  {form.logo_url ? (
+                    <img
+                      src={form.logo_url}
+                      alt="Logo"
+                      className="h-full w-full object-contain"
+                    />
+                  ) : (
+                    <Building2 size={42} className="text-slate-400" />
+                  )}
                 </div>
-              </div>
 
-              <div className="flex items-center gap-3 rounded-2xl bg-slate-50 p-4">
-                <Mail className="text-brand-600" />
-                <div>
-                  <p className="text-sm font-bold text-slate-500">Email</p>
-                  <p className="font-black text-slate-950">{form.email || 'Non renseigné'}</p>
-                </div>
-              </div>
+                <div className="pt-20">
+                  <h2 className="text-3xl font-black text-slate-950">
+                    {form.name || 'Nom boutique'}
+                  </h2>
 
-              <div className="flex items-center gap-3 rounded-2xl bg-slate-50 p-4">
-                <MapPin className="text-brand-600" />
-                <div>
-                  <p className="text-sm font-bold text-slate-500">Adresse</p>
-                  <p className="font-black text-slate-950">{form.address || 'Non renseignée'}</p>
-                </div>
-              </div>
+                  <p className="mt-2 font-semibold text-slate-500">
+                    {form.slogan || 'Votre slogan ici'}
+                  </p>
 
-              <div className="flex items-center gap-3 rounded-2xl bg-slate-50 p-4">
-                <WalletCards className="text-brand-600" />
-                <div>
-                  <p className="text-sm font-bold text-slate-500">Devise</p>
-                  <p className="font-black text-slate-950">{form.currency}</p>
+                  <div className="mt-6 flex flex-wrap gap-3">
+                    <div
+                      className="rounded-full px-5 py-3 text-sm font-black text-white"
+                      style={{ backgroundColor: form.primary_color }}
+                    >
+                      Bouton principal
+                    </div>
+
+                    <div
+                      className="rounded-full px-5 py-3 text-sm font-black text-white"
+                      style={{ backgroundColor: form.secondary_color }}
+                    >
+                      Couleur secondaire
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
 
-            {form.public_slug && (
-              <div className="mt-6 rounded-2xl bg-brand-50 p-4">
-                <p className="text-sm font-bold text-brand-700">Futur lien boutique</p>
-                <p className="mt-1 font-black text-slate-950">
-                  caissepro.app/shop/{form.public_slug}
-                </p>
+            <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+              <h3 className="text-2xl font-black text-slate-950">
+                Aperçu reçu
+              </h3>
+
+              <div className="mt-6 rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-6">
+                <div className="text-center">
+                  {form.logo_url && (
+                    <img
+                      src={form.logo_url}
+                      alt="Logo"
+                      className="mx-auto mb-4 h-20 w-20 object-contain"
+                    />
+                  )}
+
+                  <h4 className="text-2xl font-black text-slate-950">
+                    {form.name || 'Nom boutique'}
+                  </h4>
+
+                  <p className="mt-1 text-sm font-semibold text-slate-500">
+                    {form.business_phone || 'Téléphone'}
+                  </p>
+
+                  <p className="text-sm font-semibold text-slate-500">
+                    {form.business_address || 'Adresse'}
+                  </p>
+
+                  <div className="my-5 border-t border-dashed border-slate-300" />
+
+                  <div className="space-y-2 text-sm font-bold text-slate-700">
+                    <div className="flex justify-between">
+                      <span>Produit</span>
+                      <span>5 000 CFA</span>
+                    </div>
+
+                    <div className="flex justify-between">
+                      <span>Produit 2</span>
+                      <span>10 000 CFA</span>
+                    </div>
+                  </div>
+
+                  <div className="my-5 border-t border-dashed border-slate-300" />
+
+                  <div className="flex justify-between text-lg font-black text-slate-950">
+                    <span>Total</span>
+                    <span>15 000 CFA</span>
+                  </div>
+
+                  <p className="mt-6 text-sm font-semibold text-slate-500">
+                    {form.receipt_footer || 'Merci pour votre achat'}
+                  </p>
+
+                  <p className="mt-2 text-xs font-bold text-slate-400">
+                    Powered by CaissePro
+                  </p>
+                </div>
               </div>
-            )}
+            </div>
           </div>
         </div>
       </section>
