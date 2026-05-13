@@ -445,3 +445,27 @@ function marginStatus(percent: number) {
     className: 'bg-red-50 text-red-700'
   }
 }
+const valuation = useMemo(() => {
+  const totalCostValue = products.reduce((sum, product) => {
+    return sum + Number(product.cost_price || 0) * Number(product.stock || 0)
+  }, 0)
+
+  const totalRetailValue = products.reduce((sum, product) => {
+    return sum + Number(product.sell_price || 0) * Number(product.stock || 0)
+  }, 0)
+
+  const potentialProfit = totalRetailValue - totalCostValue
+
+  const lowStockValue = products
+    .filter((product) => Number(product.stock || 0) <= 5)
+    .reduce((sum, product) => {
+      return sum + Number(product.sell_price || 0) * Number(product.stock || 0)
+    }, 0)
+
+  return {
+    totalCostValue,
+    totalRetailValue,
+    potentialProfit,
+    lowStockValue
+  }
+}, [products])
