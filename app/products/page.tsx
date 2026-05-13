@@ -76,7 +76,7 @@ function stockStatus(stockValue: number) {
 function profitPerUnit(product: Product) {
   return Number(product.sell_price || 0) - Number(product.cost_price || 0)
 }
-  
+
 function marginPercent(product: Product) {
   const sell = Number(product.sell_price || 0)
   const cost = Number(product.cost_price || 0)
