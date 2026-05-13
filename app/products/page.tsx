@@ -469,3 +469,63 @@ const valuation = useMemo(() => {
     lowStockValue
   }
 }, [products])
+const [editingProduct, setEditingProduct] = useState<Product | null>(null)
+
+const [editForm, setEditForm] = useState({
+  name: '',
+  category: '',
+  barcode: '',
+  cost_price: '',
+  sell_price: '',
+  minimum_price: '',
+  stock: '',
+  image: ''
+})
+
+function startEdit(product: Product) {
+  setEditingProduct(product)
+  setEditForm({
+    name: product.name || '',
+    category: product.category || '',
+    barcode: product.barcode || '',
+    cost_price: String(product.cost_price || 0),
+    sell_price: String(product.sell_price || 0),
+    minimum_price: String(product.minimum_price || 0),
+    stock: String(product.stock || 0),
+    image: product.image || ''
+  })
+}
+
+async function updateProduct(e: React.FormEvent) {
+  e.preventDefault()
+
+  if (!editingProduct || !businessId) return
+
+  setSaving(true)
+  setMessage('')
+
+  const { error } = await supabase
+    .from('products')
+    .update({
+      name: editForm.name,
+      category: editForm.category || null,
+      barcode: editForm.barcode || null,
+      cost_price: Number(editForm.cost_price || 0),
+      sell_price: Number(editForm.sell_price || 0),
+      minimum_price: Number(editForm.minimum_price || editForm.sell_price || 0),
+      stock: Number(editForm.stock || 0),
+      image: editForm.image || null
+    })
+    .eq('id', editingProduct.id)
+
+  if (error) {
+    setMessage(error.message)
+    setSaving(false)
+    return
+  }
+
+  setEditingProduct(null)
+  await loadProducts(businessId)
+  setMessage('Produit modifié avec succès.')
+  setSaving(false)
+}
