@@ -1,6 +1,6 @@
-import ProductImageUploader from '@/components/ProductImageUploader'
-  'use client'
 
+  'use client'
+import ProductImageUploader from '@/components/ProductImageUploader'
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
