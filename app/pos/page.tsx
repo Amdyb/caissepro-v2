@@ -464,19 +464,33 @@ export default function POSPage() {
                 </div>
               ))}
 
-              <div className="border-t border-slate-200 pt-5">
-                <label className="text-sm font-bold text-slate-700">Méthode de paiement</label>
-                <select
-                  className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 font-bold outline-none focus:border-brand-600"
-                  value={paymentMethod}
-                  onChange={(e) => setPaymentMethod(e.target.value)}
-                >
-                  <option value="cash">Cash</option>
-                  <option value="wave">Wave</option>
-                  <option value="orange_money">Orange Money</option>
-                  <option value="card">Carte</option>
-                  <option value="credit">Crédit client</option>
-                </select>
+              <div className="space-y-3">
+  <select
+    className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 font-bold outline-none focus:border-brand-600"
+    value={paymentMethod}
+    onChange={(e) => setPaymentMethod(e.target.value)}
+  >
+    <option value="cash">Cash</option>
+    <option value="wave">Wave</option>
+    <option value="orange_money">Orange Money</option>
+    <option value="card">Carte</option>
+    <option value="credit">Client Doit</option>
+  </select>
+
+  {paymentMethod === 'credit' && (
+    <div className="rounded-2xl bg-red-50 p-4">
+      <p className="text-sm font-bold text-red-700">
+        Vente enregistrée comme dette client.
+      </p>
+
+      {selectedCustomer && (
+        <p className="mt-2 text-sm font-semibold text-red-600">
+          Dette ajoutée à {selectedCustomer.full_name}
+        </p>
+      )}
+    </div>
+  )}
+</div>
               </div>
 
               <div className="rounded-3xl bg-slate-950 p-5 text-white">
