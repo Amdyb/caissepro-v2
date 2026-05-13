@@ -3,14 +3,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Building2, Mail, MapPin, Phone, Plus, Search, Trash2, WalletCards } from 'lucide-react'
+import { ArrowLeft, Building2, Mail, MapPin, Phone, Plus, Search, Trash2, Wallet } from 'lucide-react'
 import { supabase } from '@/lib/supabaseClient'
 
 type Supplier = {
   id: string
   business_id: string
   name: string
-  contact_name: string | null
   phone: string | null
   email: string | null
   address: string | null
@@ -21,7 +20,6 @@ type Supplier = {
 
 export default function SuppliersPage() {
   const router = useRouter()
-
   const [businessId, setBusinessId] = useState<string | null>(null)
   const [businessName, setBusinessName] = useState('CaissePro')
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
@@ -32,7 +30,6 @@ export default function SuppliersPage() {
 
   const [form, setForm] = useState({
     name: '',
-    contact_name: '',
     phone: '',
     email: '',
     address: '',
@@ -46,15 +43,13 @@ export default function SuppliersPage() {
 
     return suppliers.filter((supplier) =>
       supplier.name.toLowerCase().includes(q) ||
-      (supplier.contact_name || '').toLowerCase().includes(q) ||
       (supplier.phone || '').toLowerCase().includes(q) ||
       (supplier.email || '').toLowerCase().includes(q) ||
       (supplier.address || '').toLowerCase().includes(q)
     )
   }, [suppliers, search])
 
-  const totalSupplierBalance = suppliers.reduce((sum, supplier) => sum + Number(supplier.balance || 0), 0)
-  const suppliersWithBalance = suppliers.filter((supplier) => Number(supplier.balance || 0) > 0)
+  const totalBalance = suppliers.reduce((sum, supplier) => sum + Number(supplier.balance || 0), 0)
 
   useEffect(() => {
     async function init() {
@@ -81,7 +76,6 @@ export default function SuppliersPage() {
       const member: any = membership
       setBusinessId(member.business_id)
       setBusinessName(member.businesses?.name || 'Ma Boutique')
-
       await loadSuppliers(member.business_id)
       setLoading(false)
     }
@@ -116,7 +110,6 @@ export default function SuppliersPage() {
       .insert({
         business_id: businessId,
         name: form.name,
-        contact_name: form.contact_name || null,
         phone: form.phone || null,
         email: form.email || null,
         address: form.address || null,
@@ -132,7 +125,6 @@ export default function SuppliersPage() {
 
     setForm({
       name: '',
-      contact_name: '',
       phone: '',
       email: '',
       address: '',
@@ -194,7 +186,10 @@ export default function SuppliersPage() {
             </p>
           </div>
 
-          <button onClick={logout} className="rounded-full bg-slate-950 px-5 py-3 text-sm font-bold text-white">
+          <button
+            onClick={logout}
+            className="rounded-full bg-slate-950 px-5 py-3 text-sm font-bold text-white"
+          >
             Déconnexion
           </button>
         </div>
@@ -215,15 +210,19 @@ export default function SuppliersPage() {
           </div>
 
           <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <WalletCards className="text-red-600" />
+            <Wallet className={totalBalance > 0 ? 'text-red-600' : 'text-brand-600'} />
             <p className="mt-5 text-sm font-bold text-slate-500">Solde fournisseur</p>
-            <p className="mt-2 text-3xl font-black text-slate-950">{totalSupplierBalance.toLocaleString('fr-FR')} CFA</p>
+            <p className={`mt-2 text-3xl font-black ${totalBalance > 0 ? 'text-red-700' : 'text-slate-950'}`}>
+              {totalBalance.toLocaleString('fr-FR')} CFA
+            </p>
           </div>
 
           <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
             <Phone className="text-brand-600" />
-            <p className="mt-5 text-sm font-bold text-slate-500">Avec solde</p>
-            <p className="mt-2 text-3xl font-black text-slate-950">{suppliersWithBalance.length}</p>
+            <p className="mt-5 text-sm font-bold text-slate-500">Contacts actifs</p>
+            <p className="mt-2 text-3xl font-black text-slate-950">
+              {suppliers.filter((supplier) => supplier.phone || supplier.email).length}
+            </p>
           </div>
         </div>
 
@@ -235,8 +234,13 @@ export default function SuppliersPage() {
               </div>
 
               <div>
-                <h2 className="text-2xl font-black text-slate-950">Ajouter un fournisseur</h2>
-                <p className="text-sm text-slate-500">Contact, téléphone, solde et notes.</p>
+                <h2 className="text-2xl font-black text-slate-950">
+                  Ajouter un fournisseur
+                </h2>
+
+                <p className="text-sm text-slate-500">
+                  Gardez vos contacts et soldes fournisseurs.
+                </p>
               </div>
             </div>
 
@@ -246,19 +250,9 @@ export default function SuppliersPage() {
                 <input
                   required
                   className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-brand-600"
-                  placeholder="Ex: Grossiste Dakar"
+                  placeholder="Ex: Grossiste Sandaga"
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
-                />
-              </div>
-
-              <div>
-                <label className="text-sm font-bold text-slate-700">Nom du contact</label>
-                <input
-                  className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-brand-600"
-                  placeholder="Ex: Mamadou"
-                  value={form.contact_name}
-                  onChange={(e) => setForm({ ...form, contact_name: e.target.value })}
                 />
               </div>
 
@@ -296,7 +290,7 @@ export default function SuppliersPage() {
               </div>
 
               <div>
-                <label className="text-sm font-bold text-slate-700">Solde dû au fournisseur</label>
+                <label className="text-sm font-bold text-slate-700">Solde dû</label>
                 <input
                   type="number"
                   min="0"
@@ -305,20 +299,24 @@ export default function SuppliersPage() {
                   value={form.balance}
                   onChange={(e) => setForm({ ...form, balance: e.target.value })}
                 />
+                <p className="mt-1 text-xs text-slate-500">Montant que la boutique doit à ce fournisseur.</p>
               </div>
 
               <div>
                 <label className="text-sm font-bold text-slate-700">Note</label>
                 <input
                   className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-brand-600"
-                  placeholder="Produits, conditions, remarques..."
+                  placeholder="Ex: livre le mardi, paiement Wave..."
                   value={form.note}
                   onChange={(e) => setForm({ ...form, note: e.target.value })}
                 />
               </div>
 
-              <button disabled={saving} className="w-full rounded-2xl bg-brand-600 py-4 font-black text-white hover:bg-brand-700 disabled:opacity-60">
-                {saving ? 'Ajout...' : 'Ajouter le fournisseur'}
+              <button
+                disabled={saving}
+                className="w-full rounded-2xl bg-brand-600 py-4 font-black text-white hover:bg-brand-700 disabled:opacity-60"
+              >
+                {saving ? 'Ajout...' : 'Ajouter fournisseur'}
               </button>
             </form>
           </div>
@@ -355,25 +353,32 @@ export default function SuppliersPage() {
                       <div>
                         <p className="text-lg font-black text-slate-950">{supplier.name}</p>
 
-                        {supplier.contact_name && (
-                          <p className="mt-1 text-sm font-semibold text-slate-500">Contact: {supplier.contact_name}</p>
-                        )}
-
-                        <div className="mt-3 space-y-1 text-sm text-slate-500">
+                        <div className="mt-3 space-y-2 text-sm font-semibold text-slate-500">
                           {supplier.phone && (
-                            <p className="flex items-center gap-2"><Phone size={14} /> {supplier.phone}</p>
+                            <p className="flex items-center gap-2">
+                              <Phone size={15} />
+                              {supplier.phone}
+                            </p>
                           )}
+
                           {supplier.email && (
-                            <p className="flex items-center gap-2"><Mail size={14} /> {supplier.email}</p>
+                            <p className="flex items-center gap-2">
+                              <Mail size={15} />
+                              {supplier.email}
+                            </p>
                           )}
+
                           {supplier.address && (
-                            <p className="flex items-center gap-2"><MapPin size={14} /> {supplier.address}</p>
+                            <p className="flex items-center gap-2">
+                              <MapPin size={15} />
+                              {supplier.address}
+                            </p>
+                          )}
+
+                          {supplier.note && (
+                            <p className="text-slate-600">{supplier.note}</p>
                           )}
                         </div>
-
-                        {supplier.note && (
-                          <p className="mt-3 rounded-2xl bg-slate-50 p-3 text-sm font-semibold text-slate-600">{supplier.note}</p>
-                        )}
                       </div>
 
                       <div className="flex items-center gap-3">
