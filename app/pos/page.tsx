@@ -214,8 +214,10 @@ export default function POSPage() {
         cashier_id: cashierId,
         customer_id: customerId,
         total: subtotal,
-        payment_method: paymentMethod,
-        status: 'completed'
+paid_amount: paymentMethod === 'credit' ? 0 : subtotal,
+remaining_amount: paymentMethod === 'credit' ? subtotal : 0,
+payment_method: paymentMethod,
+status: paymentMethod === 'credit' ? 'pending' : 'completed'
       })
       .select()
       .single()
