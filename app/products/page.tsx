@@ -792,4 +792,3 @@ export default function ProductsPage() {
     </main>
   )
 }
-
