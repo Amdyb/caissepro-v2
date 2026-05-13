@@ -1,10 +1,22 @@
+'use client'
 
-  'use client'
 import ProductImageUploader from '@/components/ProductImageUploader'
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { AlertTriangle, ArrowLeft, CheckCircle2, ImageIcon, Package, Plus, Search, Trash2, TrendingUp } from 'lucide-react'
+import {
+  AlertTriangle,
+  ArrowLeft,
+  CheckCircle2,
+  Edit,
+  ImageIcon,
+  Package,
+  Plus,
+  Search,
+  Trash2,
+  TrendingUp,
+  X
+} from 'lucide-react'
 import { supabase } from '@/lib/supabaseClient'
 
 type Product = {
@@ -48,8 +60,43 @@ function stockStatus(stockValue: number) {
   }
 }
 
+function profitPerUnit(product: Product) {
+  return Number(product.sell_price || 0) - Number(product.cost_price || 0)
+}
+
+function marginPercent(product: Product) {
+  const sell = Number(product.sell_price || 0)
+  const cost = Number(product.cost_price || 0)
+
+  if (sell <= 0) return 0
+
+  return ((sell - cost) / sell) * 100
+}
+
+function marginStatus(percent: number) {
+  if (percent >= 40) {
+    return {
+      label: 'Marge forte',
+      className: 'bg-brand-50 text-brand-700'
+    }
+  }
+
+  if (percent >= 20) {
+    return {
+      label: 'Marge correcte',
+      className: 'bg-yellow-50 text-yellow-700'
+    }
+  }
+
+  return {
+    label: 'Marge faible',
+    className: 'bg-red-50 text-red-700'
+  }
+}
+
 export default function ProductsPage() {
   const router = useRouter()
+
   const [businessId, setBusinessId] = useState<string | null>(null)
   const [businessName, setBusinessName] = useState('CaissePro')
   const [products, setProducts] = useState<Product[]>([])
@@ -58,7 +105,20 @@ export default function ProductsPage() {
   const [message, setMessage] = useState('')
   const [search, setSearch] = useState('')
 
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null)
+
   const [form, setForm] = useState({
+    name: '',
+    category: '',
+    barcode: '',
+    cost_price: '',
+    sell_price: '',
+    minimum_price: '',
+    stock: '',
+    image: ''
+  })
+
+  const [editForm, setEditForm] = useState({
     name: '',
     category: '',
     barcode: '',
@@ -90,6 +150,31 @@ export default function ProductsPage() {
       lowStock,
       healthyStock,
       alertCount: outOfStock.length + lowStock.length
+    }
+  }, [products])
+
+  const valuation = useMemo(() => {
+    const totalCostValue = products.reduce((sum, product) => {
+      return sum + Number(product.cost_price || 0) * Number(product.stock || 0)
+    }, 0)
+
+    const totalRetailValue = products.reduce((sum, product) => {
+      return sum + Number(product.sell_price || 0) * Number(product.stock || 0)
+    }, 0)
+
+    const potentialProfit = totalRetailValue - totalCostValue
+
+    const lowStockValue = products
+      .filter((product) => Number(product.stock || 0) <= 5)
+      .reduce((sum, product) => {
+        return sum + Number(product.sell_price || 0) * Number(product.stock || 0)
+      }, 0)
+
+    return {
+      totalCostValue,
+      totalRetailValue,
+      potentialProfit,
+      lowStockValue
     }
   }, [products])
 
@@ -165,18 +250,83 @@ export default function ProductsPage() {
       return
     }
 
-    setForm({ name: '', category: '', barcode: '', cost_price: '', sell_price: '', minimum_price: '', stock: '', image: '' })
+    setForm({
+      name: '',
+      category: '',
+      barcode: '',
+      cost_price: '',
+      sell_price: '',
+      minimum_price: '',
+      stock: '',
+      image: ''
+    })
+
     await loadProducts(businessId)
+    setMessage('Produit ajouté avec succès.')
+    setSaving(false)
+  }
+
+  function startEdit(product: Product) {
+    setEditingProduct(product)
+    setEditForm({
+      name: product.name || '',
+      category: product.category || '',
+      barcode: product.barcode || '',
+      cost_price: String(product.cost_price || 0),
+      sell_price: String(product.sell_price || 0),
+      minimum_price: String(product.minimum_price || 0),
+      stock: String(product.stock || 0),
+      image: product.image || ''
+    })
+  }
+
+  async function updateProduct(e: React.FormEvent) {
+    e.preventDefault()
+
+    if (!editingProduct || !businessId) return
+
+    setSaving(true)
+    setMessage('')
+
+    const { error } = await supabase
+      .from('products')
+      .update({
+        name: editForm.name,
+        category: editForm.category || null,
+        barcode: editForm.barcode || null,
+        cost_price: Number(editForm.cost_price || 0),
+        sell_price: Number(editForm.sell_price || 0),
+        minimum_price: Number(editForm.minimum_price || editForm.sell_price || 0),
+        stock: Number(editForm.stock || 0),
+        image: editForm.image || null
+      })
+      .eq('id', editingProduct.id)
+
+    if (error) {
+      setMessage(error.message)
+      setSaving(false)
+      return
+    }
+
+    setEditingProduct(null)
+    await loadProducts(businessId)
+    setMessage('Produit modifié avec succès.')
     setSaving(false)
   }
 
   async function deleteProduct(productId: string) {
     if (!confirm('Supprimer ce produit ?')) return
-    const { error } = await supabase.from('products').delete().eq('id', productId)
+
+    const { error } = await supabase
+      .from('products')
+      .delete()
+      .eq('id', productId)
+
     if (error) {
       setMessage(error.message)
       return
     }
+
     setProducts((current) => current.filter((p) => p.id !== productId))
   }
 
@@ -204,11 +354,20 @@ export default function ProductsPage() {
             <h1 className="mt-1 text-2xl font-black text-slate-950">Produits</h1>
             <p className="text-sm font-semibold text-slate-500">{businessName}</p>
           </div>
-          <button onClick={logout} className="rounded-full bg-slate-950 px-5 py-3 text-sm font-bold text-white">Déconnexion</button>
+
+          <button onClick={logout} className="rounded-full bg-slate-950 px-5 py-3 text-sm font-bold text-white">
+            Déconnexion
+          </button>
         </div>
       </header>
 
       <section className="mx-auto max-w-7xl px-6 py-10">
+        {message && (
+          <div className="mb-6 rounded-2xl bg-brand-50 p-4 text-sm font-bold text-brand-700">
+            {message}
+          </div>
+        )}
+
         <div className="mb-8 grid gap-5 md:grid-cols-4">
           <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
             <Package className="text-brand-600" />
@@ -235,6 +394,36 @@ export default function ProductsPage() {
           </div>
         </div>
 
+        <div className="mb-8 grid gap-5 md:grid-cols-4">
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <p className="text-sm font-bold text-slate-500">Valeur achat stock</p>
+            <p className="mt-2 text-2xl font-black text-slate-950">
+              {valuation.totalCostValue.toLocaleString('fr-FR')} CFA
+            </p>
+          </div>
+
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <p className="text-sm font-bold text-slate-500">Valeur vente stock</p>
+            <p className="mt-2 text-2xl font-black text-slate-950">
+              {valuation.totalRetailValue.toLocaleString('fr-FR')} CFA
+            </p>
+          </div>
+
+          <div className="rounded-3xl border border-brand-200 bg-white p-6 shadow-sm">
+            <p className="text-sm font-bold text-slate-500">Profit potentiel</p>
+            <p className="mt-2 text-2xl font-black text-brand-700">
+              {valuation.potentialProfit.toLocaleString('fr-FR')} CFA
+            </p>
+          </div>
+
+          <div className="rounded-3xl border border-red-200 bg-white p-6 shadow-sm">
+            <p className="text-sm font-bold text-slate-500">Valeur stock critique</p>
+            <p className="mt-2 text-2xl font-black text-red-700">
+              {valuation.lowStockValue.toLocaleString('fr-FR')} CFA
+            </p>
+          </div>
+        </div>
+
         {stockAlerts.alertCount > 0 && (
           <div className="mb-8 rounded-3xl border border-red-200 bg-red-50 p-6">
             <div className="flex items-start gap-3">
@@ -255,66 +444,105 @@ export default function ProductsPage() {
         <div className="grid gap-8 lg:grid-cols-[.85fr_1.15fr]">
           <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="mb-6 flex items-center gap-3">
-              <div className="rounded-2xl bg-brand-50 p-3 text-brand-700"><Plus /></div>
+              <div className="rounded-2xl bg-brand-50 p-3 text-brand-700">
+                <Plus />
+              </div>
               <div>
                 <h2 className="text-2xl font-black text-slate-950">Ajouter un produit</h2>
-                <p className="text-sm text-slate-500">Photo, prix minimum, stock et catégorie.</p>
+                <p className="text-sm text-slate-500">Image, prix minimum, stock et catégorie.</p>
               </div>
             </div>
 
             <form onSubmit={addProduct} className="space-y-4">
               <div>
                 <label className="text-sm font-bold text-slate-700">Nom du produit</label>
-                <input required className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-brand-600" placeholder="Ex: T-shirt Premium" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+                <input
+                  required
+                  className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-brand-600"
+                  placeholder="Ex: T-shirt Premium"
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                />
               </div>
 
-             <ProductImageUploader
-  value={form.image}
-  onChange={(url) =>
-    setForm({ ...form, image: url })
-  }
-/>
+              <ProductImageUploader
+                value={form.image}
+                onChange={(url) => setForm({ ...form, image: url })}
+              />
 
               <div className="grid gap-4 md:grid-cols-2">
                 <div>
                   <label className="text-sm font-bold text-slate-700">Catégorie</label>
-                  <input className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-brand-600" placeholder="Mode, beauté..." value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} />
+                  <input
+                    className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-brand-600"
+                    placeholder="Mode, beauté..."
+                    value={form.category}
+                    onChange={(e) => setForm({ ...form, category: e.target.value })}
+                  />
                 </div>
+
                 <div>
                   <label className="text-sm font-bold text-slate-700">Code-barres</label>
-                  <input className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-brand-600" placeholder="Optionnel" value={form.barcode} onChange={(e) => setForm({ ...form, barcode: e.target.value })} />
+                  <input
+                    className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-brand-600"
+                    placeholder="Optionnel"
+                    value={form.barcode}
+                    onChange={(e) => setForm({ ...form, barcode: e.target.value })}
+                  />
                 </div>
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
                 <div>
                   <label className="text-sm font-bold text-slate-700">Prix achat</label>
-                  <input type="number" min="0" className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-brand-600" placeholder="0" value={form.cost_price} onChange={(e) => setForm({ ...form, cost_price: e.target.value })} />
+                  <input
+                    type="number"
+                    min="0"
+                    className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-brand-600"
+                    placeholder="0"
+                    value={form.cost_price}
+                    onChange={(e) => setForm({ ...form, cost_price: e.target.value })}
+                  />
                 </div>
+
                 <div>
                   <label className="text-sm font-bold text-slate-700">Prix minimum</label>
-                  <input type="number" min="0" className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-brand-600" placeholder="Prix le plus bas autorisé" value={form.minimum_price} onChange={(e) => setForm({ ...form, minimum_price: e.target.value })} />
+                  <input
+                    type="number"
+                    min="0"
+                    className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-brand-600"
+                    placeholder="Prix le plus bas autorisé"
+                    value={form.minimum_price}
+                    onChange={(e) => setForm({ ...form, minimum_price: e.target.value })}
+                  />
                 </div>
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
                 <div>
                   <label className="text-sm font-bold text-slate-700">Prix vente</label>
-                  <input type="number" min="0" className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-brand-600" placeholder="0" value={form.sell_price} onChange={(e) => setForm({ ...form, sell_price: e.target.value })} />
+                  <input
+                    type="number"
+                    min="0"
+                    className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-brand-600"
+                    placeholder="0"
+                    value={form.sell_price}
+                    onChange={(e) => setForm({ ...form, sell_price: e.target.value })}
+                  />
                 </div>
+
                 <div>
                   <label className="text-sm font-bold text-slate-700">Stock</label>
-                  <input type="number" min="0" className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-brand-600" placeholder="0" value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} />
+                  <input
+                    type="number"
+                    min="0"
+                    className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-brand-600"
+                    placeholder="0"
+                    value={form.stock}
+                    onChange={(e) => setForm({ ...form, stock: e.target.value })}
+                  />
                 </div>
               </div>
-
-              {form.image && (
-                <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
-                  <img src={form.image} alt="Aperçu produit" className="h-40 w-full object-cover" />
-                </div>
-              )}
-
-              {message && <div className="rounded-2xl bg-red-50 p-3 text-sm font-semibold text-red-700">{message}</div>}
 
               <button disabled={saving} className="w-full rounded-2xl bg-brand-600 py-4 font-black text-white hover:bg-brand-700 disabled:opacity-60">
                 {saving ? 'Enregistrement...' : 'Ajouter le produit'}
@@ -328,9 +556,15 @@ export default function ProductsPage() {
                 <h2 className="text-2xl font-black text-slate-950">Inventaire intelligent</h2>
                 <p className="text-sm text-slate-500">{products.length} produit(s)</p>
               </div>
+
               <div className="relative">
                 <Search className="absolute left-4 top-3.5 text-slate-400" size={18} />
-                <input className="w-full rounded-2xl border border-slate-300 py-3 pl-11 pr-4 outline-none focus:border-brand-600 md:w-72" placeholder="Rechercher..." value={search} onChange={(e) => setSearch(e.target.value)} />
+                <input
+                  className="w-full rounded-2xl border border-slate-300 py-3 pl-11 pr-4 outline-none focus:border-brand-600 md:w-72"
+                  placeholder="Rechercher..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
               </div>
             </div>
 
@@ -347,15 +581,18 @@ export default function ProductsPage() {
                   const status = stockStatus(stock)
                   const Icon = status.icon
                   const recommendedRestock = stock <= 0 ? 20 : stock <= 5 ? Math.max(10 - stock, 5) : 0
+                  const profit = profitPerUnit(product)
+                  const margin = marginPercent(product)
+                  const marginInfo = marginStatus(margin)
 
                   return (
                     <div key={product.id} className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-                      <div className="relative h-40 bg-slate-100">
+                      <div className="relative h-24 bg-slate-100">
                         {product.image ? (
-                          <img src={product.image} alt={product.name} className="h-28 w-full object-contain bg-white" />
+                          <img src={product.image} alt={product.name} className="h-full w-full object-contain bg-white p-2" />
                         ) : (
                           <div className="flex h-full items-center justify-center text-slate-400">
-                            <ImageIcon size={42} />
+                            <ImageIcon size={34} />
                           </div>
                         )}
 
@@ -372,9 +609,16 @@ export default function ProductsPage() {
                             <h3 className="mt-1 text-lg font-black text-slate-950">{product.name}</h3>
                             <p className="mt-1 text-xs text-slate-500">{product.barcode || 'Sans code-barres'}</p>
                           </div>
-                          <button onClick={() => deleteProduct(product.id)} className="rounded-xl p-2 text-slate-400 hover:bg-red-50 hover:text-red-600">
-                            <Trash2 size={18} />
-                          </button>
+
+                          <div className="flex items-center gap-1">
+                            <button onClick={() => startEdit(product)} className="rounded-xl p-2 text-brand-700 hover:bg-brand-50">
+                              <Edit size={18} />
+                            </button>
+
+                            <button onClick={() => deleteProduct(product.id)} className="rounded-xl p-2 text-slate-400 hover:bg-red-50 hover:text-red-600">
+                              <Trash2 size={18} />
+                            </button>
+                          </div>
                         </div>
 
                         <div className="mt-4 grid grid-cols-3 gap-2 text-center">
@@ -382,13 +626,30 @@ export default function ProductsPage() {
                             <p className="text-xs font-bold text-slate-500">Vente</p>
                             <p className="mt-1 text-sm font-black text-slate-950">{Number(product.sell_price || 0).toLocaleString('fr-FR')} CFA</p>
                           </div>
+
                           <div className="rounded-2xl bg-slate-50 p-3">
                             <p className="text-xs font-bold text-slate-500">Minimum</p>
                             <p className="mt-1 text-sm font-black text-slate-950">{Number(product.minimum_price || 0).toLocaleString('fr-FR')} CFA</p>
                           </div>
+
                           <div className={`rounded-2xl p-3 ${stock <= 0 ? 'bg-red-50' : stock <= 5 ? 'bg-yellow-50' : 'bg-brand-50'}`}>
                             <p className="text-xs font-bold text-slate-500">Stock</p>
                             <p className={`mt-1 text-sm font-black ${stock <= 0 ? 'text-red-700' : stock <= 5 ? 'text-yellow-700' : 'text-brand-700'}`}>{stock}</p>
+                          </div>
+                        </div>
+
+                        <div className="mt-4 rounded-2xl bg-slate-50 p-4">
+                          <div className="flex items-center justify-between gap-3">
+                            <div>
+                              <p className="text-xs font-bold text-slate-500">Profit unité</p>
+                              <p className={`mt-1 text-lg font-black ${profit >= 0 ? 'text-brand-700' : 'text-red-700'}`}>
+                                {profit.toLocaleString('fr-FR')} CFA
+                              </p>
+                            </div>
+
+                            <div className={`rounded-full px-3 py-1 text-xs font-black ${marginInfo.className}`}>
+                              {marginInfo.label} • {margin.toFixed(1)}%
+                            </div>
                           </div>
                         </div>
 
@@ -408,124 +669,119 @@ export default function ProductsPage() {
             )}
           </div>
         </div>
+
+        {editingProduct && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4">
+            <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl">
+              <div className="mb-6 flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-black text-slate-950">Modifier produit</h2>
+                  <p className="text-sm text-slate-500">{editingProduct.name}</p>
+                </div>
+
+                <button
+                  onClick={() => setEditingProduct(null)}
+                  className="rounded-2xl bg-slate-100 p-3 text-slate-700 hover:bg-slate-200"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <form onSubmit={updateProduct} className="space-y-4">
+                <div>
+                  <label className="text-sm font-bold text-slate-700">Nom</label>
+                  <input
+                    required
+                    className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-brand-600"
+                    value={editForm.name}
+                    onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                  />
+                </div>
+
+                <ProductImageUploader
+                  value={editForm.image}
+                  onChange={(url) => setEditForm({ ...editForm, image: url })}
+                />
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div>
+                    <label className="text-sm font-bold text-slate-700">Catégorie</label>
+                    <input
+                      className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-brand-600"
+                      value={editForm.category}
+                      onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-bold text-slate-700">Code-barres</label>
+                    <input
+                      className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-brand-600"
+                      value={editForm.barcode}
+                      onChange={(e) => setEditForm({ ...editForm, barcode: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div>
+                    <label className="text-sm font-bold text-slate-700">Prix achat</label>
+                    <input
+                      type="number"
+                      min="0"
+                      className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-brand-600"
+                      value={editForm.cost_price}
+                      onChange={(e) => setEditForm({ ...editForm, cost_price: e.target.value })}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-bold text-slate-700">Prix vente</label>
+                    <input
+                      type="number"
+                      min="0"
+                      className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-brand-600"
+                      value={editForm.sell_price}
+                      onChange={(e) => setEditForm({ ...editForm, sell_price: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div>
+                    <label className="text-sm font-bold text-slate-700">Prix minimum</label>
+                    <input
+                      type="number"
+                      min="0"
+                      className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-brand-600"
+                      value={editForm.minimum_price}
+                      onChange={(e) => setEditForm({ ...editForm, minimum_price: e.target.value })}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-bold text-slate-700">Stock</label>
+                    <input
+                      type="number"
+                      min="0"
+                      className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-brand-600"
+                      value={editForm.stock}
+                      onChange={(e) => setEditForm({ ...editForm, stock: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <button
+                  disabled={saving}
+                  className="w-full rounded-2xl bg-brand-600 py-4 font-black text-white hover:bg-brand-700 disabled:opacity-60"
+                >
+                  {saving ? 'Enregistrement...' : 'Enregistrer modifications'}
+                </button>
+              </form>
+            </div>
+          </div>
+        )}
       </section>
     </main>
   )
-}
-function profitPerUnit(product: Product) {
-  return Number(product.sell_price || 0) - Number(product.cost_price || 0)
-}
-
-function marginPercent(product: Product) {
-  const sell = Number(product.sell_price || 0)
-  const cost = Number(product.cost_price || 0)
-
-  if (sell <= 0) return 0
-
-  return ((sell - cost) / sell) * 100
-}
-
-function marginStatus(percent: number) {
-  if (percent >= 40) {
-    return {
-      label: 'Marge forte',
-      className: 'bg-brand-50 text-brand-700'
-    }
-  }
-
-  if (percent >= 20) {
-    return {
-      label: 'Marge correcte',
-      className: 'bg-yellow-50 text-yellow-700'
-    }
-  }
-
-  return {
-    label: 'Marge faible',
-    className: 'bg-red-50 text-red-700'
-  }
-}
-const valuation = useMemo(() => {
-  const totalCostValue = products.reduce((sum, product) => {
-    return sum + Number(product.cost_price || 0) * Number(product.stock || 0)
-  }, 0)
-
-  const totalRetailValue = products.reduce((sum, product) => {
-    return sum + Number(product.sell_price || 0) * Number(product.stock || 0)
-  }, 0)
-
-  const potentialProfit = totalRetailValue - totalCostValue
-
-  const lowStockValue = products
-    .filter((product) => Number(product.stock || 0) <= 5)
-    .reduce((sum, product) => {
-      return sum + Number(product.sell_price || 0) * Number(product.stock || 0)
-    }, 0)
-
-  return {
-    totalCostValue,
-    totalRetailValue,
-    potentialProfit,
-    lowStockValue
-  }
-}, [products])
-const [editingProduct, setEditingProduct] = useState<Product | null>(null)
-
-const [editForm, setEditForm] = useState({
-  name: '',
-  category: '',
-  barcode: '',
-  cost_price: '',
-  sell_price: '',
-  minimum_price: '',
-  stock: '',
-  image: ''
-})
-
-function startEdit(product: Product) {
-  setEditingProduct(product)
-  setEditForm({
-    name: product.name || '',
-    category: product.category || '',
-    barcode: product.barcode || '',
-    cost_price: String(product.cost_price || 0),
-    sell_price: String(product.sell_price || 0),
-    minimum_price: String(product.minimum_price || 0),
-    stock: String(product.stock || 0),
-    image: product.image || ''
-  })
-}
-
-async function updateProduct(e: React.FormEvent) {
-  e.preventDefault()
-
-  if (!editingProduct || !businessId) return
-
-  setSaving(true)
-  setMessage('')
-
-  const { error } = await supabase
-    .from('products')
-    .update({
-      name: editForm.name,
-      category: editForm.category || null,
-      barcode: editForm.barcode || null,
-      cost_price: Number(editForm.cost_price || 0),
-      sell_price: Number(editForm.sell_price || 0),
-      minimum_price: Number(editForm.minimum_price || editForm.sell_price || 0),
-      stock: Number(editForm.stock || 0),
-      image: editForm.image || null
-    })
-    .eq('id', editingProduct.id)
-
-  if (error) {
-    setMessage(error.message)
-    setSaving(false)
-    return
-  }
-
-  setEditingProduct(null)
-  await loadProducts(businessId)
-  setMessage('Produit modifié avec succès.')
-  setSaving(false)
 }
