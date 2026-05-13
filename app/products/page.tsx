@@ -268,10 +268,12 @@ export default function ProductsPage() {
                 <input required className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-brand-600" placeholder="Ex: T-shirt Premium" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
               </div>
 
-              <div>
-                <label className="text-sm font-bold text-slate-700">Image URL</label>
-                <input className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-brand-600" placeholder="https://image-du-produit.jpg" value={form.image} onChange={(e) => setForm({ ...form, image: e.target.value })} />
-              </div>
+             <ProductImageUploader
+  value={form.image}
+  onChange={(url) =>
+    setForm({ ...form, image: url })
+  }
+/>
 
               <div className="grid gap-4 md:grid-cols-2">
                 <div>
