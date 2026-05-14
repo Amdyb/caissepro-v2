@@ -1,8 +1,8 @@
 'use client'
 
+import BusinessImageUploader from '@/components/BusinessImageUploader'
 import { supabase } from '@/lib/supabaseClient'
-import Link from 'next/link'
-import { ArrowRight, ImagePlus, MapPin, Phone, Store, Upload } from 'lucide-react'
+import { ArrowRight, MapPin, Phone, Store } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 
@@ -116,11 +116,7 @@ export default function BusinessProfilePage() {
           </p>
         </div>
 
-        {message && (
-          <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-bold text-red-700">
-            {message}
-          </div>
-        )}
+        {message && <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-bold text-red-700">{message}</div>}
 
         <div className="grid gap-8 lg:grid-cols-[1fr_420px]">
           <div className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm">
@@ -167,25 +163,21 @@ export default function BusinessProfilePage() {
                 />
               </div>
 
-              <div>
-                <label className="mb-2 flex items-center gap-2 text-sm font-black text-slate-700"><Upload size={16}/>Logo URL</label>
-                <input
-                  value={form.logo_url}
-                  onChange={(e) => setForm({ ...form, logo_url: e.target.value })}
-                  placeholder="https://..."
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-semibold outline-none transition focus:border-emerald-500 focus:bg-white"
-                />
-              </div>
+              <BusinessImageUploader
+                label="Logo"
+                value={form.logo_url}
+                folder="logos"
+                previewClassName="h-40"
+                onChange={(url) => setForm({ ...form, logo_url: url })}
+              />
 
-              <div>
-                <label className="mb-2 flex items-center gap-2 text-sm font-black text-slate-700"><ImagePlus size={16}/>Banner URL</label>
-                <input
-                  value={form.banner_url}
-                  onChange={(e) => setForm({ ...form, banner_url: e.target.value })}
-                  placeholder="https://..."
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-semibold outline-none transition focus:border-emerald-500 focus:bg-white"
-                />
-              </div>
+              <BusinessImageUploader
+                label="Bannière"
+                value={form.banner_url}
+                folder="banners"
+                previewClassName="h-52"
+                onChange={(url) => setForm({ ...form, banner_url: url })}
+              />
             </div>
           </div>
 
@@ -196,40 +188,19 @@ export default function BusinessProfilePage() {
                   <img src={form.banner_url} className="h-full w-full object-cover" />
                 ) : (
                   <div className="flex h-full items-center justify-center bg-gradient-to-br from-emerald-500 via-emerald-600 to-slate-950 text-white">
-                    <ImagePlus size={42} />
+                    <Store size={42} />
                   </div>
                 )}
 
                 <div className="absolute bottom-5 left-5 flex items-center gap-4">
                   <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-3xl border-4 border-white bg-white shadow-xl">
-                    {form.logo_url ? (
-                      <img src={form.logo_url} className="h-full w-full object-contain p-2" />
-                    ) : (
-                      <Store className="text-emerald-600" size={32} />
-                    )}
+                    {form.logo_url ? <img src={form.logo_url} className="h-full w-full object-contain p-2" /> : <Store className="text-emerald-600" size={32} />}
                   </div>
 
                   <div className="text-white drop-shadow">
                     <h2 className="text-3xl font-black">{form.name || 'Votre business'}</h2>
                     <p className="font-bold uppercase tracking-wide text-emerald-200">{type}</p>
                   </div>
-                </div>
-              </div>
-
-              <div className="space-y-3 p-5">
-                <div className="flex items-center justify-between rounded-2xl bg-slate-50 p-4">
-                  <span className="font-bold text-slate-500">Téléphone</span>
-                  <span className="font-black">{form.phone || '—'}</span>
-                </div>
-
-                <div className="flex items-center justify-between rounded-2xl bg-slate-50 p-4">
-                  <span className="font-bold text-slate-500">WhatsApp</span>
-                  <span className="font-black">{form.whatsapp || '—'}</span>
-                </div>
-
-                <div className="rounded-2xl bg-slate-50 p-4">
-                  <p className="mb-2 font-bold text-slate-500">Adresse</p>
-                  <p className="font-black">{form.address || 'Adresse non renseignée'}</p>
                 </div>
               </div>
             </div>
@@ -242,10 +213,6 @@ export default function BusinessProfilePage() {
               {loading ? 'Création...' : 'Créer mon espace'}
               {!loading && <ArrowRight size={20} />}
             </button>
-
-            <p className="mt-4 text-center text-sm font-semibold text-slate-500">
-              Votre template sera automatiquement adapté à votre activité.
-            </p>
           </div>
         </div>
       </div>
