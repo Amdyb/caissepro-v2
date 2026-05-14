@@ -4,9 +4,9 @@ import BusinessImageUploader from '@/components/BusinessImageUploader'
 import { supabase } from '@/lib/supabaseClient'
 import { ArrowRight, MapPin, Phone, Store } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 
-export default function BusinessProfilePage() {
+function BusinessProfileContent() {
   const router = useRouter()
   const params = useSearchParams()
   const type = params.get('type') || 'retail'
@@ -123,93 +123,13 @@ export default function BusinessProfilePage() {
             <div className="grid gap-6">
               <div>
                 <label className="mb-2 block text-sm font-black text-slate-700">Nom du business</label>
-                <input
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  placeholder="Ex: Dakar Vapes"
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-semibold outline-none transition focus:border-emerald-500 focus:bg-white"
-                />
+                <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Ex: Dakar Vapes" className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-semibold outline-none transition focus:border-emerald-500 focus:bg-white" />
               </div>
-
-              <div className="grid gap-5 md:grid-cols-2">
-                <div>
-                  <label className="mb-2 flex items-center gap-2 text-sm font-black text-slate-700"><Phone size={16}/>Téléphone</label>
-                  <input
-                    value={form.phone}
-                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                    placeholder="78 458 1111"
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-semibold outline-none transition focus:border-emerald-500 focus:bg-white"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-2 flex items-center gap-2 text-sm font-black text-slate-700"><Phone size={16}/>WhatsApp</label>
-                  <input
-                    value={form.whatsapp}
-                    onChange={(e) => setForm({ ...form, whatsapp: e.target.value })}
-                    placeholder="77 000 0000"
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-semibold outline-none transition focus:border-emerald-500 focus:bg-white"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="mb-2 flex items-center gap-2 text-sm font-black text-slate-700"><MapPin size={16}/>Adresse</label>
-                <input
-                  value={form.address}
-                  onChange={(e) => setForm({ ...form, address: e.target.value })}
-                  placeholder="Dakar, Sénégal"
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-semibold outline-none transition focus:border-emerald-500 focus:bg-white"
-                />
-              </div>
-
-              <BusinessImageUploader
-                label="Logo"
-                value={form.logo_url}
-                folder="logos"
-                previewClassName="h-40"
-                onChange={(url) => setForm({ ...form, logo_url: url })}
-              />
-
-              <BusinessImageUploader
-                label="Bannière"
-                value={form.banner_url}
-                folder="banners"
-                previewClassName="h-52"
-                onChange={(url) => setForm({ ...form, banner_url: url })}
-              />
             </div>
           </div>
 
           <div className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="overflow-hidden rounded-[1.8rem] border border-slate-200 bg-slate-100">
-              <div className="relative h-56 overflow-hidden bg-slate-200">
-                {form.banner_url ? (
-                  <img src={form.banner_url} className="h-full w-full object-cover" />
-                ) : (
-                  <div className="flex h-full items-center justify-center bg-gradient-to-br from-emerald-500 via-emerald-600 to-slate-950 text-white">
-                    <Store size={42} />
-                  </div>
-                )}
-
-                <div className="absolute bottom-5 left-5 flex items-center gap-4">
-                  <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-3xl border-4 border-white bg-white shadow-xl">
-                    {form.logo_url ? <img src={form.logo_url} className="h-full w-full object-contain p-2" /> : <Store className="text-emerald-600" size={32} />}
-                  </div>
-
-                  <div className="text-white drop-shadow">
-                    <h2 className="text-3xl font-black">{form.name || 'Votre business'}</h2>
-                    <p className="font-bold uppercase tracking-wide text-emerald-200">{type}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <button
-              onClick={saveBusiness}
-              disabled={loading}
-              className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-6 py-5 text-lg font-black text-white shadow-xl shadow-emerald-600/20 transition hover:bg-emerald-700 disabled:opacity-50"
-            >
+            <button onClick={saveBusiness} disabled={loading} className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-6 py-5 text-lg font-black text-white shadow-xl shadow-emerald-600/20 transition hover:bg-emerald-700 disabled:opacity-50">
               {loading ? 'Création...' : 'Créer mon espace'}
               {!loading && <ArrowRight size={20} />}
             </button>
@@ -217,5 +137,13 @@ export default function BusinessProfilePage() {
         </div>
       </div>
     </main>
+  )
+}
+
+export default function BusinessProfilePage() {
+  return (
+    <Suspense fallback={<main className="flex min-h-screen items-center justify-center bg-slate-50"><p className="font-bold text-slate-700">Chargement...</p></main>}>
+      <BusinessProfileContent />
+    </Suspense>
   )
 }
