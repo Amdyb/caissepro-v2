@@ -16,6 +16,7 @@ import {
   HandCoins,
   LayoutDashboard,
   Menu,
+  MessageSquare,
   Package,
   PackagePlus,
   ReceiptText,
@@ -35,14 +36,19 @@ type AppShellProps = { children: ReactNode; title: string; subtitle?: string; ac
 type NavItem = { label: string; href: string; icon: any }
 type NavSection = { title: string; items: NavItem[] }
 
-const employeeNav: NavSection[] = [{ title: 'Employé', items: [
-  { label: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard },
-  { label: 'Vendre', href: '/pos', icon: ShoppingCart },
-  { label: 'Caisse', href: '/register-shifts', icon: CalendarClock },
-  { label: 'Clients', href: '/customers', icon: Users },
-  { label: 'Rapport du jour', href: '/reports', icon: ReceiptText },
-  { label: 'Partager ma boutique', href: '/storefront', icon: Share2 }
-]}]
+const employeeNav: NavSection[] = [
+  { title: 'Employé', items: [
+    { label: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard },
+    { label: 'Vendre', href: '/pos', icon: ShoppingCart },
+    { label: 'Caisse', href: '/register-shifts', icon: CalendarClock },
+    { label: 'Clients', href: '/customers', icon: Users },
+    { label: 'Rapport du jour', href: '/reports', icon: ReceiptText },
+    { label: 'Partager ma boutique', href: '/storefront', icon: Share2 }
+  ]},
+  { title: 'Aide', items: [
+    { label: 'Feedback Beta', href: '/feedback', icon: MessageSquare }
+  ]}
+]
 
 const managerNav: NavSection[] = [
   { title: 'Ventes', items: [
@@ -61,6 +67,9 @@ const managerNav: NavSection[] = [
     { label: 'Rapport', href: '/reports', icon: ReceiptText },
     { label: 'Employés', href: '/employees', icon: Users },
     { label: 'Partager ma boutique', href: '/storefront', icon: Share2 }
+  ]},
+  { title: 'Aide', items: [
+    { label: 'Feedback Beta', href: '/feedback', icon: MessageSquare }
   ]}
 ]
 
@@ -91,6 +100,9 @@ const adminNav: NavSection[] = [
     { label: 'Employés', href: '/employees', icon: Users },
     { label: 'Multi-boutiques', href: '/branches', icon: Building2 },
     { label: 'Paramètres', href: '/settings', icon: Settings }
+  ]},
+  { title: 'Aide Beta', items: [
+    { label: 'Envoyer Feedback', href: '/feedback', icon: MessageSquare }
   ]}
 ]
 
