@@ -1,3 +1,4 @@
+import AmdyLabsBrand from '@/components/AmdyLabsBrand'
 import CaisseProLogo from '@/components/CaisseProLogo'
 import Link from 'next/link'
 import { ArrowRight, BarChart3, CheckCircle2, CreditCard, MessageCircle, Package, ShoppingBag, ShoppingCart, Smartphone, Sparkles, Star, Store, Users, Wallet, Zap } from 'lucide-react'
@@ -48,6 +49,12 @@ export default function LandingPage() {
           {plans.map((plan) => <div key={plan.name} className={`rounded-[2rem] border p-7 shadow-sm ${plan.featured ? 'border-emerald-300 bg-slate-950 text-white' : 'border-slate-200 bg-white'}`}><h3 className="text-3xl font-black">{plan.name}</h3><p className="mt-4 text-4xl font-black text-emerald-500">{plan.price}</p><div className="mt-7 space-y-3">{plan.features.map((f) => <p key={f} className={`font-bold ${plan.featured ? 'text-white/80' : 'text-slate-700'}`}>✓ {f}</p>)}</div><Link href="/login" className={`mt-7 block rounded-2xl px-5 py-4 text-center font-black ${plan.featured ? 'bg-emerald-600 text-white' : 'bg-slate-950 text-white'}`}>{plan.cta}</Link></div>)}
         </div>
       </section>
+
+      <footer className="border-t border-slate-200 bg-white">
+        <div className="mx-auto flex max-w-7xl justify-center px-5 py-8">
+          <AmdyLabsBrand />
+        </div>
+      </footer>
     </main>
   )
 }
