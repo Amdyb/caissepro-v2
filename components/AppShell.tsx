@@ -1,5 +1,6 @@
 'use client'
 
+import AmdyLabsBrand from '@/components/AmdyLabsBrand'
 import { ReactNode, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
@@ -102,9 +103,10 @@ function getNavForRole(role: string) {
 
 function AmdyLabsSignature() {
   return (
-    <footer className="mt-10 border-t border-slate-200 px-5 py-5 text-center text-xs font-bold text-slate-400">
-      <p>Powered by Amdy Labs · © 2026 All rights reserved.</p>
-      <p className="mt-1">Pour le développement du commerce en Afrique.</p>
+    <footer className="mt-10 border-t border-slate-200 bg-white px-5 py-5">
+      <div className="flex justify-center">
+        <AmdyLabsBrand />
+      </div>
     </footer>
   )
 }
