@@ -2,7 +2,7 @@
 
 import AppShell from '@/components/AppShell'
 import { supabase } from '@/lib/supabaseClient'
-import { BellRing, HandCoins, RefreshCcw, Search } from 'lucide-react'
+import { BellRing, Copy, HandCoins, MessageCircle, RefreshCcw, Search } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 
@@ -15,6 +15,10 @@ type CustomerDebt = {
 
 function cfa(value: number) {
   return `${value.toLocaleString('fr-FR')} CFA`
+}
+
+function reminderText(customer: CustomerDebt) {
+  return `Bonjour ${customer.full_name}, rappel: vous avez un solde impayé de ${cfa(Number(customer.debt_balance || 0))}. Merci de passer régler dès que possible.`
 }
 
 export default function RemindersPage() {
@@ -75,6 +79,18 @@ export default function RemindersPage() {
     setLoading(true)
     await loadDebts(businessId)
     setLoading(false)
+  }
+
+  function openWhatsApp(customer: CustomerDebt) {
+    const phone = (customer.phone || '').replace(/\D/g, '')
+    const text = encodeURIComponent(reminderText(customer))
+    const url = phone ? `https://wa.me/${phone}?text=${text}` : `https://wa.me/?text=${text}`
+    window.open(url, '_blank')
+  }
+
+  async function copyMessage(customer: CustomerDebt) {
+    await navigator.clipboard.writeText(reminderText(customer))
+    setMessage('Message copié.')
   }
 
   const filteredCustomers = useMemo(() => {
@@ -140,10 +156,26 @@ export default function RemindersPage() {
           <div className="space-y-4">
             {filteredCustomers.map((customer) => (
               <div key={customer.id} className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-                <span className="rounded-full bg-red-50 px-3 py-1.5 text-xs font-black text-red-700">Client Doit</span>
-                <h3 className="mt-3 text-xl font-black text-slate-950">{customer.full_name}</h3>
-                <p className="mt-1 text-sm font-semibold text-slate-500">{customer.phone || 'Sans téléphone'}</p>
-                <p className="mt-2 text-lg font-black text-red-600">{cfa(Number(customer.debt_balance || 0))}</p>
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                  <div>
+                    <span className="rounded-full bg-red-50 px-3 py-1.5 text-xs font-black text-red-700">Client Doit</span>
+                    <h3 className="mt-3 text-xl font-black text-slate-950">{customer.full_name}</h3>
+                    <p className="mt-1 text-sm font-semibold text-slate-500">{customer.phone || 'Sans téléphone'}</p>
+                    <p className="mt-2 text-lg font-black text-red-600">{cfa(Number(customer.debt_balance || 0))}</p>
+                    <p className="mt-3 rounded-2xl bg-slate-50 p-3 text-sm font-semibold text-slate-600">{reminderText(customer)}</p>
+                  </div>
+
+                  <div className="flex flex-wrap gap-3">
+                    <button onClick={() => openWhatsApp(customer)} className="inline-flex items-center gap-2 rounded-2xl bg-green-600 px-5 py-3 text-sm font-black text-white hover:bg-green-700">
+                      <MessageCircle size={18} />
+                      WhatsApp
+                    </button>
+                    <button onClick={() => copyMessage(customer)} className="inline-flex items-center gap-2 rounded-2xl bg-slate-100 px-5 py-3 text-sm font-black text-slate-700 hover:bg-slate-200">
+                      <Copy size={18} />
+                      Copier
+                    </button>
+                  </div>
+                </div>
               </div>
             ))}
           </div>
