@@ -1,6 +1,7 @@
 'use client'
 
 import BusinessImageUploader from '@/components/BusinessImageUploader'
+import { seedDemoBusiness } from '@/lib/seedDemoBusiness'
 import { supabase } from '@/lib/supabaseClient'
 import { ArrowRight, MapPin, Phone, Store } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -16,19 +17,11 @@ function BusinessProfileContent() {
   const [message, setMessage] = useState('')
   const [businessId, setBusinessId] = useState<string | null>(null)
 
-  const [form, setForm] = useState({
-    name: '',
-    phone: '',
-    whatsapp: '',
-    address: '',
-    logo_url: '',
-    banner_url: ''
-  })
+  const [form, setForm] = useState({ name: '', phone: '', whatsapp: '', address: '', logo_url: '', banner_url: '' })
 
   useEffect(() => {
     async function init() {
       const { data: userData } = await supabase.auth.getUser()
-
       if (!userData.user) {
         router.push('/login')
         return
@@ -42,10 +35,8 @@ function BusinessProfileContent() {
         .maybeSingle()
 
       const member: any = membership
-
       if (member?.business_id) {
         setBusinessId(member.business_id)
-
         if (member.businesses) {
           setForm({
             name: member.businesses.name || '',
@@ -57,10 +48,8 @@ function BusinessProfileContent() {
           })
         }
       }
-
       setChecking(false)
     }
-
     init()
   }, [router])
 
@@ -83,37 +72,32 @@ function BusinessProfileContent() {
         logo_url: form.logo_url,
         banner_url: form.banner_url,
         business_type: type,
-        onboarding_completed: true
+        onboarding_completed: true,
+        demo_seeded: true
       })
       .eq('id', businessId)
 
-    setLoading(false)
-
     if (error) {
+      setLoading(false)
       setMessage(error.message)
       return
     }
 
+    await seedDemoBusiness(businessId, type)
+
+    setLoading(false)
     router.push('/dashboard')
   }
 
-  if (checking) {
-    return <main className="flex min-h-screen items-center justify-center bg-slate-50"><p className="font-bold text-slate-700">Chargement...</p></main>
-  }
+  if (checking) return <main className="flex min-h-screen items-center justify-center bg-slate-50"><p className="font-bold text-slate-700">Chargement...</p></main>
 
   return (
     <main className="min-h-screen bg-slate-50 px-5 py-10 text-slate-950">
       <div className="mx-auto max-w-5xl">
         <div className="mb-10 text-center">
-          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-3xl bg-emerald-600 text-white shadow-xl shadow-emerald-600/20">
-            <Store size={34} />
-          </div>
-
+          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-3xl bg-emerald-600 text-white shadow-xl shadow-emerald-600/20"><Store size={34} /></div>
           <h1 className="text-5xl font-black tracking-tight">Configurez votre business</h1>
-
-          <p className="mx-auto mt-4 max-w-2xl text-lg font-semibold leading-8 text-slate-600">
-            Ajoutez votre identité visuelle et vos informations pour générer automatiquement votre espace CaissePro.
-          </p>
+          <p className="mx-auto mt-4 max-w-2xl text-lg font-semibold leading-8 text-slate-600">Ajoutez votre identité visuelle et vos informations pour générer automatiquement votre espace CaissePro.</p>
         </div>
 
         {message && <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-bold text-red-700">{message}</div>}
@@ -125,12 +109,23 @@ function BusinessProfileContent() {
                 <label className="mb-2 block text-sm font-black text-slate-700">Nom du business</label>
                 <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Ex: Dakar Vapes" className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-semibold outline-none transition focus:border-emerald-500 focus:bg-white" />
               </div>
+
+              <div className="grid gap-5 md:grid-cols-2">
+                <div><label className="mb-2 flex items-center gap-2 text-sm font-black text-slate-700"><Phone size={16}/>Téléphone</label><input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="78 458 1111" className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-semibold outline-none transition focus:border-emerald-500 focus:bg-white" /></div>
+                <div><label className="mb-2 flex items-center gap-2 text-sm font-black text-slate-700"><Phone size={16}/>WhatsApp</label><input value={form.whatsapp} onChange={(e) => setForm({ ...form, whatsapp: e.target.value })} placeholder="77 000 0000" className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-semibold outline-none transition focus:border-emerald-500 focus:bg-white" /></div>
+              </div>
+
+              <div><label className="mb-2 flex items-center gap-2 text-sm font-black text-slate-700"><MapPin size={16}/>Adresse</label><input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="Dakar, Sénégal" className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-semibold outline-none transition focus:border-emerald-500 focus:bg-white" /></div>
+
+              <BusinessImageUploader label="Logo" value={form.logo_url} folder="logos" previewClassName="h-40" onChange={(url) => setForm({ ...form, logo_url: url })} />
+              <BusinessImageUploader label="Bannière" value={form.banner_url} folder="banners" previewClassName="h-52" onChange={(url) => setForm({ ...form, banner_url: url })} />
             </div>
           </div>
 
           <div className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="rounded-3xl bg-emerald-50 p-5 text-sm font-bold text-emerald-800">Après création, CaissePro va charger un écosystème demo adapté à votre type de business pour que le dashboard soit vivant immédiatement.</div>
             <button onClick={saveBusiness} disabled={loading} className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-6 py-5 text-lg font-black text-white shadow-xl shadow-emerald-600/20 transition hover:bg-emerald-700 disabled:opacity-50">
-              {loading ? 'Création...' : 'Créer mon espace'}
+              {loading ? 'Création + génération demo...' : 'Créer mon espace'}
               {!loading && <ArrowRight size={20} />}
             </button>
           </div>
