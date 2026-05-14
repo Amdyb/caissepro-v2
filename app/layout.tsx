@@ -5,7 +5,7 @@ import NetworkStatusBanner from '@/components/NetworkStatusBanner'
 
 export const metadata: Metadata = {
   title: 'CaissePro',
-  description: 'POS, inventory and business management for African businesses',
+  description: 'CaissePro by Amdy Labs — Développer le commerce en Afrique',
   manifest: '/manifest.json',
   themeColor: '#16a34a',
   icons: {
@@ -34,21 +34,13 @@ export default function RootLayout({
 
         <meta name="theme-color" content="#16a34a" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta
-          name="apple-mobile-web-app-status-bar-style"
-          content="default"
-        />
-        <meta
-          name="apple-mobile-web-app-title"
-          content="CaissePro"
-        />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="CaissePro" />
       </head>
 
       <body>
         <NetworkStatusBanner />
-
         {children}
-
         <InstallAppPrompt />
       </body>
     </html>
