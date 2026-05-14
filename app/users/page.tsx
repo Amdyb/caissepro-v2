@@ -2,8 +2,8 @@
 
 import AppShell from '@/components/AppShell'
 import { supabase } from '@/lib/supabaseClient'
+import { AccessDenied, useRoleGuard } from '@/lib/useRoleGuard'
 import { Mail, Plus, ShieldCheck, Trash2, UserCog, Users } from 'lucide-react'
-import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 
 type Member = {
@@ -38,13 +38,10 @@ function roleBadge(role: string | null) {
 }
 
 export default function UsersPage() {
-  const router = useRouter()
+  const guard = useRoleGuard(['admin'])
 
-  const [businessId, setBusinessId] = useState<string | null>(null)
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
-  const [currentRole, setCurrentRole] = useState<string | null>(null)
   const [members, setMembers] = useState<Member[]>([])
-  const [loading, setLoading] = useState(true)
+  const [loadingMembers, setLoadingMembers] = useState(true)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
@@ -54,8 +51,6 @@ export default function UsersPage() {
     email: '',
     role: 'sales'
   })
-
-  const isAdmin = currentRole === 'admin'
 
   const stats = useMemo(() => {
     return {
@@ -67,39 +62,13 @@ export default function UsersPage() {
   }, [members])
 
   useEffect(() => {
-    async function init() {
-      const { data: userData } = await supabase.auth.getUser()
-
-      if (!userData.user) {
-        router.push('/login')
-        return
-      }
-
-      setCurrentUserId(userData.user.id)
-
-      const { data: membership, error: membershipError } = await supabase
-        .from('business_members')
-        .select('business_id, role')
-        .eq('user_id', userData.user.id)
-        .limit(1)
-        .single()
-
-      if (membershipError || !membership) {
-        setError('Aucune boutique trouvée pour ce compte.')
-        setLoading(false)
-        return
-      }
-
-      setBusinessId(membership.business_id)
-      setCurrentRole(membership.role || 'sales')
-      await loadMembers(membership.business_id)
-      setLoading(false)
-    }
-
-    init()
-  }, [router])
+    if (!guard.businessId || !guard.allowed) return
+    loadMembers(guard.businessId)
+  }, [guard.businessId, guard.allowed])
 
   async function loadMembers(id: string) {
+    setLoadingMembers(true)
+
     const { data, error } = await supabase
       .from('business_members')
       .select('*')
@@ -108,16 +77,18 @@ export default function UsersPage() {
 
     if (error) {
       setError(error.message)
+      setLoadingMembers(false)
       return
     }
 
     setMembers((data || []) as Member[])
+    setLoadingMembers(false)
   }
 
   async function addMember(e: React.FormEvent) {
     e.preventDefault()
 
-    if (!businessId || !isAdmin) return
+    if (!guard.businessId || !guard.allowed) return
 
     setSaving(true)
     setMessage('')
@@ -135,7 +106,7 @@ export default function UsersPage() {
     const { error } = await supabase
       .from('business_members')
       .insert({
-        business_id: businessId,
+        business_id: guard.businessId,
         user_id: null,
         full_name: form.full_name,
         email: normalizedEmail,
@@ -149,13 +120,13 @@ export default function UsersPage() {
     }
 
     setForm({ full_name: '', email: '', role: 'sales' })
-    await loadMembers(businessId)
+    await loadMembers(guard.businessId)
     setMessage('Employé ajouté. Il pourra être lié au compte auth plus tard.')
     setSaving(false)
   }
 
   async function updateRole(memberId: string, role: string) {
-    if (!businessId || !isAdmin) return
+    if (!guard.businessId || !guard.allowed) return
 
     setMessage('')
     setError('')
@@ -170,14 +141,14 @@ export default function UsersPage() {
       return
     }
 
-    await loadMembers(businessId)
+    await loadMembers(guard.businessId)
     setMessage('Rôle mis à jour.')
   }
 
   async function removeMember(member: Member) {
-    if (!businessId || !isAdmin) return
+    if (!guard.businessId || !guard.allowed) return
 
-    if (member.user_id === currentUserId) {
+    if (member.user_id === guard.userId) {
       setError('Vous ne pouvez pas supprimer votre propre accès.')
       return
     }
@@ -195,16 +166,20 @@ export default function UsersPage() {
       return
     }
 
-    await loadMembers(businessId)
+    await loadMembers(guard.businessId)
     setMessage('Employé supprimé.')
   }
 
-  if (loading) {
+  if (guard.loading || loadingMembers) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-slate-50">
         <p className="font-bold text-slate-700">Chargement utilisateurs...</p>
       </main>
     )
+  }
+
+  if (!guard.allowed) {
+    return <AccessDenied message={guard.error} />
   }
 
   return (
@@ -213,7 +188,7 @@ export default function UsersPage() {
       subtitle="Employés, rôles et permissions de la boutique."
       action={
         <div className="hidden rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-black text-emerald-700 md:block">
-          {roleLabel(currentRole)}
+          Admin
         </div>
       }
     >
@@ -260,37 +235,28 @@ export default function UsersPage() {
               Créez une fiche employé avec son rôle. L’activation du compte auth viendra ensuite.
             </p>
 
-            {!isAdmin && (
-              <div className="mt-5 rounded-2xl bg-amber-50 p-4 text-sm font-bold text-amber-700">
-                Seul un admin peut ajouter ou modifier les utilisateurs.
-              </div>
-            )}
-
             <form onSubmit={addMember} className="mt-6 space-y-4">
               <input
-                className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm font-semibold outline-none focus:border-emerald-300 focus:ring-4 focus:ring-emerald-100 disabled:bg-slate-50"
+                className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm font-semibold outline-none focus:border-emerald-300 focus:ring-4 focus:ring-emerald-100"
                 placeholder="Nom complet"
                 value={form.full_name}
                 onChange={(e) => setForm({ ...form, full_name: e.target.value })}
-                disabled={!isAdmin}
                 required
               />
 
               <input
-                className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm font-semibold outline-none focus:border-emerald-300 focus:ring-4 focus:ring-emerald-100 disabled:bg-slate-50"
+                className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm font-semibold outline-none focus:border-emerald-300 focus:ring-4 focus:ring-emerald-100"
                 placeholder="Email employé"
                 type="email"
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
-                disabled={!isAdmin}
                 required
               />
 
               <select
-                className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm font-black outline-none focus:border-emerald-300 focus:ring-4 focus:ring-emerald-100 disabled:bg-slate-50"
+                className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm font-black outline-none focus:border-emerald-300 focus:ring-4 focus:ring-emerald-100"
                 value={form.role}
                 onChange={(e) => setForm({ ...form, role: e.target.value })}
-                disabled={!isAdmin}
               >
                 {roleOptions.map((role) => (
                   <option key={role.value} value={role.value}>{role.label}</option>
@@ -298,7 +264,7 @@ export default function UsersPage() {
               </select>
 
               <button
-                disabled={!isAdmin || saving}
+                disabled={saving}
                 className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 py-4 text-sm font-black text-white transition hover:bg-emerald-700 disabled:opacity-50"
               >
                 <Plus size={18} />
@@ -348,10 +314,9 @@ export default function UsersPage() {
                       </span>
 
                       <select
-                        className="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-black outline-none disabled:bg-slate-50"
+                        className="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-black outline-none"
                         value={member.role || 'sales'}
                         onChange={(e) => updateRole(member.id, e.target.value)}
-                        disabled={!isAdmin}
                       >
                         {roleOptions.map((role) => (
                           <option key={role.value} value={role.value}>{role.label}</option>
@@ -360,7 +325,7 @@ export default function UsersPage() {
 
                       <button
                         onClick={() => removeMember(member)}
-                        disabled={!isAdmin || member.user_id === currentUserId}
+                        disabled={member.user_id === guard.userId}
                         className="rounded-2xl bg-red-50 p-3 text-red-600 transition hover:bg-red-100 disabled:opacity-40"
                       >
                         <Trash2 size={18} />
