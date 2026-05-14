@@ -8,6 +8,11 @@ export const metadata: Metadata = {
   description: 'POS, inventory and business management for African businesses',
   manifest: '/manifest.json',
   themeColor: '#16a34a',
+  icons: {
+    icon: '/icons/caissepro-icon.svg',
+    shortcut: '/icons/caissepro-icon.svg',
+    apple: '/icons/caissepro-icon.svg'
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
@@ -24,6 +29,9 @@ export default function RootLayout({
     <html lang="fr">
       <head>
         <link rel="manifest" href="/manifest.json" />
+        <link rel="icon" href="/icons/caissepro-icon.svg" />
+        <link rel="apple-touch-icon" href="/icons/caissepro-icon.svg" />
+
         <meta name="theme-color" content="#16a34a" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta
