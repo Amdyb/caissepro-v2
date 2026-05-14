@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import InstallAppPrompt from '@/components/InstallAppPrompt'
+import NetworkStatusBanner from '@/components/NetworkStatusBanner'
 
 export const metadata: Metadata = {
   title: 'CaissePro',
@@ -36,6 +37,8 @@ export default function RootLayout({
       </head>
 
       <body>
+        <NetworkStatusBanner />
+
         {children}
 
         <InstallAppPrompt />
