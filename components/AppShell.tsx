@@ -5,14 +5,17 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import {
   BarChart3,
+  BellRing,
   Boxes,
   Building2,
   CalendarClock,
   ChevronLeft,
   ChevronRight,
   CreditCard,
+  Gift,
   HandCoins,
   LayoutDashboard,
+  LinkIcon,
   Menu,
   Package,
   PackagePlus,
@@ -74,51 +77,52 @@ export default function AppShell({ children, title, subtitle, action }: AppShell
     router.push('/login')
   }
 
-  const navItems = [
-    { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    { label: 'Caisse POS', href: '/pos', icon: ShoppingCart },
-    { label: 'Produits', href: '/products', icon: Package },
-    { label: 'Catégories', href: '/categories', icon: Boxes },
-    { label: 'Ventes', href: '/sales', icon: ReceiptText },
-    { label: 'Clients', href: '/customers', icon: Users },
-    { label: 'Client Doit', href: '/debts', icon: HandCoins },
-    { label: 'Fournisseurs', href: '/suppliers', icon: Truck },
-    { label: 'Achats', href: '/purchases', icon: PackagePlus },
-    { label: 'Dépenses', href: '/expenses', icon: Wallet },
-    { label: 'Analytics', href: '/analytics', icon: BarChart3 },
-    { label: 'Rapports', href: '/reports', icon: CreditCard },
-    { label: 'Caisse jour', href: '/register-shifts', icon: CalendarClock },
-    { label: 'Multi-boutiques', href: '/branches', icon: Building2 },
-    { label: 'Paramètres', href: '/settings', icon: Settings }
+  const navSections = [
+    {
+      title: 'Commerce',
+      items: [
+        { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+        { label: 'Caisse POS', href: '/pos', icon: ShoppingCart },
+        { label: 'Produits', href: '/products', icon: Package },
+        { label: 'Catégories', href: '/categories', icon: Boxes },
+        { label: 'Ventes', href: '/sales', icon: ReceiptText },
+        { label: 'Boutique en ligne', href: '/storefront', icon: Store }
+      ]
+    },
+    {
+      title: 'Clients & paiements',
+      items: [
+        { label: 'Clients', href: '/customers', icon: Users },
+        { label: 'Client Doit', href: '/debts', icon: HandCoins },
+        { label: 'Paiements', href: '/payment-links', icon: CreditCard },
+        { label: 'Fidélité & Parrainage', href: '/referrals', icon: Gift },
+        { label: 'Rappels', href: '/reminders', icon: BellRing }
+      ]
+    },
+    {
+      title: 'Gestion',
+      items: [
+        { label: 'Fournisseurs', href: '/suppliers', icon: Truck },
+        { label: 'Achats', href: '/purchases', icon: PackagePlus },
+        { label: 'Dépenses', href: '/expenses', icon: Wallet },
+        { label: 'Rapports', href: '/reports', icon: BarChart3 },
+        { label: 'Caisse jour', href: '/register-shifts', icon: CalendarClock },
+        { label: 'Multi-boutiques', href: '/branches', icon: Building2 },
+        { label: 'Paramètres', href: '/settings', icon: Settings }
+      ]
+    }
   ]
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-950">
-      {mobileMenuOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-slate-950/50 backdrop-blur-sm lg:hidden"
-          onClick={() => setMobileMenuOpen(false)}
-        />
-      )}
+      {mobileMenuOpen && <div className="fixed inset-0 z-40 bg-slate-950/50 backdrop-blur-sm lg:hidden" onClick={() => setMobileMenuOpen(false)} />}
 
-      <aside
-        className={`fixed inset-y-0 left-0 z-50 border-r border-slate-200 bg-white shadow-2xl transition-all duration-300 ease-in-out lg:shadow-none ${
-          sidebarOpen ? 'w-72' : 'w-24'
-        } ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
-      >
+      <aside className={`fixed inset-y-0 left-0 z-50 border-r border-slate-200 bg-white shadow-2xl transition-all duration-300 ease-in-out lg:shadow-none ${sidebarOpen ? 'w-72' : 'w-24'} ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
         <div className="flex h-full flex-col">
           <div className="flex items-center justify-between border-b border-slate-100 p-5">
             <div className="flex min-w-0 items-center gap-3">
               <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-emerald-600 text-white shadow-lg shadow-emerald-600/20">
-                {businessLogo ? (
-                  <img
-                    src={businessLogo}
-                    alt={businessName}
-                    className="h-full w-full object-contain bg-white p-1"
-                  />
-                ) : (
-                  <Store size={24} />
-                )}
+                {businessLogo ? <img src={businessLogo} alt={businessName} className="h-full w-full object-contain bg-white p-1" /> : <Store size={24} />}
               </div>
 
               {sidebarOpen && (
@@ -129,44 +133,40 @@ export default function AppShell({ children, title, subtitle, action }: AppShell
               )}
             </div>
 
-            <button
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="hidden rounded-xl p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 lg:block"
-            >
+            <button onClick={() => setSidebarOpen(!sidebarOpen)} className="hidden rounded-xl p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 lg:block">
               {sidebarOpen ? <ChevronLeft size={18} /> : <ChevronRight size={18} />}
             </button>
 
-            <button
-              onClick={() => setMobileMenuOpen(false)}
-              className="rounded-xl p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 lg:hidden"
-            >
+            <button onClick={() => setMobileMenuOpen(false)} className="rounded-xl p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 lg:hidden">
               <X size={18} />
             </button>
           </div>
 
-          <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
-            {navItems.map((item) => {
-              const Icon = item.icon
-              const active =
-                pathname === item.href ||
-                (item.href !== '/dashboard' && pathname.startsWith(item.href))
+          <nav className="flex-1 space-y-6 overflow-y-auto px-3 py-4">
+            {navSections.map((section) => (
+              <div key={section.title}>
+                {sidebarOpen && <p className="mb-2 px-3 text-xs font-black uppercase tracking-wider text-slate-400">{section.title}</p>}
 
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`group flex items-center gap-4 rounded-2xl px-4 py-3 text-sm font-black transition ${
-                    active
-                      ? 'bg-emerald-50 text-emerald-700 shadow-sm ring-1 ring-emerald-100'
-                      : 'text-slate-600 hover:bg-slate-50 hover:text-slate-950'
-                  }`}
-                  title={!sidebarOpen ? item.label : undefined}
-                >
-                  <Icon size={21} className="shrink-0" />
-                  {sidebarOpen && <span className="truncate">{item.label}</span>}
-                </Link>
-              )
-            })}
+                <div className="space-y-1">
+                  {section.items.map((item) => {
+                    const Icon = item.icon
+                    const active = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))
+
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        className={`group flex items-center gap-4 rounded-2xl px-4 py-3 text-sm font-black transition ${active ? 'bg-emerald-50 text-emerald-700 shadow-sm ring-1 ring-emerald-100' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-950'}`}
+                        title={!sidebarOpen ? item.label : undefined}
+                      >
+                        <Icon size={21} className="shrink-0" />
+                        {sidebarOpen && <span className="truncate">{item.label}</span>}
+                      </Link>
+                    )
+                  })}
+                </div>
+              </div>
+            ))}
           </nav>
 
           <div className="border-t border-slate-100 p-4">
@@ -185,10 +185,7 @@ export default function AppShell({ children, title, subtitle, action }: AppShell
               </div>
 
               {sidebarOpen && (
-                <button
-                  onClick={logout}
-                  className="mt-4 w-full rounded-2xl bg-slate-950 px-4 py-3 text-sm font-black text-white transition hover:bg-slate-800"
-                >
+                <button onClick={logout} className="mt-4 w-full rounded-2xl bg-slate-950 px-4 py-3 text-sm font-black text-white transition hover:bg-slate-800">
                   Déconnexion
                 </button>
               )}
@@ -201,10 +198,7 @@ export default function AppShell({ children, title, subtitle, action }: AppShell
         <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/90 backdrop-blur">
           <div className="flex items-center justify-between gap-4 px-5 py-5">
             <div className="flex min-w-0 items-center gap-4">
-              <button
-                onClick={() => setMobileMenuOpen(true)}
-                className="rounded-2xl border border-slate-200 bg-white p-3 text-slate-700 shadow-sm lg:hidden"
-              >
+              <button onClick={() => setMobileMenuOpen(true)} className="rounded-2xl border border-slate-200 bg-white p-3 text-slate-700 shadow-sm lg:hidden">
                 <Menu size={20} />
               </button>
 
