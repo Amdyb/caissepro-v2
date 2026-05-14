@@ -15,12 +15,13 @@ import {
   Gift,
   HandCoins,
   LayoutDashboard,
-  LinkIcon,
   Menu,
   Package,
   PackagePlus,
   ReceiptText,
+  RotateCcw,
   Settings,
+  Share2,
   ShoppingCart,
   Store,
   Truck,
@@ -37,6 +38,103 @@ type AppShellProps = {
   action?: ReactNode
 }
 
+type NavItem = {
+  label: string
+  href: string
+  icon: any
+}
+
+type NavSection = {
+  title: string
+  items: NavItem[]
+}
+
+const employeeNav: NavSection[] = [
+  {
+    title: 'Employé',
+    items: [
+      { label: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard },
+      { label: 'Vendre', href: '/pos', icon: ShoppingCart },
+      { label: 'Caisse', href: '/register-shifts', icon: CalendarClock },
+      { label: 'Clients', href: '/customers', icon: Users },
+      { label: 'Rapport du jour', href: '/reports', icon: ReceiptText },
+      { label: 'Partager ma boutique', href: '/storefront', icon: Share2 }
+    ]
+  }
+]
+
+const managerNav: NavSection[] = [
+  {
+    title: 'Ventes',
+    items: [
+      { label: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard },
+      { label: 'Vendre', href: '/pos', icon: ShoppingCart },
+      { label: 'Remboursements', href: '/refunds', icon: RotateCcw },
+      { label: 'Caisse', href: '/register-shifts', icon: CalendarClock },
+      { label: 'Fond de caisse', href: '/register-shifts', icon: Wallet }
+    ]
+  },
+  {
+    title: 'Gestion',
+    items: [
+      { label: 'Client Doit', href: '/debts', icon: HandCoins },
+      { label: 'Fournisseurs', href: '/suppliers', icon: Truck },
+      { label: 'Produits', href: '/products', icon: Package },
+      { label: 'Dépenses', href: '/expenses', icon: Wallet },
+      { label: 'Analytique', href: '/analytics', icon: BarChart3 },
+      { label: 'Rapport', href: '/reports', icon: ReceiptText },
+      { label: 'Employés', href: '/employees', icon: Users },
+      { label: 'Partager ma boutique', href: '/storefront', icon: Share2 }
+    ]
+  }
+]
+
+const adminNav: NavSection[] = [
+  {
+    title: 'Commerce',
+    items: [
+      { label: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard },
+      { label: 'Vendre', href: '/pos', icon: ShoppingCart },
+      { label: 'Remboursements', href: '/refunds', icon: RotateCcw },
+      { label: 'Caisse', href: '/register-shifts', icon: CalendarClock },
+      { label: 'Fond de caisse', href: '/register-shifts', icon: Wallet },
+      { label: 'Produits', href: '/products', icon: Package },
+      { label: 'Ventes', href: '/sales', icon: ReceiptText },
+      { label: 'Partager ma boutique', href: '/storefront', icon: Share2 }
+    ]
+  },
+  {
+    title: 'Clients & paiements',
+    items: [
+      { label: 'Clients', href: '/customers', icon: Users },
+      { label: 'Client Doit', href: '/debts', icon: HandCoins },
+      { label: 'Paiements', href: '/payment-links', icon: CreditCard },
+      { label: 'Rappels', href: '/automation/reminders', icon: BellRing },
+      { label: 'Fidélité & Parrainage', href: '/referrals', icon: Gift }
+    ]
+  },
+  {
+    title: 'Gestion admin',
+    items: [
+      { label: 'Fournisseurs', href: '/suppliers', icon: Truck },
+      { label: 'Achats', href: '/purchases', icon: PackagePlus },
+      { label: 'Dépenses', href: '/expenses', icon: Wallet },
+      { label: 'Analytique', href: '/analytics', icon: BarChart3 },
+      { label: 'Rapports', href: '/reports', icon: ReceiptText },
+      { label: 'Employés', href: '/employees', icon: Users },
+      { label: 'Multi-boutiques', href: '/branches', icon: Building2 },
+      { label: 'Paramètres', href: '/settings', icon: Settings }
+    ]
+  }
+]
+
+function getNavForRole(role: string) {
+  const normalized = role.toLowerCase()
+  if (normalized.includes('employee') || normalized.includes('employe') || normalized.includes('sales')) return employeeNav
+  if (normalized.includes('manager') || normalized.includes('gerant') || normalized.includes('gérant')) return managerNav
+  return adminNav
+}
+
 export default function AppShell({ children, title, subtitle, action }: AppShellProps) {
   const pathname = usePathname()
   const router = useRouter()
@@ -46,6 +144,8 @@ export default function AppShell({ children, title, subtitle, action }: AppShell
   const [businessName, setBusinessName] = useState('CaissePro')
   const [businessLogo, setBusinessLogo] = useState<string | null>(null)
   const [email, setEmail] = useState<string | null>(null)
+  const [role, setRole] = useState('admin')
+  const [businessType, setBusinessType] = useState('retail')
 
   useEffect(() => {
     async function loadBranding() {
@@ -56,16 +156,19 @@ export default function AppShell({ children, title, subtitle, action }: AppShell
 
       const { data: membership } = await supabase
         .from('business_members')
-        .select('business_id, businesses(name, logo_url)')
+        .select('business_id, role, businesses(name, logo_url, business_type)')
         .eq('user_id', userData.user.id)
         .limit(1)
         .single()
 
       const member: any = membership
 
+      setRole(member?.role || 'admin')
+
       if (member?.businesses) {
         setBusinessName(member.businesses.name || 'CaissePro')
         setBusinessLogo(member.businesses.logo_url || null)
+        setBusinessType(member.businesses.business_type || 'retail')
       }
     }
 
@@ -77,41 +180,7 @@ export default function AppShell({ children, title, subtitle, action }: AppShell
     router.push('/login')
   }
 
-  const navSections = [
-    {
-      title: 'Commerce',
-      items: [
-        { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-        { label: 'Caisse POS', href: '/pos', icon: ShoppingCart },
-        { label: 'Produits', href: '/products', icon: Package },
-        { label: 'Catégories', href: '/categories', icon: Boxes },
-        { label: 'Ventes', href: '/sales', icon: ReceiptText },
-        { label: 'Boutique en ligne', href: '/storefront', icon: Store }
-      ]
-    },
-    {
-      title: 'Clients & paiements',
-      items: [
-        { label: 'Clients', href: '/customers', icon: Users },
-        { label: 'Client Doit', href: '/debts', icon: HandCoins },
-        { label: 'Paiements', href: '/payment-links', icon: CreditCard },
-        { label: 'Fidélité & Parrainage', href: '/referrals', icon: Gift },
-        { label: 'Rappels', href: '/reminders', icon: BellRing }
-      ]
-    },
-    {
-      title: 'Gestion',
-      items: [
-        { label: 'Fournisseurs', href: '/suppliers', icon: Truck },
-        { label: 'Achats', href: '/purchases', icon: PackagePlus },
-        { label: 'Dépenses', href: '/expenses', icon: Wallet },
-        { label: 'Rapports', href: '/reports', icon: BarChart3 },
-        { label: 'Caisse jour', href: '/register-shifts', icon: CalendarClock },
-        { label: 'Multi-boutiques', href: '/branches', icon: Building2 },
-        { label: 'Paramètres', href: '/settings', icon: Settings }
-      ]
-    }
-  ]
+  const navSections = getNavForRole(role)
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-950">
@@ -129,6 +198,7 @@ export default function AppShell({ children, title, subtitle, action }: AppShell
                 <div className="min-w-0">
                   <h1 className="truncate text-xl font-black text-slate-950">CaissePro</h1>
                   <p className="truncate text-xs font-bold text-slate-500">{businessName}</p>
+                  <p className="mt-1 truncate text-[10px] font-black uppercase tracking-wide text-emerald-600">{role} • {businessType}</p>
                 </div>
               )}
             </div>
@@ -154,7 +224,7 @@ export default function AppShell({ children, title, subtitle, action }: AppShell
 
                     return (
                       <Link
-                        key={item.href}
+                        key={`${section.title}-${item.href}-${item.label}`}
                         href={item.href}
                         className={`group flex items-center gap-4 rounded-2xl px-4 py-3 text-sm font-black transition ${active ? 'bg-emerald-50 text-emerald-700 shadow-sm ring-1 ring-emerald-100' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-950'}`}
                         title={!sidebarOpen ? item.label : undefined}
