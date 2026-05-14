@@ -2,12 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@supabase/supabase-js'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+import { supabase } from '@/lib/supabaseClient'
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -65,19 +60,62 @@ export default function RegisterPage() {
     setMessage('')
     setLoading(true)
 
-    const { error } = await supabase.auth.verifyOtp({
+    const { data, error } = await supabase.auth.verifyOtp({
       email,
       token: otp,
       type: 'signup',
     })
 
-    setLoading(false)
-
-    if (error) {
+    if (error || !data.user) {
+      setLoading(false)
       setError('Code invalide ou expiré.')
       return
     }
 
+    const userId = data.user.id
+
+    const { data: existingMembership } = await supabase
+      .from('business_members')
+      .select('business_id')
+      .eq('user_id', userId)
+      .limit(1)
+      .maybeSingle()
+
+    if (!existingMembership) {
+      const { data: business, error: businessError } = await supabase
+        .from('businesses')
+        .insert({
+          name: businessName,
+          plan: 'free',
+          currency: 'CFA',
+        })
+        .select('id')
+        .single()
+
+      if (businessError || !business) {
+        setLoading(false)
+        setError(businessError?.message || 'Impossible de créer le commerce.')
+        return
+      }
+
+      const { error: memberError } = await supabase
+        .from('business_members')
+        .insert({
+          business_id: business.id,
+          user_id: userId,
+          full_name: fullName,
+          email,
+          role: 'admin',
+        })
+
+      if (memberError) {
+        setLoading(false)
+        setError(memberError.message)
+        return
+      }
+    }
+
+    setLoading(false)
     router.push('/dashboard')
   }
 
@@ -128,7 +166,6 @@ export default function RegisterPage() {
 
         {step === 'register' ? (
           <form onSubmit={handleRegister} className="space-y-4">
-
             <input
               className="w-full p-3 rounded-lg bg-zinc-800 border border-zinc-700"
               placeholder="Nom complet"
@@ -174,27 +211,26 @@ export default function RegisterPage() {
 
             <button
               disabled={loading}
-              className="w-full bg-green-500 hover:bg-green-600 text-black font-bold p-3 rounded-lg"
+              className="w-full bg-green-500 hover:bg-green-600 text-black font-bold p-3 rounded-lg disabled:opacity-60"
             >
               {loading ? 'Création...' : 'Créer un compte'}
             </button>
-
           </form>
         ) : (
           <form onSubmit={handleVerify} className="space-y-4">
-
             <input
               className="w-full p-4 rounded-lg bg-zinc-800 border border-zinc-700 text-center text-2xl tracking-widest"
               placeholder="123456"
               value={otp}
-              onChange={(e) => setOtp(e.target.value)}
+              onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
               maxLength={6}
+              inputMode="numeric"
               required
             />
 
             <button
               disabled={loading}
-              className="w-full bg-green-500 hover:bg-green-600 text-black font-bold p-3 rounded-lg"
+              className="w-full bg-green-500 hover:bg-green-600 text-black font-bold p-3 rounded-lg disabled:opacity-60"
             >
               {loading ? 'Vérification...' : 'Vérifier'}
             </button>
@@ -203,11 +239,10 @@ export default function RegisterPage() {
               type="button"
               onClick={resendCode}
               disabled={loading}
-              className="w-full text-green-400 text-sm"
+              className="w-full text-green-400 text-sm disabled:opacity-60"
             >
               Renvoyer le code
             </button>
-
           </form>
         )}
       </div>
