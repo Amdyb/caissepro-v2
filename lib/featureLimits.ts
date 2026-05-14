@@ -1,8 +1,10 @@
 import { supabase } from '@/lib/supabaseClient'
 
-export type PlanName = 'free' | 'starter' | 'business' | 'premium'
+export type PlanName = 'free' | 'starter' | 'business' | 'premium' | 'founder_premium'
 
-export const DEFAULT_LIMITS: Record<PlanName, Record<string, number | null>> = {
+type CorePlanName = 'free' | 'starter' | 'business' | 'premium'
+
+export const DEFAULT_LIMITS: Record<CorePlanName, Record<string, number | null>> = {
   free: {
     products: 10,
     employees: 1,
@@ -34,6 +36,21 @@ export const DEFAULT_LIMITS: Record<PlanName, Record<string, number | null>> = {
 }
 
 export async function getActivePlan(businessId: string): Promise<PlanName> {
+  const { data: business } = await supabase
+    .from('businesses')
+    .select('beta_access,beta_plan,beta_expires_at,founding_member')
+    .eq('id', businessId)
+    .maybeSingle()
+
+  if (business?.beta_access) {
+    const expiresAt = business.beta_expires_at ? new Date(business.beta_expires_at) : null
+    const stillActive = !expiresAt || expiresAt > new Date()
+
+    if (stillActive) {
+      return 'founder_premium'
+    }
+  }
+
   const { data } = await supabase
     .from('subscriptions')
     .select('plan,status')
@@ -49,25 +66,38 @@ export async function getActivePlan(businessId: string): Promise<PlanName> {
 export async function getFeatureLimit(businessId: string, featureKey: string) {
   const plan = await getActivePlan(businessId)
 
+  if (plan === 'founder_premium') {
+    return {
+      plan,
+      enabled: true,
+      limit: null,
+      betaAccess: true
+    }
+  }
+
+  const corePlan = (['free', 'starter', 'business', 'premium'].includes(plan) ? plan : 'free') as CorePlanName
+
   const { data } = await supabase
     .from('feature_limits')
     .select('limit_value,enabled')
-    .eq('plan', plan)
+    .eq('plan', corePlan)
     .eq('feature_key', featureKey)
     .maybeSingle()
 
   if (data) {
     return {
-      plan,
+      plan: corePlan,
       enabled: data.enabled,
-      limit: data.limit_value as number | null
+      limit: data.limit_value as number | null,
+      betaAccess: false
     }
   }
 
   return {
-    plan,
+    plan: corePlan,
     enabled: true,
-    limit: DEFAULT_LIMITS[plan]?.[featureKey] ?? null
+    limit: DEFAULT_LIMITS[corePlan]?.[featureKey] ?? null,
+    betaAccess: false
   }
 }
 
@@ -77,6 +107,15 @@ export async function canUseFeature(params: {
   currentUsage: number
 }) {
   const feature = await getFeatureLimit(params.businessId, params.featureKey)
+
+  if (feature.betaAccess) {
+    return {
+      allowed: true,
+      plan: feature.plan,
+      limit: null,
+      reason: 'founder_beta_unlocked'
+    }
+  }
 
   if (!feature.enabled) {
     return {
