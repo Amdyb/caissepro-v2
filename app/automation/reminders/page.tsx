@@ -2,7 +2,7 @@
 
 import AppShell from '@/components/AppShell'
 import { supabase } from '@/lib/supabaseClient'
-import { BellRing, CheckCircle, Home, MessageCircle, Plus, RefreshCcw, Users } from 'lucide-react'
+import { BellRing, CheckCircle, CreditCard, Home, MessageCircle, Plus, RefreshCcw, Users } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 
@@ -15,10 +15,15 @@ type Reminder = {
   message: string | null
   due_date: string | null
   status: string | null
+  payment_url: string | null
 }
 
 function cfa(value: number) {
   return `${value.toLocaleString('fr-FR')} CFA`
+}
+
+function paymentUrl(id: string) {
+  return `https://caissepro.app/payment-links?ref=${id}`
 }
 
 export default function AutomationRemindersPage() {
@@ -73,6 +78,40 @@ export default function AutomationRemindersPage() {
     setReminders((data || []) as Reminder[])
   }
 
+  async function createRowsWithPaymentLinks(rawRows: any[]) {
+    if (!businessId) return []
+
+    const finalRows = []
+
+    for (const row of rawRows) {
+      const { data: link } = await supabase
+        .from('payment_links')
+        .insert({
+          business_id: businessId,
+          reference_type: row.reminder_type,
+          reference_id: row.reference_id,
+          provider: 'manual',
+          amount: row.amount,
+          currency: 'XOF',
+          status: 'pending',
+          note: row.message
+        })
+        .select('id')
+        .single()
+
+      const payUrl = link?.id ? paymentUrl(link.id) : null
+
+      finalRows.push({
+        ...row,
+        payment_link_id: link?.id || null,
+        payment_url: payUrl,
+        message: payUrl ? `${row.message}\n\nPayer maintenant: ${payUrl}` : row.message
+      })
+    }
+
+    return finalRows
+  }
+
   async function insertReminderRows(rows: any[], successMessage: string, emptyMessage: string) {
     if (!businessId) return
     if (rows.length === 0) {
@@ -80,7 +119,9 @@ export default function AutomationRemindersPage() {
       return
     }
 
-    const { error } = await supabase.from('reminders').insert(rows)
+    const finalRows = await createRowsWithPaymentLinks(rows)
+    const { error } = await supabase.from('reminders').insert(finalRows)
+
     if (error) setMessage(error.message)
     else setMessage(successMessage)
 
@@ -117,7 +158,7 @@ export default function AutomationRemindersPage() {
       message: `Bonjour ${customer.full_name}, rappel: vous avez un solde impayé de ${cfa(Number(customer.debt_balance || 0))}. Merci de régler dès que possible.`
     }))
 
-    await insertReminderRows(rows, `${rows.length} rappel(s) Client Doit généré(s).`, 'Aucun client avec dette trouvé.')
+    await insertReminderRows(rows, `${rows.length} rappel(s) Client Doit généré(s) avec lien de paiement.`, 'Aucun client avec dette trouvé.')
     setLoading(false)
   }
 
@@ -150,7 +191,7 @@ export default function AutomationRemindersPage() {
       message: `Bonjour ${rent.tenants?.full_name || ''}, rappel: votre loyer de ${cfa(Number(rent.amount || 0))}${rent.properties?.name ? ` pour ${rent.properties.name}` : ''} est dû${rent.due_date ? ` le ${rent.due_date}` : ''}. Merci.`
     }))
 
-    await insertReminderRows(rows, `${rows.length} rappel(s) loyer généré(s).`, 'Aucun loyer impayé trouvé.')
+    await insertReminderRows(rows, `${rows.length} rappel(s) loyer généré(s) avec lien de paiement.`, 'Aucun loyer impayé trouvé.')
     setLoading(false)
   }
 
@@ -183,7 +224,7 @@ export default function AutomationRemindersPage() {
       message: `Bonjour ${item.tontine_participants?.full_name || ''}, rappel tontine: votre cotisation de ${cfa(Number(item.amount || 0))} pour ${item.tontine_groups?.name || 'la tontine'} est due${item.due_date ? ` le ${item.due_date}` : ''}. Merci.`
     }))
 
-    await insertReminderRows(rows, `${rows.length} rappel(s) tontine généré(s).`, 'Aucune cotisation tontine impayée trouvée.')
+    await insertReminderRows(rows, `${rows.length} rappel(s) tontine généré(s) avec lien de paiement.`, 'Aucune cotisation tontine impayée trouvée.')
     setLoading(false)
   }
 
@@ -212,7 +253,7 @@ export default function AutomationRemindersPage() {
   }
 
   return (
-    <AppShell title="Automatisation rappels" subtitle="File de relance WhatsApp pour dettes, loyers et tontines.">
+    <AppShell title="Automatisation rappels" subtitle="Relances WhatsApp avec liens de paiement.">
       <div className="mx-auto max-w-[1300px]">
         {message && <div className="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-bold text-emerald-700">{message}</div>}
 
@@ -220,7 +261,7 @@ export default function AutomationRemindersPage() {
           <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"><BellRing className="text-emerald-600" /><p className="mt-5 text-sm font-bold text-slate-500">Total</p><p className="mt-2 text-3xl font-black text-slate-950">{stats.total}</p></div>
           <div className="rounded-3xl border border-amber-200 bg-white p-6 shadow-sm"><BellRing className="text-amber-600" /><p className="mt-5 text-sm font-bold text-slate-500">En attente</p><p className="mt-2 text-3xl font-black text-amber-600">{stats.pending}</p></div>
           <div className="rounded-3xl border border-emerald-200 bg-white p-6 shadow-sm"><CheckCircle className="text-emerald-600" /><p className="mt-5 text-sm font-bold text-slate-500">Envoyés</p><p className="mt-2 text-3xl font-black text-emerald-600">{stats.sent}</p></div>
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"><BellRing className="text-slate-700" /><p className="mt-5 text-sm font-bold text-slate-500">Montant</p><p className="mt-2 text-2xl font-black text-slate-950">{cfa(stats.amount)}</p></div>
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"><CreditCard className="text-slate-700" /><p className="mt-5 text-sm font-bold text-slate-500">Montant</p><p className="mt-2 text-2xl font-black text-slate-950">{cfa(stats.amount)}</p></div>
         </div>
 
         <div className="mb-8 flex flex-wrap gap-3">
@@ -239,16 +280,17 @@ export default function AutomationRemindersPage() {
                   <h3 className="mt-3 text-xl font-black text-slate-950">{reminder.customer_name || 'Client'}</h3>
                   <p className="mt-1 text-sm font-semibold text-slate-500">{reminder.customer_phone || 'Sans téléphone'} • {reminder.due_date || 'Sans date'}</p>
                   <p className="mt-2 text-lg font-black text-red-600">{cfa(Number(reminder.amount || 0))}</p>
-                  <p className="mt-3 rounded-2xl bg-slate-50 p-3 text-sm font-semibold text-slate-600">{reminder.message}</p>
+                  {reminder.payment_url && <p className="mt-2 text-sm font-black text-emerald-700">Lien paiement attaché</p>}
+                  <p className="mt-3 whitespace-pre-line rounded-2xl bg-slate-50 p-3 text-sm font-semibold text-slate-600">{reminder.message}</p>
                 </div>
                 <div className="flex flex-wrap gap-3">
+                  {reminder.payment_url && <a href={reminder.payment_url} className="inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-black text-white"><CreditCard size={18}/>Paiement</a>}
                   <button onClick={() => openWhatsApp(reminder)} className="inline-flex items-center gap-2 rounded-2xl bg-green-600 px-5 py-3 text-sm font-black text-white hover:bg-green-700"><MessageCircle size={18}/>WhatsApp</button>
                   <button onClick={() => markSent(reminder.id)} className="rounded-2xl bg-emerald-50 px-5 py-3 text-sm font-black text-emerald-700">Marquer envoyé</button>
                 </div>
               </div>
             </div>
           ))}
-
           {reminders.length === 0 && <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-12 text-center"><BellRing className="mx-auto text-slate-300" size={54}/><h3 className="mt-4 text-2xl font-black text-slate-950">Aucun rappel</h3><p className="mt-2 text-sm font-semibold text-slate-500">Générez des rappels pour commencer.</p></div>}
         </div>
       </div>
