@@ -23,7 +23,7 @@ function cfa(value: number) {
 }
 
 function paymentUrl(id: string) {
-  return `https://caissepro.app/payment-links?ref=${id}`
+  return `https://caissepro.app/pay/${id}`
 }
 
 export default function AutomationRemindersPage() {
@@ -80,7 +80,6 @@ export default function AutomationRemindersPage() {
 
   async function createRowsWithPaymentLinks(rawRows: any[]) {
     if (!businessId) return []
-
     const finalRows = []
 
     for (const row of rawRows) {
@@ -280,11 +279,11 @@ export default function AutomationRemindersPage() {
                   <h3 className="mt-3 text-xl font-black text-slate-950">{reminder.customer_name || 'Client'}</h3>
                   <p className="mt-1 text-sm font-semibold text-slate-500">{reminder.customer_phone || 'Sans téléphone'} • {reminder.due_date || 'Sans date'}</p>
                   <p className="mt-2 text-lg font-black text-red-600">{cfa(Number(reminder.amount || 0))}</p>
-                  {reminder.payment_url && <p className="mt-2 text-sm font-black text-emerald-700">Lien paiement attaché</p>}
+                  {reminder.payment_url && <p className="mt-2 text-sm font-black text-emerald-700">Lien paiement public attaché</p>}
                   <p className="mt-3 whitespace-pre-line rounded-2xl bg-slate-50 p-3 text-sm font-semibold text-slate-600">{reminder.message}</p>
                 </div>
                 <div className="flex flex-wrap gap-3">
-                  {reminder.payment_url && <a href={reminder.payment_url} className="inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-black text-white"><CreditCard size={18}/>Paiement</a>}
+                  {reminder.payment_url && <a href={reminder.payment_url} target="_blank" className="inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-black text-white"><CreditCard size={18}/>Paiement</a>}
                   <button onClick={() => openWhatsApp(reminder)} className="inline-flex items-center gap-2 rounded-2xl bg-green-600 px-5 py-3 text-sm font-black text-white hover:bg-green-700"><MessageCircle size={18}/>WhatsApp</button>
                   <button onClick={() => markSent(reminder.id)} className="rounded-2xl bg-emerald-50 px-5 py-3 text-sm font-black text-emerald-700">Marquer envoyé</button>
                 </div>
