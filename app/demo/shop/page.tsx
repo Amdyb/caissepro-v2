@@ -5,12 +5,12 @@ import { ArrowLeft, MessageCircle, Minus, Plus, ShoppingCart, Sparkles, Star } f
 import { useMemo, useState } from 'react'
 
 const products = [
-  { id: '1', name: 'Robe Wax Élégante', category: 'Fashion', price: 18000, image: 'from-pink-500 via-orange-400 to-yellow-300', accent: 'Mode premium' },
-  { id: '2', name: 'Écouteurs Bluetooth Pro', category: 'Électronique', price: 12500, image: 'from-sky-500 via-indigo-500 to-slate-900', accent: 'Son HD' },
-  { id: '3', name: 'Pack Beauté Karité', category: 'Beauty', price: 9000, image: 'from-emerald-500 via-lime-300 to-amber-200', accent: 'Beauté naturelle' },
-  { id: '4', name: 'Menu Poulet Yassa', category: 'Restauration', price: 3500, image: 'from-amber-500 via-orange-500 to-red-600', accent: 'Plat signature' },
-  { id: '5', name: 'Sac Cuir Premium', category: 'Fashion', price: 22000, image: 'from-stone-900 via-amber-800 to-yellow-500', accent: 'Luxury' },
-  { id: '6', name: 'Smart Watch Dakar', category: 'Électronique', price: 30000, image: 'from-slate-950 via-emerald-700 to-cyan-300', accent: 'Tech moderne' }
+  { id: '1', name: 'Robe Wax Élégante', category: 'Fashion', price: 18000, image: 'https://images.unsplash.com/photo-1496747611176-843222e1e57c?q=80&w=1200&auto=format&fit=crop', accent: 'Mode premium' },
+  { id: '2', name: 'Écouteurs Bluetooth Pro', category: 'Électronique', price: 12500, image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=1200&auto=format&fit=crop', accent: 'Son HD' },
+  { id: '3', name: 'Pack Beauté Karité', category: 'Beauty', price: 9000, image: 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?q=80&w=1200&auto=format&fit=crop', accent: 'Beauté naturelle' },
+  { id: '4', name: 'Menu Poulet Yassa', category: 'Restauration', price: 3500, image: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=1200&auto=format&fit=crop', accent: 'Plat signature' },
+  { id: '5', name: 'Sac Cuir Premium', category: 'Fashion', price: 22000, image: 'https://images.unsplash.com/photo-1590874103328-eac38a683ce7?q=80&w=1200&auto=format&fit=crop', accent: 'Luxury' },
+  { id: '6', name: 'Smart Watch Dakar', category: 'Électronique', price: 30000, image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=1200&auto=format&fit=crop', accent: 'Tech moderne' }
 ]
 
 function cfa(value: number) {
@@ -43,8 +43,8 @@ export default function DemoShopPage() {
       </header>
 
       <section className="relative overflow-hidden bg-slate-950">
-        <img src="/demo/awa-market-banner.svg" className="absolute inset-0 h-full w-full object-cover opacity-80" alt="Awa Market banner" />
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-slate-950/55 to-transparent" />
+        <img src="https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=1800&auto=format&fit=crop" className="absolute inset-0 h-full w-full object-cover opacity-55" alt="Premium store" />
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/95 via-slate-950/70 to-emerald-950/35" />
         <div className="relative mx-auto max-w-7xl px-5 py-24 text-white">
           <div className="max-w-3xl">
             <div className="mb-5 inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-2 text-sm font-black backdrop-blur"><Sparkles size={16}/>Boutique demo sophistiquée</div>
@@ -69,12 +69,10 @@ export default function DemoShopPage() {
           <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
             {filtered.map((product) => (
               <div key={product.id} className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-2xl">
-                <div className={`relative flex h-64 items-center justify-center bg-gradient-to-br ${product.image}`}>
-                  <div className="absolute inset-0 bg-black/10" />
-                  <div className="relative rounded-[2rem] bg-white/15 px-8 py-6 text-center text-white backdrop-blur">
-                    <p className="text-sm font-black uppercase tracking-widest text-amber-200">{product.accent}</p>
-                    <p className="mt-2 text-4xl font-black">{product.category}</p>
-                  </div>
+                <div className="relative h-72 overflow-hidden">
+                  <img src={product.image} alt={product.name} className="h-full w-full object-cover transition duration-500 hover:scale-105" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent" />
+                  <span className="absolute left-4 top-4 rounded-full bg-white/90 px-3 py-1 text-xs font-black text-slate-900">{product.accent}</span>
                 </div>
                 <div className="p-5">
                   <p className="text-xs font-black uppercase tracking-wide text-emerald-700">{product.category}</p>
