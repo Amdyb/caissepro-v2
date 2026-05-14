@@ -2,7 +2,7 @@
 
 import AppShell from '@/components/AppShell'
 import { supabase } from '@/lib/supabaseClient'
-import { BellRing, CheckCircle, MessageCircle, Plus, RefreshCcw } from 'lucide-react'
+import { BellRing, CheckCircle, Home, MessageCircle, Plus, RefreshCcw, Users } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 
@@ -73,12 +73,26 @@ export default function AutomationRemindersPage() {
     setReminders((data || []) as Reminder[])
   }
 
+  async function insertReminderRows(rows: any[], successMessage: string, emptyMessage: string) {
+    if (!businessId) return
+    if (rows.length === 0) {
+      setMessage(emptyMessage)
+      return
+    }
+
+    const { error } = await supabase.from('reminders').insert(rows)
+    if (error) setMessage(error.message)
+    else setMessage(successMessage)
+
+    await loadReminders(businessId)
+  }
+
   async function generateDebtReminders() {
     if (!businessId) return
     setLoading(true)
     setMessage('')
 
-    const { data: customers, error } = await supabase
+    const { data, error } = await supabase
       .from('customers')
       .select('id, full_name, phone, debt_balance')
       .eq('business_id', businessId)
@@ -90,27 +104,86 @@ export default function AutomationRemindersPage() {
       return
     }
 
-    const rows = (customers || []).map((customer: any) => ({
+    const today = new Date().toISOString().slice(0, 10)
+    const rows = (data || []).map((customer: any) => ({
       business_id: businessId,
       reminder_type: 'debt',
       reference_id: customer.id,
       customer_name: customer.full_name,
       customer_phone: customer.phone,
       amount: Number(customer.debt_balance || 0),
-      due_date: new Date().toISOString().slice(0, 10),
+      due_date: today,
       status: 'pending',
       message: `Bonjour ${customer.full_name}, rappel: vous avez un solde impayé de ${cfa(Number(customer.debt_balance || 0))}. Merci de régler dès que possible.`
     }))
 
-    if (rows.length > 0) {
-      const { error: insertError } = await supabase.from('reminders').insert(rows)
-      if (insertError) setMessage(insertError.message)
-      else setMessage(`${rows.length} rappel(s) Client Doit généré(s).`)
-    } else {
-      setMessage('Aucun client avec dette trouvé.')
+    await insertReminderRows(rows, `${rows.length} rappel(s) Client Doit généré(s).`, 'Aucun client avec dette trouvé.')
+    setLoading(false)
+  }
+
+  async function generateRentReminders() {
+    if (!businessId) return
+    setLoading(true)
+    setMessage('')
+
+    const { data, error } = await supabase
+      .from('rent_payments')
+      .select('id, amount, due_date, status, tenants(full_name, phone), properties(name)')
+      .eq('business_id', businessId)
+      .neq('status', 'paid')
+
+    if (error) {
+      setMessage(error.message)
+      setLoading(false)
+      return
     }
 
-    await loadReminders(businessId)
+    const rows = (data || []).map((rent: any) => ({
+      business_id: businessId,
+      reminder_type: 'rent',
+      reference_id: rent.id,
+      customer_name: rent.tenants?.full_name || 'Locataire',
+      customer_phone: rent.tenants?.phone || null,
+      amount: Number(rent.amount || 0),
+      due_date: rent.due_date || new Date().toISOString().slice(0, 10),
+      status: 'pending',
+      message: `Bonjour ${rent.tenants?.full_name || ''}, rappel: votre loyer de ${cfa(Number(rent.amount || 0))}${rent.properties?.name ? ` pour ${rent.properties.name}` : ''} est dû${rent.due_date ? ` le ${rent.due_date}` : ''}. Merci.`
+    }))
+
+    await insertReminderRows(rows, `${rows.length} rappel(s) loyer généré(s).`, 'Aucun loyer impayé trouvé.')
+    setLoading(false)
+  }
+
+  async function generateTontineReminders() {
+    if (!businessId) return
+    setLoading(true)
+    setMessage('')
+
+    const { data, error } = await supabase
+      .from('tontine_contributions')
+      .select('id, amount, due_date, status, tontine_participants(full_name, phone), tontine_groups(name)')
+      .eq('business_id', businessId)
+      .neq('status', 'paid')
+
+    if (error) {
+      setMessage(error.message)
+      setLoading(false)
+      return
+    }
+
+    const rows = (data || []).map((item: any) => ({
+      business_id: businessId,
+      reminder_type: 'tontine',
+      reference_id: item.id,
+      customer_name: item.tontine_participants?.full_name || 'Participant',
+      customer_phone: item.tontine_participants?.phone || null,
+      amount: Number(item.amount || 0),
+      due_date: item.due_date || new Date().toISOString().slice(0, 10),
+      status: 'pending',
+      message: `Bonjour ${item.tontine_participants?.full_name || ''}, rappel tontine: votre cotisation de ${cfa(Number(item.amount || 0))} pour ${item.tontine_groups?.name || 'la tontine'} est due${item.due_date ? ` le ${item.due_date}` : ''}. Merci.`
+    }))
+
+    await insertReminderRows(rows, `${rows.length} rappel(s) tontine généré(s).`, 'Aucune cotisation tontine impayée trouvée.')
     setLoading(false)
   }
 
@@ -151,7 +224,9 @@ export default function AutomationRemindersPage() {
         </div>
 
         <div className="mb-8 flex flex-wrap gap-3">
-          <button onClick={generateDebtReminders} className="inline-flex items-center gap-2 rounded-2xl bg-emerald-600 px-5 py-4 text-sm font-black text-white hover:bg-emerald-700"><Plus size={18}/>Générer Client Doit</button>
+          <button onClick={generateDebtReminders} className="inline-flex items-center gap-2 rounded-2xl bg-emerald-600 px-5 py-4 text-sm font-black text-white hover:bg-emerald-700"><Plus size={18}/>Client Doit</button>
+          <button onClick={generateRentReminders} className="inline-flex items-center gap-2 rounded-2xl bg-sky-600 px-5 py-4 text-sm font-black text-white hover:bg-sky-700"><Home size={18}/>Loyers</button>
+          <button onClick={generateTontineReminders} className="inline-flex items-center gap-2 rounded-2xl bg-amber-500 px-5 py-4 text-sm font-black text-white hover:bg-amber-600"><Users size={18}/>Tontines</button>
           <button onClick={() => businessId && loadReminders(businessId)} className="inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-5 py-4 text-sm font-black text-white hover:bg-slate-800"><RefreshCcw size={18}/>Actualiser</button>
         </div>
 
