@@ -2,8 +2,9 @@
 
 import AppShell from '@/components/AppShell'
 import { supabase } from '@/lib/supabaseClient'
-import { Globe, ImageIcon, Palette, Save, Store } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { Copy, ExternalLink, Globe, ImageIcon, Palette, QrCode, Save, Share2, Store } from 'lucide-react'
+import Link from 'next/link'
+import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 export default function StorePage() {
@@ -23,6 +24,12 @@ export default function StorePage() {
     whatsapp_number: '',
     online_store_enabled: false
   })
+
+  const cleanSlug = form.slug || 'votre-boutique'
+  const shopUrl = useMemo(() => `https://caissepro.app/shop/${cleanSlug}`, [cleanSlug])
+  const qrCodeUrl = useMemo(() => {
+    return `https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(shopUrl)}`
+  }, [shopUrl])
 
   useEffect(() => {
     async function init() {
@@ -78,10 +85,12 @@ export default function StorePage() {
     setSaving(true)
     setMessage('')
 
+    const finalSlug = form.slug.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+
     const { error } = await supabase
       .from('businesses')
       .update({
-        slug: form.slug.toLowerCase().replace(/\s+/g, '-'),
+        slug: finalSlug,
         banner_url: form.banner_url,
         logo_url: form.logo_url,
         primary_color: form.primary_color,
@@ -96,8 +105,38 @@ export default function StorePage() {
       return
     }
 
+    setForm({ ...form, slug: finalSlug })
     setMessage('Boutique en ligne mise à jour.')
     setSaving(false)
+  }
+
+  async function copyLink() {
+    await navigator.clipboard.writeText(shopUrl)
+    setMessage('Lien boutique copié.')
+  }
+
+  async function shareStore() {
+    if (navigator.share) {
+      await navigator.share({
+        title: form.name || 'Ma boutique CaissePro',
+        text: `Découvrez ma boutique ${form.name}`,
+        url: shopUrl
+      })
+      return
+    }
+
+    await copyLink()
+  }
+
+  async function downloadQrCode() {
+    const response = await fetch(qrCodeUrl)
+    const blob = await response.blob()
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `${cleanSlug}-qr-code.png`
+    link.click()
+    URL.revokeObjectURL(url)
   }
 
   if (loading) {
@@ -112,6 +151,25 @@ export default function StorePage() {
     <AppShell
       title="Boutique en ligne"
       subtitle="Personnalisez votre vitrine publique."
+      action={
+        <div className="hidden gap-3 md:flex">
+          <button
+            onClick={copyLink}
+            className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-700 shadow-sm hover:bg-slate-50"
+          >
+            <Copy size={18} />
+            Copier lien
+          </button>
+          <Link
+            href={`/shop/${form.slug || ''}`}
+            target="_blank"
+            className="inline-flex items-center gap-2 rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700"
+          >
+            <ExternalLink size={18} />
+            Voir boutique
+          </Link>
+        </div>
+      }
     >
       <div className="mx-auto max-w-5xl">
         {message && (
@@ -119,6 +177,38 @@ export default function StorePage() {
             {message}
           </div>
         )}
+
+        <div className="mb-6 grid gap-6 lg:grid-cols-[1fr_300px]">
+          <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+            <p className="text-sm font-black text-slate-500">Votre lien public</p>
+            <div className="mt-3 flex flex-col gap-3 md:flex-row md:items-center">
+              <div className="flex-1 rounded-2xl bg-slate-50 px-4 py-4 text-sm font-black text-slate-900">
+                {shopUrl}
+              </div>
+              <button
+                onClick={shareStore}
+                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 py-4 text-sm font-black text-white hover:bg-slate-800"
+              >
+                <Share2 size={18} />
+                Partager
+              </button>
+            </div>
+          </div>
+
+          <div className="rounded-3xl border border-slate-200 bg-white p-5 text-center shadow-sm">
+            <div className="mx-auto mb-3 inline-flex rounded-2xl bg-emerald-50 p-3 text-emerald-700">
+              <QrCode size={24} />
+            </div>
+            <p className="text-sm font-black text-slate-500">QR code boutique</p>
+            <img src={qrCodeUrl} alt="QR code boutique" className="mx-auto mt-4 h-44 w-44 rounded-2xl border border-slate-200 bg-white p-2" />
+            <button
+              onClick={downloadQrCode}
+              className="mt-4 w-full rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-black text-white hover:bg-emerald-700"
+            >
+              Télécharger QR code
+            </button>
+          </div>
+        </div>
 
         <div className="mb-8 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
           <div
