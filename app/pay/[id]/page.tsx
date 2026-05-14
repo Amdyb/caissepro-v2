@@ -1,9 +1,17 @@
 'use client'
 
 import { supabase } from '@/lib/supabaseClient'
-import { CheckCircle, CreditCard, MessageCircle, ShieldCheck, Store } from 'lucide-react'
+import { CheckCircle, CreditCard, MessageCircle, ShieldCheck, Smartphone, Store } from 'lucide-react'
 import { useParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
+
+type PaymentSettings = {
+  wave_number: string | null
+  orange_money_number: string | null
+  card_payment_url: string | null
+  default_provider: string | null
+  payment_instructions: string | null
+}
 
 type PaymentLink = {
   id: string
@@ -15,7 +23,6 @@ type PaymentLink = {
   status: string | null
   payment_url: string | null
   note: string | null
-  created_at: string
   businesses?: {
     name: string | null
     logo_url: string | null
@@ -41,8 +48,8 @@ function reasonLabel(value: string | null) {
 export default function PublicPaymentPage() {
   const params = useParams<{ id: string }>()
   const id = params.id
-
   const [payment, setPayment] = useState<PaymentLink | null>(null)
+  const [settings, setSettings] = useState<PaymentSettings | null>(null)
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState('')
 
@@ -61,6 +68,14 @@ export default function PublicPaymentPage() {
       }
 
       setPayment(data as unknown as PaymentLink)
+
+      const { data: paymentSettings } = await supabase
+        .from('payment_settings')
+        .select('wave_number, orange_money_number, card_payment_url, default_provider, payment_instructions')
+        .eq('business_id', data.business_id)
+        .maybeSingle()
+
+      setSettings((paymentSettings || null) as PaymentSettings | null)
       setLoading(false)
     }
 
@@ -69,7 +84,6 @@ export default function PublicPaymentPage() {
 
   function confirmWhatsApp() {
     if (!payment) return
-
     const business = payment.businesses
     const phone = (business?.whatsapp_number || business?.business_phone || '').replace(/\D/g, '')
     const text = `Bonjour ${business?.name || ''}, je confirme le paiement de ${cfa(Number(payment.amount || 0))} pour ${reasonLabel(payment.reference_type)}. Référence: ${payment.id.slice(0, 8)}.`
@@ -96,6 +110,7 @@ export default function PublicPaymentPage() {
   const business = payment.businesses
   const primary = business?.primary_color || '#16a34a'
   const isPaid = payment.status === 'paid'
+  const cardUrl = payment.payment_url || settings?.card_payment_url || ''
 
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-8 text-slate-950">
@@ -128,38 +143,28 @@ export default function PublicPaymentPage() {
                   <ShieldCheck className="mt-1 text-amber-600" />
                   <div>
                     <h2 className="font-black text-slate-950">Instructions de paiement</h2>
-                    <p className="mt-2 text-sm font-semibold text-slate-600">
-                      Payez avec la méthode indiquée par le vendeur. Ensuite, envoyez une confirmation WhatsApp avec la référence ci-dessous.
+                    <p className="mt-2 whitespace-pre-line text-sm font-semibold text-slate-600">
+                      {settings?.payment_instructions || 'Payez avec Wave, Orange Money ou la méthode indiquée. Ensuite, confirmez sur WhatsApp avec votre référence.'}
                     </p>
                   </div>
                 </div>
               </div>
             )}
 
+            <div className="mb-5 grid gap-3">
+              {settings?.wave_number && <div className="flex items-center justify-between rounded-2xl bg-sky-50 p-4 text-sm font-bold text-sky-700"><span className="inline-flex items-center gap-2"><Smartphone size={18}/>Wave</span><span>{settings.wave_number}</span></div>}
+              {settings?.orange_money_number && <div className="flex items-center justify-between rounded-2xl bg-orange-50 p-4 text-sm font-bold text-orange-700"><span className="inline-flex items-center gap-2"><Smartphone size={18}/>Orange Money</span><span>{settings.orange_money_number}</span></div>}
+            </div>
+
             <div className="space-y-3 text-sm font-semibold text-slate-600">
               <div className="flex justify-between rounded-2xl bg-slate-50 p-4"><span>Référence</span><span className="font-black text-slate-950">#{payment.id.slice(0, 8)}</span></div>
               <div className="flex justify-between rounded-2xl bg-slate-50 p-4"><span>Statut</span><span className="font-black text-slate-950">{payment.status || 'pending'}</span></div>
-              <div className="flex justify-between rounded-2xl bg-slate-50 p-4"><span>Méthode</span><span className="font-black text-slate-950">{payment.provider || 'manual'}</span></div>
+              <div className="flex justify-between rounded-2xl bg-slate-50 p-4"><span>Méthode</span><span className="font-black text-slate-950">{settings?.default_provider || payment.provider || 'manual'}</span></div>
             </div>
 
-            {payment.note && (
-              <div className="mt-5 rounded-2xl bg-slate-50 p-4 text-sm font-semibold text-slate-600">
-                {payment.note}
-              </div>
-            )}
-
             <div className="mt-7 space-y-3">
-              {payment.payment_url && (
-                <a href={payment.payment_url} target="_blank" className="flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-sm font-black text-white" style={{ backgroundColor: primary }}>
-                  <CreditCard size={18} />
-                  Payer maintenant
-                </a>
-              )}
-
-              <button onClick={confirmWhatsApp} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-green-600 py-4 text-sm font-black text-white hover:bg-green-700">
-                <MessageCircle size={18} />
-                Confirmer sur WhatsApp
-              </button>
+              {cardUrl && <a href={cardUrl} target="_blank" className="flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-sm font-black text-white" style={{ backgroundColor: primary }}><CreditCard size={18} />Payer par lien/carte</a>}
+              <button onClick={confirmWhatsApp} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-green-600 py-4 text-sm font-black text-white hover:bg-green-700"><MessageCircle size={18} />Confirmer sur WhatsApp</button>
             </div>
           </div>
         </div>
