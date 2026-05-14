@@ -2,7 +2,7 @@
 
 import AppShell from '@/components/AppShell'
 import { supabase } from '@/lib/supabaseClient'
-import { CalendarClock, Crown, HandCoins, MessageCircle, Plus, Search, Users } from 'lucide-react'
+import { CalendarClock, Crown, HandCoins, MessageCircle, Plus, Search, Shuffle, ToggleLeft, ToggleRight, Users } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 
@@ -13,6 +13,8 @@ type TontineGroup = {
   frequency: string | null
   current_round: number | null
   status: string | null
+  random_draw_enabled: boolean | null
+  draw_requires_paid: boolean | null
 }
 
 type Participant = {
@@ -148,6 +150,8 @@ export default function TontinesPage() {
       contribution_amount: Number(groupForm.contribution_amount || 0),
       frequency: groupForm.frequency,
       start_date: groupForm.start_date || null,
+      random_draw_enabled: false,
+      draw_requires_paid: true,
       status: 'active'
     })
 
@@ -240,6 +244,55 @@ export default function TontinesPage() {
     setMessage('Gagnant enregistré.')
   }
 
+  async function toggleRandomDraw(group: TontineGroup) {
+    if (!businessId) return
+    const { error } = await supabase
+      .from('tontine_groups')
+      .update({ random_draw_enabled: !group.random_draw_enabled })
+      .eq('id', group.id)
+
+    if (error) setMessage(error.message)
+    else await loadData(businessId)
+  }
+
+  async function togglePaidRequirement(group: TontineGroup) {
+    if (!businessId) return
+    const { error } = await supabase
+      .from('tontine_groups')
+      .update({ draw_requires_paid: !group.draw_requires_paid })
+      .eq('id', group.id)
+
+    if (error) setMessage(error.message)
+    else await loadData(businessId)
+  }
+
+  async function runRandomDraw(group: TontineGroup) {
+    if (!group.random_draw_enabled) {
+      setMessage('Le tirage aléatoire est désactivé pour ce groupe.')
+      return
+    }
+
+    let eligible = participants.filter((p) => p.group_id === group.id && !p.has_won && (p.status || 'active') === 'active')
+
+    if (group.draw_requires_paid) {
+      const paidIds = contributions
+        .filter((c) => c.group_id === group.id && c.round_number === (group.current_round || 1) && c.status === 'paid')
+        .map((c) => c.participant_id)
+      eligible = eligible.filter((p) => paidIds.includes(p.id))
+    }
+
+    if (eligible.length === 0) {
+      setMessage('Aucun participant éligible pour le tirage.')
+      return
+    }
+
+    const winner = eligible[Math.floor(Math.random() * eligible.length)]
+    const confirmed = confirm(`Gagnant proposé: ${winner.full_name}. Confirmer ce gagnant ?`)
+    if (!confirmed) return
+
+    await markWinner(winner.id, group.id)
+  }
+
   function sendReminder(contribution: Contribution) {
     const phone = (contribution.tontine_participants?.phone || '').replace(/\D/g, '')
     const text = `Bonjour ${contribution.tontine_participants?.full_name || ''}, rappel tontine: votre cotisation de ${cfa(Number(contribution.amount || 0))} pour ${contribution.tontine_groups?.name || 'la tontine'} est due le ${contribution.due_date || ''}. Merci.`
@@ -285,6 +338,33 @@ export default function TontinesPage() {
               <button disabled={saving} className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 py-4 text-sm font-black text-white"><Plus size={18}/>Ajouter participant</button>
             </div>
           </form>
+        </div>
+
+        <div className="mt-8 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <h3 className="mb-5 text-xl font-black text-slate-950">Paramètres tirage aléatoire</h3>
+          <div className="grid gap-4 lg:grid-cols-2">
+            {groups.map((group) => (
+              <div key={group.id} className="rounded-3xl border border-slate-200 p-5">
+                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                  <div>
+                    <p className="text-lg font-black text-slate-950">{group.name}</p>
+                    <p className="mt-1 text-sm font-semibold text-slate-500">Tour {group.current_round || 1} • {group.random_draw_enabled ? 'Tirage activé' : 'Tirage désactivé'}</p>
+                  </div>
+                  <div className="flex flex-wrap gap-3">
+                    <button onClick={() => toggleRandomDraw(group)} className="inline-flex items-center gap-2 rounded-2xl bg-slate-100 px-4 py-3 text-sm font-black text-slate-700">
+                      {group.random_draw_enabled ? <ToggleRight size={18}/> : <ToggleLeft size={18}/>} Tirage
+                    </button>
+                    <button onClick={() => togglePaidRequirement(group)} className="rounded-2xl bg-slate-100 px-4 py-3 text-sm font-black text-slate-700">
+                      {group.draw_requires_paid ? 'Payé requis' : 'Tous éligibles'}
+                    </button>
+                    <button onClick={() => runRandomDraw(group)} className="inline-flex items-center gap-2 rounded-2xl bg-amber-500 px-4 py-3 text-sm font-black text-white">
+                      <Shuffle size={18}/> Lancer
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
         <div className="mt-8 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
