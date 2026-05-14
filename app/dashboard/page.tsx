@@ -2,24 +2,12 @@
 
 import AppShell from '@/components/AppShell'
 import FreePlanAd from '@/components/FreePlanAd'
+import { getBusinessTemplate } from '@/lib/businessTemplates'
+import { getDashboardCards } from '@/lib/dashboardCards'
 import { supabase } from '@/lib/supabaseClient'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
-import {
-  BarChart3,
-  CalendarClock,
-  HandCoins,
-  LinkIcon,
-  Package,
-  PackagePlus,
-  ReceiptText,
-  Settings,
-  ShoppingCart,
-  Truck,
-  Users,
-  Wallet
-} from 'lucide-react'
 
 type Sale = { id: string; total: number | null; created_at: string }
 type Product = { id: string; name: string; stock: number | null }
@@ -44,23 +32,9 @@ export default function DashboardPage() {
   const [products, setProducts] = useState<Product[]>([])
   const [customers, setCustomers] = useState<Customer[]>([])
   const [plan, setPlan] = useState('free')
+  const [businessType, setBusinessType] = useState('retail')
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState('')
-
-  const cards = [
-    { title: 'Caisse POS', text: 'Ouvrir la caisse et vendre.', href: '/pos', icon: ShoppingCart, primary: true },
-    { title: 'Produits', text: 'Inventaire, photos, prix et stock.', href: '/products', icon: Package },
-    { title: 'Ventes', text: 'Historique, reçus et factures.', href: '/sales', icon: ReceiptText },
-    { title: 'Clients', text: 'Fidélité, contacts et achats.', href: '/customers', icon: Users },
-    { title: 'Client Doit', text: 'Dettes clients et remboursements.', href: '/debts', icon: HandCoins },
-    { title: 'Liens paiement', text: 'Wave, Orange Money, carte et paiements manuels.', href: '/payment-links', icon: LinkIcon },
-    { title: 'Fournisseurs', text: 'Contacts et soldes fournisseurs.', href: '/suppliers', icon: Truck },
-    { title: 'Achats / Réassort', text: 'Réapprovisionnement du stock.', href: '/purchases', icon: PackagePlus },
-    { title: 'Dépenses', text: 'Charges et profits réels.', href: '/expenses', icon: Wallet },
-    { title: 'Analytics', text: 'Performance commerciale.', href: '/analytics', icon: BarChart3 },
-    { title: 'Ouverture caisse', text: 'Cash journalier et fermeture.', href: '/register-shifts', icon: CalendarClock },
-    { title: 'Paramètres', text: 'Branding, logo et informations.', href: '/settings', icon: Settings }
-  ]
 
   useEffect(() => {
     async function init() {
@@ -72,7 +46,7 @@ export default function DashboardPage() {
 
       const { data: membership, error } = await supabase
         .from('business_members')
-        .select('business_id')
+        .select('business_id, businesses(business_type)')
         .eq('user_id', userData.user.id)
         .limit(1)
         .single()
@@ -83,7 +57,9 @@ export default function DashboardPage() {
         return
       }
 
-      const businessId = membership.business_id
+      const member: any = membership
+      const businessId = member.business_id
+      setBusinessType(member.businesses?.business_type || 'retail')
 
       const [salesResult, productsResult, customersResult, subscriptionResult] = await Promise.all([
         supabase.from('sales').select('id,total,created_at').eq('business_id', businessId).order('created_at', { ascending: false }).limit(200),
@@ -106,6 +82,9 @@ export default function DashboardPage() {
     init()
   }, [router])
 
+  const template = getBusinessTemplate(businessType)
+  const cards = getDashboardCards(businessType)
+
   const stats = useMemo(() => {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
@@ -114,37 +93,35 @@ export default function DashboardPage() {
     const weekTotal = sales.filter((sale) => new Date(sale.created_at) >= weekStart).reduce((sum, sale) => sum + Number(sale.total || 0), 0)
     const lowStock = products.filter((product) => Number(product.stock || 0) <= 5)
     const totalDebt = customers.reduce((sum, customer) => sum + Number(customer.debt_balance || 0), 0)
-    return { todayTotal, weekTotal, lowStock, totalDebt, recentSales: sales.slice(0, 5), debtCustomers: customers.filter((customer) => Number(customer.debt_balance || 0) > 0).slice(0, 5) }
+    return { todayTotal, weekTotal, lowStock, totalDebt }
   }, [sales, products, customers])
 
-  if (loading) {
-    return <main className="flex min-h-screen items-center justify-center bg-slate-50"><p className="font-bold text-slate-700">Chargement dashboard...</p></main>
-  }
+  if (loading) return <main className="flex min-h-screen items-center justify-center bg-slate-50"><p className="font-bold text-slate-700">Chargement dashboard...</p></main>
+
+  const actionHref = businessType === 'tontine' ? '/tontines' : businessType === 'rental' ? '/properties' : '/pos'
 
   return (
-    <AppShell title="Centre de contrôle" subtitle="Vue rapide de votre boutique en temps réel." action={<Link href="/pos" className="rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700">Ouvrir la caisse</Link>}>
+    <AppShell title={template.dashboardTitle} subtitle={`Template: ${template.label}`} action={<Link href={actionHref} className="rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700">Action rapide</Link>}>
       <div className="mx-auto max-w-[1600px]">
         {message && <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-bold text-red-700">{message}</div>}
-
-        {plan === 'free' && <div className="mb-8"><FreePlanAd title="Votre boutique mérite plus" text="Passez à Business pour publier votre boutique en ligne, supprimer les publicités et débloquer les outils premium." /></div>}
+        {plan === 'free' && <div className="mb-8"><FreePlanAd title="Votre business mérite plus" text="Passez à Business pour débloquer plus d’automatisations, de rapports et de templates premium." /></div>}
 
         <div className="mb-8 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
           <Link href="/sales" className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:shadow-lg"><p className="text-sm font-bold text-slate-500">Aujourd’hui</p><p className="mt-2 text-3xl font-black text-slate-950">{cfa(stats.todayTotal)}</p></Link>
           <Link href="/sales" className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:shadow-lg"><p className="text-sm font-bold text-slate-500">Cette semaine</p><p className="mt-2 text-3xl font-black text-slate-950">{cfa(stats.weekTotal)}</p></Link>
-          <Link href="/products" className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:shadow-lg"><p className="text-sm font-bold text-slate-500">Stock bas</p><p className="mt-2 text-3xl font-black text-amber-600">{stats.lowStock.length}</p></Link>
-          <Link href="/debts" className="rounded-3xl border border-red-200 bg-white p-6 shadow-sm transition hover:shadow-lg"><p className="text-sm font-bold text-slate-500">Client Doit</p><p className="mt-2 text-3xl font-black text-red-600">{cfa(stats.totalDebt)}</p></Link>
+          <Link href="/products" className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:shadow-lg"><p className="text-sm font-bold text-slate-500">Alertes</p><p className="mt-2 text-3xl font-black text-amber-600">{stats.lowStock.length}</p></Link>
+          <Link href="/debts" className="rounded-3xl border border-red-200 bg-white p-6 shadow-sm transition hover:shadow-lg"><p className="text-sm font-bold text-slate-500">À récupérer</p><p className="mt-2 text-3xl font-black text-red-600">{cfa(stats.totalDebt)}</p></Link>
         </div>
 
-        <div className="mb-8 grid gap-6 xl:grid-cols-3">
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"><h3 className="text-xl font-black text-slate-950">Ventes récentes</h3><div className="mt-5 space-y-3">{stats.recentSales.length === 0 ? <p className="rounded-2xl bg-slate-50 p-4 text-sm font-semibold text-slate-500">Aucune vente récente.</p> : stats.recentSales.map((sale) => <Link key={sale.id} href={`/sales/${sale.id}`} className="flex justify-between rounded-2xl bg-slate-50 p-4 text-sm font-bold transition hover:bg-emerald-50"><span>#{sale.id.slice(0, 8)}</span><span>{cfa(Number(sale.total || 0))}</span></Link>)}</div></div>
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"><h3 className="text-xl font-black text-slate-950">Stock faible</h3><div className="mt-5 space-y-3">{stats.lowStock.length === 0 ? <p className="rounded-2xl bg-emerald-50 p-4 text-sm font-bold text-emerald-700">Stock correct.</p> : stats.lowStock.slice(0, 5).map((product) => <div key={product.id} className="flex justify-between rounded-2xl bg-amber-50 p-4 text-sm font-bold"><span>{product.name}</span><span>{product.stock || 0}</span></div>)}</div></div>
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"><h3 className="text-xl font-black text-slate-950">Clients qui doivent</h3><div className="mt-5 space-y-3">{stats.debtCustomers.length === 0 ? <p className="rounded-2xl bg-emerald-50 p-4 text-sm font-bold text-emerald-700">Aucune dette.</p> : stats.debtCustomers.map((customer) => <Link key={customer.id} href={`/customers/${customer.id}`} className="flex justify-between rounded-2xl bg-red-50 p-4 text-sm font-bold transition hover:bg-red-100"><span>{customer.full_name}</span><span>{cfa(Number(customer.debt_balance || 0))}</span></Link>)}</div></div>
+        <div className="mb-8 rounded-[2rem] border border-emerald-200 bg-emerald-50 p-6">
+          <h3 className="text-2xl font-black text-slate-950">Modules actifs pour {template.label}</h3>
+          <div className="mt-4 flex flex-wrap gap-2">{template.modules.map((module) => <span key={module} className="rounded-full bg-white px-4 py-2 text-xs font-black text-emerald-700 shadow-sm">{module}</span>)}</div>
         </div>
 
         <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
           {cards.map((card) => {
             const Icon = card.icon
-            return <Link key={card.href} href={card.href} className={`group rounded-3xl border p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-xl ${card.primary ? 'border-emerald-200 bg-emerald-600 text-white' : 'border-slate-200 bg-white text-slate-950'}`}><div className={`mb-6 inline-flex rounded-2xl p-4 ${card.primary ? 'bg-white/15 text-white' : 'bg-emerald-50 text-emerald-700'}`}><Icon size={26} /></div><h3 className="text-2xl font-black">{card.title}</h3><p className={`mt-2 text-sm font-semibold ${card.primary ? 'text-white/80' : 'text-slate-500'}`}>{card.text}</p></Link>
+            return <Link key={card.href + card.title} href={card.href} className={`group rounded-3xl border p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-xl ${card.primary ? 'border-emerald-200 bg-emerald-600 text-white' : 'border-slate-200 bg-white text-slate-950'}`}><div className={`mb-6 inline-flex rounded-2xl p-4 ${card.primary ? 'bg-white/15 text-white' : 'bg-emerald-50 text-emerald-700'}`}><Icon size={26} /></div><h3 className="text-2xl font-black">{card.title}</h3><p className={`mt-2 text-sm font-semibold ${card.primary ? 'text-white/80' : 'text-slate-500'}`}>{card.text}</p></Link>
           })}
         </div>
       </div>
