@@ -1,5 +1,6 @@
 'use client'
 
+import PaymentProofUploader from '@/components/PaymentProofUploader'
 import { supabase } from '@/lib/supabaseClient'
 import { CheckCircle, CreditCard, MessageCircle, ShieldCheck, Smartphone, Store, UploadCloud } from 'lucide-react'
 import { useParams } from 'next/navigation'
@@ -200,9 +201,9 @@ export default function PublicPaymentPage() {
             {!isPaid && (
               <form onSubmit={submitProof} className="mt-7 rounded-3xl border border-slate-200 bg-slate-50 p-5">
                 <h3 className="text-lg font-black text-slate-950">Envoyer une preuve</h3>
-                <p className="mt-1 text-sm font-semibold text-slate-500">Collez un lien de capture/reçu ou ajoutez une note de transaction.</p>
+                <p className="mt-1 text-sm font-semibold text-slate-500">Uploadez une capture/reçu et ajoutez une note de transaction.</p>
                 <div className="mt-4 space-y-3">
-                  <input value={proofForm.proof_image_url} onChange={(e) => setProofForm({ ...proofForm, proof_image_url: e.target.value })} placeholder="Lien image du reçu / capture" className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm font-semibold outline-none" />
+                  <PaymentProofUploader value={proofForm.proof_image_url} onChange={(url) => setProofForm({ ...proofForm, proof_image_url: url })} />
                   <textarea value={proofForm.proof_note} onChange={(e) => setProofForm({ ...proofForm, proof_note: e.target.value })} placeholder="Note ou numéro de transaction" className="min-h-24 w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm font-semibold outline-none" />
                   <button disabled={savingProof} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 py-4 text-sm font-black text-white disabled:opacity-60"><UploadCloud size={18}/>{savingProof ? 'Envoi...' : 'Envoyer preuve'}</button>
                 </div>
