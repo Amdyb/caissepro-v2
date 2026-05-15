@@ -74,12 +74,10 @@ export default function StorefrontPage() {
 
     const slug = business.slug || slugify(business.name || `shop-${business.id.slice(0, 8)}`)
 
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('businesses')
       .update({ slug, online_store_enabled: true })
       .eq('id', business.id)
-      .select('*')
-      .limit(1)
 
     setSaving(false)
 
@@ -88,7 +86,7 @@ export default function StorefrontPage() {
       return
     }
 
-    setBusiness((data?.[0] as Business) || { ...business, slug, online_store_enabled: true })
+    setBusiness({ ...business, slug, online_store_enabled: true })
     setMessage('Boutique en ligne activée. Vous pouvez maintenant partager le lien.')
   }
 
