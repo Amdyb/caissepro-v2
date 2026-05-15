@@ -3,10 +3,10 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import BrandingImageUploader from '@/components/BrandingImageUploader'
 import {
   ArrowLeft,
   Building2,
-  ImageIcon,
   Palette,
   Save,
   Phone,
@@ -194,8 +194,24 @@ export default function SettingsPage() {
                 <p className="mt-2 rounded-2xl bg-amber-50 p-3 text-xs font-bold text-amber-700">Changer le type adapte les modules, le menu, le dashboard et les outils visibles sans supprimer vos données.</p>
               </div>
 
-              <div><label className="flex items-center gap-2 text-sm font-bold text-slate-700"><ImageIcon size={16} />Logo URL</label><input className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-green-600" placeholder="https://..." value={form.logo_url} onChange={(e) => setForm({ ...form, logo_url: e.target.value })} /></div>
-              <div><label className="flex items-center gap-2 text-sm font-bold text-slate-700"><ImageIcon size={16} />Banner URL</label><input className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-green-600" placeholder="https://..." value={form.banner_url} onChange={(e) => setForm({ ...form, banner_url: e.target.value })} /></div>
+              {business && (
+                <>
+                  <BrandingImageUploader
+                    businessId={business.id}
+                    label="Logo"
+                    value={form.logo_url}
+                    folder="logos"
+                    onUploaded={(url) => setForm({ ...form, logo_url: url })}
+                  />
+                  <BrandingImageUploader
+                    businessId={business.id}
+                    label="Bannière"
+                    value={form.banner_url}
+                    folder="banners"
+                    onUploaded={(url) => setForm({ ...form, banner_url: url })}
+                  />
+                </>
+              )}
 
               <div className="grid gap-4 md:grid-cols-2"><div><label className="flex items-center gap-2 text-sm font-bold text-slate-700"><Palette size={16} />Couleur principale</label><input type="color" className="mt-2 h-14 w-full rounded-2xl border border-slate-300" value={form.primary_color} onChange={(e) => setForm({ ...form, primary_color: e.target.value })} /></div><div><label className="flex items-center gap-2 text-sm font-bold text-slate-700"><Palette size={16} />Couleur secondaire</label><input type="color" className="mt-2 h-14 w-full rounded-2xl border border-slate-300" value={form.secondary_color} onChange={(e) => setForm({ ...form, secondary_color: e.target.value })} /></div></div>
               <div><label className="flex items-center gap-2 text-sm font-bold text-slate-700"><Phone size={16} />Téléphone</label><input className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-green-600" value={form.business_phone} onChange={(e) => setForm({ ...form, business_phone: e.target.value })} /></div>
