@@ -155,12 +155,26 @@ export default function POSPage() {
     barcodeInputRef.current?.focus()
   }
 
-  const Basket = ({ compact = false }: { compact?: boolean }) => (
-    <div className={`rounded-[2rem] border border-slate-200 bg-white ${compact ? 'p-4 shadow-sm' : 'p-5 shadow-xl'}`}>
+  const CheckoutControls = () => (
+    <div className="rounded-3xl bg-slate-950 p-5 text-white shadow-2xl">
+      <p className="text-sm font-bold text-slate-300">Total</p>
+      <p className="mt-1 text-4xl font-black">{subtotal.toLocaleString('fr-FR')} CFA</p>
+      <div className="mt-5 grid grid-cols-2 gap-3">
+        {['cash', 'wave', 'orange_money', 'card', 'credit'].map((method) => (
+          <button key={method} onClick={() => setPaymentMethod(method)} className={`rounded-2xl px-4 py-3 text-sm font-black transition ${paymentStyle(method, paymentMethod === method)}`}>{paymentLabel(method)}</button>
+        ))}
+      </div>
+      {paymentMethod === 'credit' && !selectedCustomer && <div className="mt-4 rounded-2xl bg-red-500/15 p-3 text-sm font-bold text-red-200">Sélectionnez ou ajoutez un client.</div>}
+      <button onClick={checkout} disabled={checkoutLoading || cart.length === 0} className="mt-5 w-full rounded-2xl bg-emerald-600 py-4 text-lg font-black text-white disabled:opacity-40"><CreditCard className="mr-2 inline" />{checkoutLoading ? 'Enregistrement...' : 'Encaisser'}</button>
+    </div>
+  )
+
+  const Basket = () => (
+    <div className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-xl">
       <div className="mb-4 flex items-center justify-between"><div><h3 className="flex items-center gap-2 text-2xl font-black"><ShoppingCart /> Panier</h3><p className="text-sm font-semibold text-slate-500">{totalItems} article(s)</p></div>{cart.length > 0 && <button onClick={() => setCart([])} className="rounded-2xl bg-red-50 px-4 py-3 text-sm font-black text-red-700">Vider</button>}</div>
       <div className="mb-4 rounded-3xl bg-slate-50 p-4"><label className="text-sm font-black text-slate-700">Client</label><select className="mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 font-bold outline-none" value={selectedCustomerId} onChange={(e) => setSelectedCustomerId(e.target.value)}><option value="">Vente sans client</option>{customers.map((customer) => <option key={customer.id} value={customer.id}>{customer.full_name} {customer.phone ? `• ${customer.phone}` : ''}</option>)}</select><div className="mt-3 grid gap-2 md:grid-cols-[1fr_1fr_auto]"><input value={newCustomer.full_name} onChange={(e) => setNewCustomer({ ...newCustomer, full_name: e.target.value })} placeholder="Nouveau client" className="rounded-2xl border border-slate-300 px-4 py-3 text-sm font-bold outline-none" /><input value={newCustomer.phone} onChange={(e) => setNewCustomer({ ...newCustomer, phone: e.target.value })} placeholder="Téléphone" className="rounded-2xl border border-slate-300 px-4 py-3 text-sm font-bold outline-none" /><button type="button" onClick={quickAddCustomer} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 py-3 text-sm font-black text-white"><UserPlus size={16} />Ajouter</button></div></div>
-      <div className={`${compact ? 'max-h-40' : 'max-h-[34vh]'} space-y-3 overflow-y-auto pr-1`}>{cart.length === 0 ? <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center"><ShoppingCart className="mx-auto text-slate-400" /><p className="mt-3 font-black">Panier vide</p></div> : cart.map((item) => <div key={item.product.id} className="rounded-3xl border border-slate-200 p-4"><div className="flex items-start justify-between gap-3"><div><p className="font-black text-slate-950">{item.product.name}</p><p className="text-xs font-bold text-slate-500">Min: {Number(item.product.minimum_price || 0).toLocaleString('fr-FR')} CFA</p></div><button onClick={() => updateQuantity(item.product.id, 0)} className="rounded-xl p-2 text-red-600"><Trash2 size={16} /></button></div><div className="mt-3 grid grid-cols-[1fr_auto] gap-3"><input type="number" value={item.price} onChange={(e) => updatePrice(item.product.id, Number(e.target.value || 0))} className="rounded-2xl border border-slate-300 px-3 py-2 text-sm font-black outline-none" /><div className="flex items-center rounded-2xl border border-slate-300 px-2"><button onClick={() => updateQuantity(item.product.id, item.quantity - 1)} className="p-2"><Minus size={14} /></button><span className="px-2 font-black">{item.quantity}</span><button onClick={() => updateQuantity(item.product.id, item.quantity + 1)} className="p-2"><Plus size={14} /></button></div></div><p className="mt-2 text-right font-black">{(item.price * item.quantity).toLocaleString('fr-FR')} CFA</p></div>)}</div>
-      <div className="mt-5 rounded-3xl bg-slate-950 p-5 text-white"><p className="text-sm font-bold text-slate-300">Total</p><p className="mt-1 text-4xl font-black">{subtotal.toLocaleString('fr-FR')} CFA</p><div className="mt-5 grid grid-cols-2 gap-3">{['cash', 'wave', 'orange_money', 'card', 'credit'].map((method) => <button key={method} onClick={() => setPaymentMethod(method)} className={`rounded-2xl px-4 py-3 text-sm font-black transition ${paymentStyle(method, paymentMethod === method)}`}>{paymentLabel(method)}</button>)}</div>{paymentMethod === 'credit' && !selectedCustomer && <div className="mt-4 rounded-2xl bg-red-500/15 p-3 text-sm font-bold text-red-200">Sélectionnez ou ajoutez un client.</div>}<button onClick={checkout} disabled={checkoutLoading || cart.length === 0} className="mt-5 w-full rounded-2xl bg-emerald-600 py-4 text-lg font-black text-white disabled:opacity-40"><CreditCard className="mr-2 inline" />{checkoutLoading ? 'Enregistrement...' : 'Encaisser'}</button></div>
+      <div className="space-y-3 overflow-y-auto pr-1 lg:max-h-[calc(100vh-520px)]">{cart.length === 0 ? <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center"><ShoppingCart className="mx-auto text-slate-400" /><p className="mt-3 font-black">Panier vide</p></div> : cart.map((item) => <div key={item.product.id} className="rounded-3xl border border-slate-200 p-4"><div className="flex items-start justify-between gap-3"><div><p className="font-black text-slate-950">{item.product.name}</p><p className="text-xs font-bold text-slate-500">Min: {Number(item.product.minimum_price || 0).toLocaleString('fr-FR')} CFA</p></div><button onClick={() => updateQuantity(item.product.id, 0)} className="rounded-xl p-2 text-red-600"><Trash2 size={16} /></button></div><div className="mt-3 grid grid-cols-[1fr_auto] gap-3"><input type="number" value={item.price} onChange={(e) => updatePrice(item.product.id, Number(e.target.value || 0))} className="rounded-2xl border border-slate-300 px-3 py-2 text-sm font-black outline-none" /><div className="flex items-center rounded-2xl border border-slate-300 px-2"><button onClick={() => updateQuantity(item.product.id, item.quantity - 1)} className="p-2"><Minus size={14} /></button><span className="px-2 font-black">{item.quantity}</span><button onClick={() => updateQuantity(item.product.id, item.quantity + 1)} className="p-2"><Plus size={14} /></button></div></div><p className="mt-2 text-right font-black">{(item.price * item.quantity).toLocaleString('fr-FR')} CFA</p></div>)}</div>
+      <div className="sticky bottom-0 z-20 mt-5 bg-white pt-4"><CheckoutControls /></div>
     </div>
   )
 
@@ -168,7 +182,7 @@ export default function POSPage() {
 
   return (
     <AppShell title="Caisse POS" subtitle="Choisissez un produit, ajoutez un client, puis encaissez.">
-      <div className="mx-auto max-w-[1700px]">
+      <div className="mx-auto max-w-[1700px] pb-28 lg:pb-0">
         {message && <div className="mb-5 rounded-2xl bg-emerald-50 p-4 text-sm font-bold text-emerald-700">{message}</div>}
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_420px] 2xl:grid-cols-[minmax(0,1fr)_460px]">
           <section className="min-w-0">
