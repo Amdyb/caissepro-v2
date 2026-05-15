@@ -13,21 +13,34 @@ export default function LoginPage() {
   const [message, setMessage] = useState('')
 
   async function getNextRoute(userId: string) {
-    const { data: membership } = await supabase
+    const { data: memberships, error } = await supabase
       .from('business_members')
-      .select('business_id, businesses(onboarding_completed, name, business_type)')
+      .select('business_id, businesses(id, onboarding_completed, name, business_type)')
       .eq('user_id', userId)
       .limit(1)
-      .maybeSingle()
 
-    const member: any = membership
+    if (error) return '/onboarding'
+
+    const member: any = memberships?.[0]
     const business = member?.businesses
 
-    if (!member?.business_id || !business?.onboarding_completed || !business?.name || !business?.business_type) {
+    if (!member?.business_id || !business?.id) {
       return '/onboarding'
     }
 
-    return '/dashboard'
+    const hasUsableBusiness = Boolean(business.name && business.business_type)
+
+    if (hasUsableBusiness && !business.onboarding_completed) {
+      await supabase
+        .from('businesses')
+        .update({
+          onboarding_completed: true,
+          onboarding_completed_at: new Date().toISOString()
+        })
+        .eq('id', business.id)
+    }
+
+    return hasUsableBusiness ? '/dashboard' : '/onboarding'
   }
 
   async function handleLogin(e: React.FormEvent) {
