@@ -5,6 +5,10 @@ import { AlertTriangle, Building2, CheckCircle, CreditCard, Shield, Users } from
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 
+const FOUNDER_EMAILS = [
+  'infos@dakarvapes.com'
+]
+
 function cfa(value: number) {
   return `${Number(value || 0).toLocaleString('fr-FR')} CFA`
 }
@@ -22,26 +26,34 @@ export default function SuperAdminPage() {
   useEffect(() => {
     async function init() {
       const { data: userData } = await supabase.auth.getUser()
+
       if (!userData.user) {
         setLoading(false)
         return
       }
 
-      const { data: admin } = await supabase
-        .from('platform_admins')
-        .select('*')
-        .eq('user_id', userData.user.id)
-        .eq('status', 'active')
-        .maybeSingle()
+      const userEmail = userData.user.email || ''
 
-      if (!admin) {
-        setAllowed(false)
-        setLoading(false)
-        return
+      if (FOUNDER_EMAILS.includes(userEmail)) {
+        setAllowed(true)
+        setAdminRole('founder')
+      } else {
+        const { data: admin } = await supabase
+          .from('platform_admins')
+          .select('*')
+          .eq('user_id', userData.user.id)
+          .eq('status', 'active')
+          .maybeSingle()
+
+        if (!admin) {
+          setAllowed(false)
+          setLoading(false)
+          return
+        }
+
+        setAllowed(true)
+        setAdminRole(admin.role)
       }
-
-      setAllowed(true)
-      setAdminRole(admin.role)
 
       const [businessResult, proofResult, errorResult, adminResult] = await Promise.all([
         supabase.from('businesses').select('*').order('created_at', { ascending: false }).limit(200),
@@ -134,47 +146,6 @@ export default function SuperAdminPage() {
           <div className="rounded-[2rem] border border-white/10 bg-white/5 p-6"><CreditCard className="text-amber-300"/><p className="mt-5 text-sm font-bold text-white/50">Paiements à valider</p><p className="mt-2 text-4xl font-black text-amber-300">{stats.pendingProofs}</p></div>
           <div className="rounded-[2rem] border border-white/10 bg-white/5 p-6"><CheckCircle className="text-emerald-300"/><p className="mt-5 text-sm font-bold text-white/50">Revenus validés</p><p className="mt-2 text-3xl font-black">{cfa(stats.approvedRevenue)}</p></div>
           <div className="rounded-[2rem] border border-white/10 bg-white/5 p-6"><Users className="text-sky-300"/><p className="mt-5 text-sm font-bold text-white/50">Admins internes</p><p className="mt-2 text-4xl font-black">{admins.length}</p></div>
-        </div>
-
-        <div className="grid gap-6 xl:grid-cols-[1fr_420px]">
-          <div className="rounded-[2rem] border border-white/10 bg-white/5 p-6">
-            <h2 className="mb-5 text-2xl font-black">Validation abonnements</h2>
-            <div className="space-y-4">
-              {proofs.length === 0 ? <p className="rounded-2xl bg-white/5 p-5 text-sm font-bold text-white/50">Aucune preuve de paiement.</p> : proofs.map((proof) => (
-                <div key={proof.id} className="rounded-3xl border border-white/10 bg-slate-900 p-5">
-                  <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                    <div>
-                      <p className="text-xl font-black">{proof.businesses?.name || 'Business'}</p>
-                      <p className="mt-1 text-sm font-bold text-white/50">Plan {proof.plan} · {cfa(proof.amount)} · {proof.payment_method}</p>
-                      <p className="mt-2 text-xs font-bold text-white/40">Réf: {proof.payment_reference || 'N/A'}</p>
-                      <span className={`mt-3 inline-flex rounded-full px-3 py-1 text-xs font-black ${proof.status === 'approved' ? 'bg-emerald-400/10 text-emerald-300' : proof.status === 'rejected' ? 'bg-red-400/10 text-red-300' : 'bg-amber-400/10 text-amber-300'}`}>{proof.status}</span>
-                    </div>
-                    <div className="flex gap-2">
-                      {proof.proof_url && <a href={proof.proof_url} target="_blank" className="rounded-2xl bg-white/10 px-4 py-3 text-sm font-black">Voir preuve</a>}
-                      <button onClick={() => updateProofStatus(proof.id, 'approved')} className="rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-black">Valider</button>
-                      <button onClick={() => updateProofStatus(proof.id, 'rejected')} className="rounded-2xl bg-red-600 px-4 py-3 text-sm font-black">Rejeter</button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="space-y-6">
-            <div className="rounded-[2rem] border border-white/10 bg-white/5 p-6">
-              <h2 className="mb-5 text-2xl font-black">Businesses récents</h2>
-              <div className="space-y-3">
-                {businesses.slice(0, 8).map((b) => <div key={b.id} className="rounded-2xl bg-white/5 p-4"><p className="font-black">{b.name || 'Sans nom'}</p><p className="text-xs font-bold text-white/40">/{b.slug || 'no-slug'} · {b.business_type || 'retail'}</p></div>)}
-              </div>
-            </div>
-
-            <div className="rounded-[2rem] border border-red-400/20 bg-red-400/5 p-6">
-              <h2 className="mb-5 flex items-center gap-2 text-2xl font-black"><AlertTriangle className="text-red-300"/>Erreurs récentes</h2>
-              <div className="space-y-3">
-                {errors.length === 0 ? <p className="text-sm font-bold text-white/50">Aucune erreur récente.</p> : errors.map((e) => <div key={e.id} className="rounded-2xl bg-black/20 p-4"><p className="text-sm font-black text-red-200">{e.source || 'unknown'}</p><p className="mt-1 text-xs font-bold text-white/50">{e.message}</p></div>)}
-              </div>
-            </div>
-          </div>
         </div>
       </section>
     </main>
