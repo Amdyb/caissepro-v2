@@ -6,9 +6,44 @@ import { CheckCircle2, Crown, MessageCircle } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 const plans = [
-  { id: 'starter', name: 'Starter', price: '5 000 CFA/mois', features: ['POS', 'Produits', 'Clients', 'Rapports simples'] },
-  { id: 'premium', name: 'Premium', price: '10 000 CFA/mois', features: ['Tous les modules', 'Client Doit', 'Import Excel', 'Boutique en ligne', 'Employés'] },
-  { id: 'business', name: 'Business', price: '20 000 CFA/mois', features: ['Multi-boutiques', 'Analytics avancées', 'Support prioritaire', 'Fonctions premium'] }
+  {
+    id: 'free',
+    name: 'GRATUIT',
+    price: '0 CFA',
+    features: [
+      'POS basique',
+      'Produits & stock',
+      '1 employé',
+      'Rapports simples',
+      'Boutique en ligne 🔒 PRO'
+    ]
+  },
+
+  {
+    id: 'pro',
+    name: 'PRO',
+    price: '5 000 CFA/mois',
+    features: [
+      'Boutique en ligne',
+      'Lien partageable',
+      'Logo & bannière',
+      'Import Excel',
+      'Client Doit',
+      'Plusieurs employés'
+    ]
+  },
+
+  {
+    id: 'business',
+    name: 'BUSINESS',
+    price: '15 000 CFA/mois',
+    features: [
+      'Tout PRO',
+      'Multi-boutiques',
+      'Analytics avancées',
+      'Support premium'
+    ]
+  }
 ]
 
 export default function UpgradePage() {
