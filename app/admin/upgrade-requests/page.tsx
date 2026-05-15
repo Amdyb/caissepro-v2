@@ -4,8 +4,10 @@ import AppShell from '@/components/AppShell'
 import { supabase } from '@/lib/supabaseClient'
 import { CheckCircle2, Clock, ExternalLink, XCircle } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 
 const WHATSAPP_APPROVAL_NUMBER = '15863442378'
+const ADMIN_EMAILS = ['infos@dakarvapes.com']
 
 type UpgradeRequest = {
   id: string
@@ -20,13 +22,32 @@ type UpgradeRequest = {
 }
 
 export default function AdminUpgradeRequestsPage() {
+  const router = useRouter()
   const [requests, setRequests] = useState<UpgradeRequest[]>([])
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState('')
 
   useEffect(() => {
-    loadRequests()
+    checkAccess()
   }, [])
+
+  async function checkAccess() {
+    const { data: userData } = await supabase.auth.getUser()
+
+    if (!userData.user) {
+      router.push('/login')
+      return
+    }
+
+    const email = userData.user.email || ''
+
+    if (!ADMIN_EMAILS.includes(email)) {
+      router.push('/dashboard')
+      return
+    }
+
+    await loadRequests()
+  }
 
   async function loadRequests() {
     const { data, error } = await supabase
