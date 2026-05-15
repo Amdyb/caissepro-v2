@@ -40,7 +40,6 @@ type Business = {
   business_address: string | null
   slogan: string | null
   business_type?: string | null
-  template_slug?: string | null
 }
 
 export default function SettingsPage() {
@@ -95,7 +94,7 @@ export default function SettingsPage() {
 
         setForm({
           name: businessData.name || '',
-          business_type: businessData.business_type || businessData.template_slug || 'retail',
+          business_type: businessData.business_type || 'retail',
           logo_url: businessData.logo_url || '',
           banner_url: businessData.banner_url || '',
           primary_color: businessData.primary_color || '#16a34a',
@@ -126,7 +125,6 @@ export default function SettingsPage() {
       .update({
         name: form.name,
         business_type: form.business_type,
-        template_slug: form.business_type,
         logo_url: form.logo_url,
         banner_url: form.banner_url,
         primary_color: form.primary_color,
