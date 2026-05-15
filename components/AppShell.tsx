@@ -6,30 +6,20 @@ import { ReactNode, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import {
-  BarChart3,
-  BellRing,
-  Building2,
   CalendarClock,
   ChevronLeft,
   ChevronRight,
-  CreditCard,
-  Gift,
   HandCoins,
   LayoutDashboard,
   Menu,
-  MessageSquare,
   Package,
-  PackagePlus,
   ReceiptText,
   RotateCcw,
   Settings,
   Share2,
   ShoppingCart,
   Store,
-  Truck,
-  Users,
-  Wallet,
-  X
+  Users
 } from 'lucide-react'
 import { supabase } from '@/lib/supabaseClient'
 
@@ -38,26 +28,33 @@ type NavItem = { label: string; href: string; icon: any }
 type NavSection = { title: string; items: NavItem[] }
 
 const employeeNav: NavSection[] = [
-  { title: 'Employé', items: [
-    { label: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard },
-    { label: 'Vendre', href: '/pos', icon: ShoppingCart },
-    { label: 'Caisse', href: '/register-shifts', icon: CalendarClock },
-    { label: 'Clients', href: '/customers', icon: Users },
-    { label: 'Rapport du jour', href: '/reports', icon: ReceiptText },
-    { label: 'Partager ma boutique', href: '/storefront', icon: Share2 }
-  ]}
+  {
+    title: 'Employé',
+    items: [
+      { label: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard },
+      { label: 'Vendre', href: '/pos', icon: ShoppingCart },
+      { label: 'Caisse', href: '/register-shifts', icon: CalendarClock },
+      { label: 'Clients', href: '/customers', icon: Users },
+      { label: 'Rapport du jour', href: '/reports', icon: ReceiptText },
+      { label: 'Partager ma boutique', href: '/storefront', icon: Share2 }
+    ]
+  }
 ]
 
 const adminNav: NavSection[] = [
-  { title: 'Commerce', items: [
-    { label: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard },
-    { label: 'Vendre', href: '/pos', icon: ShoppingCart },
-    { label: 'Remboursements', href: '/refunds', icon: RotateCcw },
-    { label: 'Produits', href: '/products', icon: Package },
-    { label: 'Client Doit', href: '/debts', icon: HandCoins },
-    { label: 'Employés', href: '/employees', icon: Users },
-    { label: 'Paramètres', href: '/settings', icon: Settings }
-  ]}
+  {
+    title: 'Commerce',
+    items: [
+      { label: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard },
+      { label: 'Vendre', href: '/pos', icon: ShoppingCart },
+      { label: 'Remboursements', href: '/refunds', icon: RotateCcw },
+      { label: 'Produits', href: '/products', icon: Package },
+      { label: 'Partager ma boutique', href: '/storefront', icon: Share2 },
+      { label: 'Client Doit', href: '/debts', icon: HandCoins },
+      { label: 'Employés', href: '/employees', icon: Users },
+      { label: 'Paramètres', href: '/settings', icon: Settings }
+    ]
+  }
 ]
 
 function getNavForRole(role: string) {
