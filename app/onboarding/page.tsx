@@ -28,14 +28,7 @@ export default function OnboardingPage() {
   const [message, setMessage] = useState('')
   const [userId, setUserId] = useState('')
   const [businessId, setBusinessId] = useState<string | null>(null)
-  const [form, setForm] = useState({
-    name: '',
-    business_type: 'retail',
-    phone: '',
-    address: '',
-    slogan: '',
-    primary_color: '#16a34a'
-  })
+  const [form, setForm] = useState({ name: '', business_type: 'retail', phone: '', address: '', slogan: '', primary_color: '#16a34a' })
 
   useEffect(() => {
     async function init() {
@@ -47,14 +40,13 @@ export default function OnboardingPage() {
 
       setUserId(userData.user.id)
 
-      const { data: membership } = await supabase
+      const { data: memberships } = await supabase
         .from('business_members')
         .select('business_id, businesses(*)')
         .eq('user_id', userData.user.id)
         .limit(1)
-        .maybeSingle()
 
-      const member: any = membership
+      const member: any = memberships?.[0]
       if (member?.business_id) {
         setBusinessId(member.business_id)
         const business = member.businesses || {}
@@ -67,10 +59,7 @@ export default function OnboardingPage() {
           primary_color: business.primary_color || '#16a34a'
         })
       } else {
-        setForm((prev) => ({
-          ...prev,
-          name: userData.user.user_metadata?.business_name || ''
-        }))
+        setForm((prev) => ({ ...prev, name: userData.user.user_metadata?.business_name || '' }))
       }
 
       setLoading(false)
@@ -96,15 +85,16 @@ export default function OnboardingPage() {
         slogan: form.slogan,
         primary_color: form.primary_color,
         currency: 'CFA',
-        plan: 'free',
-        onboarding_completed: true
+        onboarding_completed: true,
+        onboarding_completed_at: new Date().toISOString()
       }
 
       if (businessId) {
         const { error } = await supabase.from('businesses').update(payload).eq('id', businessId)
         if (error) throw error
       } else {
-        const { data: business, error } = await supabase.from('businesses').insert(payload).select('id').single()
+        const { data: businesses, error } = await supabase.from('businesses').insert(payload).select('id').limit(1)
+        const business = businesses?.[0]
         if (error || !business) throw error || new Error('Impossible de créer la boutique.')
 
         const { data: userData } = await supabase.auth.getUser()
