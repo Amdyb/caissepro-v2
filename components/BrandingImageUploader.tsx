@@ -26,8 +26,7 @@ export default function BrandingImageUploader({
     const { error } = await supabase
       .from('businesses')
       .update({
-        [field]: url,
-        updated_at: new Date().toISOString()
+        [field]: url
       })
       .eq('id', businessId)
 
