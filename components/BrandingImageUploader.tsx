@@ -20,6 +20,25 @@ export default function BrandingImageUploader({
   const [uploading, setUploading] = useState(false)
   const [message, setMessage] = useState('')
 
+  async function persistBranding(url: string) {
+    const field = folder === 'logos' ? 'logo_url' : 'banner_url'
+
+    const { error } = await supabase
+      .from('businesses')
+      .update({
+        [field]: url,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', businessId)
+
+    if (error) {
+      setMessage(error.message)
+      return false
+    }
+
+    return true
+  }
+
   async function uploadFile(file: File) {
     if (!businessId || !file) return
 
@@ -46,9 +65,25 @@ export default function BrandingImageUploader({
       .from('business-assets')
       .getPublicUrl(path)
 
-    onUploaded(data.publicUrl)
-    setMessage('Image ajoutée avec succès.')
+    const url = data.publicUrl
+
+    onUploaded(url)
+
+    const saved = await persistBranding(url)
+
+    if (saved) {
+      setMessage('Image enregistrée avec succès.')
+    }
+
     setUploading(false)
+  }
+
+  async function handleManualChange(url: string) {
+    onUploaded(url)
+
+    if (!url || !businessId) return
+
+    await persistBranding(url)
   }
 
   return (
@@ -63,7 +98,7 @@ export default function BrandingImageUploader({
           className="w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-green-600"
           placeholder="https://..."
           value={value}
-          onChange={(e) => onUploaded(e.target.value)}
+          onChange={(e) => handleManualChange(e.target.value)}
         />
 
         <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-black text-white transition hover:bg-slate-800">
