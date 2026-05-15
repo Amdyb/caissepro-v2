@@ -64,7 +64,7 @@ export default function UpgradePage() {
     }
 
     const text = encodeURIComponent(`Bonjour CaissePro, je souhaite activer CaissePro Premium.\n\nBoutique: ${business.name}\nEmail: ${userEmail}\nPlan choisi: ${plan.name}\nMontant: ${plan.price}\nRéférence: ${reference}\n\nJ’ai effectué le paiement. Merci de valider mon accès.`)
-    window.open(`https://wa.me/?text=${text}`, '_blank')
+    window.open(`https://wa.me/15863442378?text=${text}`, '_blank')
     setMessage('Demande créée. WhatsApp va s’ouvrir avec le message de validation.')
   }
 
