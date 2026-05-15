@@ -36,14 +36,15 @@ export default function StorefrontPage() {
       const { data: userData } = await supabase.auth.getUser()
       if (!userData.user) return
 
-      const { data: membership } = await supabase
+      const { data: memberships } = await supabase
         .from('business_members')
         .select('business_id')
         .eq('user_id', userData.user.id)
         .limit(1)
-        .maybeSingle()
 
-      if (!membership?.business_id) {
+      const businessId = memberships?.[0]?.business_id
+
+      if (!businessId) {
         setMessage('Aucune boutique trouvée pour ce compte.')
         setLoading(false)
         return
@@ -52,11 +53,11 @@ export default function StorefrontPage() {
       const { data, error } = await supabase
         .from('businesses')
         .select('*')
-        .eq('id', membership.business_id)
-        .single()
+        .eq('id', businessId)
+        .limit(1)
 
       if (error) setMessage(error.message)
-      if (data) setBusiness(data as Business)
+      if (data?.[0]) setBusiness(data[0] as Business)
       setLoading(false)
     }
     init()
@@ -78,7 +79,7 @@ export default function StorefrontPage() {
       .update({ slug, online_store_enabled: true })
       .eq('id', business.id)
       .select('*')
-      .single()
+      .limit(1)
 
     setSaving(false)
 
@@ -87,7 +88,7 @@ export default function StorefrontPage() {
       return
     }
 
-    setBusiness(data as Business)
+    setBusiness((data?.[0] as Business) || { ...business, slug, online_store_enabled: true })
     setMessage('Boutique en ligne activée. Vous pouvez maintenant partager le lien.')
   }
 
