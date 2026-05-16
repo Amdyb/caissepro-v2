@@ -1,6 +1,7 @@
 'use client'
 
 import AppShell from '@/components/AppShell'
+import BrandingImageUploader from '@/components/BrandingImageUploader'
 import { supabase } from '@/lib/supabaseClient'
 import { ArrowLeft, PackagePlus, Save } from 'lucide-react'
 import Link from 'next/link'
@@ -124,6 +125,16 @@ export default function NewProductPage() {
               <input type="number" placeholder="Stock" value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} className="rounded-2xl border border-slate-300 px-5 py-4 font-bold outline-none" />
               <input placeholder="Image URL" value={form.image} onChange={(e) => setForm({ ...form, image: e.target.value })} className="rounded-2xl border border-slate-300 px-5 py-4 font-bold outline-none" />
             </div>
+
+            {businessId && (
+              <BrandingImageUploader
+                businessId={businessId}
+                label="Image produit"
+                value={form.image}
+                folder="banners"
+                onUploaded={(url) => setForm({ ...form, image: url })}
+              />
+            )}
 
             <button disabled={saving} className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 py-5 text-lg font-black text-white shadow-2xl shadow-emerald-200 disabled:opacity-50">
               <Save size={20} />
