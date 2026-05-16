@@ -1,0 +1,137 @@
+'use client'
+
+import AppShell from '@/components/AppShell'
+import { supabase } from '@/lib/supabaseClient'
+import { ArrowLeft, PackagePlus, Save } from 'lucide-react'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
+
+export default function NewProductPage() {
+  const router = useRouter()
+
+  const [businessId, setBusinessId] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [message, setMessage] = useState('')
+
+  const [form, setForm] = useState({
+    name: '',
+    category: '',
+    barcode: '',
+    cost_price: '',
+    sell_price: '',
+    minimum_price: '',
+    stock: '',
+    image: ''
+  })
+
+  useEffect(() => {
+    async function init() {
+      const { data: userData } = await supabase.auth.getUser()
+
+      if (!userData.user) {
+        router.push('/login')
+        return
+      }
+
+      const { data: membership } = await supabase
+        .from('business_members')
+        .select('business_id')
+        .eq('user_id', userData.user.id)
+        .limit(1)
+        .maybeSingle()
+
+      if (!membership?.business_id) return
+
+      setBusinessId(membership.business_id)
+    }
+
+    init()
+  }, [router])
+
+  async function createProduct(e: React.FormEvent) {
+    e.preventDefault()
+
+    if (!businessId) return
+
+    setSaving(true)
+    setMessage('')
+
+    const payload = {
+      business_id: businessId,
+      name: form.name,
+      category: form.category || null,
+      barcode: form.barcode || null,
+      cost_price: Number(form.cost_price || 0),
+      sell_price: Number(form.sell_price || 0),
+      minimum_price: Number(form.minimum_price || 0),
+      stock: Number(form.stock || 0),
+      image: form.image || null,
+      is_active: true,
+      archived: false
+    }
+
+    const { error } = await supabase
+      .from('products')
+      .insert(payload)
+
+    setSaving(false)
+
+    if (error) {
+      setMessage(error.message)
+      return
+    }
+
+    router.push('/products')
+  }
+
+  return (
+    <AppShell title="Ajouter produit" subtitle="Ajoutez un nouveau produit à votre boutique.">
+      <div className="mx-auto max-w-3xl">
+        {message && (
+          <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-black text-red-700">
+            {message}
+          </div>
+        )}
+
+        <div className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm">
+          <div className="mb-8 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <PackagePlus className="text-emerald-600" />
+              <h2 className="text-3xl font-black text-slate-950">Nouveau produit</h2>
+            </div>
+
+            <Link href="/products" className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-black text-slate-700">
+              <ArrowLeft size={16} />Retour
+            </Link>
+          </div>
+
+          <form onSubmit={createProduct} className="space-y-5">
+            <input required placeholder="Nom produit" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full rounded-2xl border border-slate-300 px-5 py-4 font-bold outline-none" />
+
+            <div className="grid gap-5 md:grid-cols-2">
+              <input placeholder="Catégorie" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="rounded-2xl border border-slate-300 px-5 py-4 font-bold outline-none" />
+              <input placeholder="Code-barres" value={form.barcode} onChange={(e) => setForm({ ...form, barcode: e.target.value })} className="rounded-2xl border border-slate-300 px-5 py-4 font-bold outline-none" />
+            </div>
+
+            <div className="grid gap-5 md:grid-cols-3">
+              <input type="number" placeholder="Prix achat" value={form.cost_price} onChange={(e) => setForm({ ...form, cost_price: e.target.value })} className="rounded-2xl border border-slate-300 px-5 py-4 font-bold outline-none" />
+              <input type="number" placeholder="Prix vente" value={form.sell_price} onChange={(e) => setForm({ ...form, sell_price: e.target.value })} className="rounded-2xl border border-slate-300 px-5 py-4 font-bold outline-none" />
+              <input type="number" placeholder="Prix minimum" value={form.minimum_price} onChange={(e) => setForm({ ...form, minimum_price: e.target.value })} className="rounded-2xl border border-slate-300 px-5 py-4 font-bold outline-none" />
+            </div>
+
+            <div className="grid gap-5 md:grid-cols-2">
+              <input type="number" placeholder="Stock" value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} className="rounded-2xl border border-slate-300 px-5 py-4 font-bold outline-none" />
+              <input placeholder="Image URL" value={form.image} onChange={(e) => setForm({ ...form, image: e.target.value })} className="rounded-2xl border border-slate-300 px-5 py-4 font-bold outline-none" />
+            </div>
+
+            <button disabled={saving} className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 py-5 text-lg font-black text-white shadow-2xl shadow-emerald-200 disabled:opacity-50">
+              <Save size={20} />
+              {saving ? 'Création...' : 'Créer produit'}
+            </button>
+          </form>
+        </div>
+      </div>
+    </AppShell>
+  )
+}
