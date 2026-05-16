@@ -3,7 +3,7 @@
 import AppShell from '@/components/AppShell'
 import { supabase } from '@/lib/supabaseClient'
 import { CheckCircle2, Copy, ExternalLink, Globe2, Share2, Store } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 type Business = {
   id: string
@@ -21,7 +21,12 @@ type Business = {
 }
 
 function slugify(value: string) {
-  return value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '')
+  return value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)+/g, '')
 }
 
 export default function StorefrontPage() {
@@ -57,26 +62,60 @@ export default function StorefrontPage() {
         .limit(1)
 
       if (error) setMessage(error.message)
-      if (data?.[0]) setBusiness(data[0] as Business)
+
+      if (data?.[0]) {
+        const businessData = data[0] as Business
+
+        const cleanSlug = businessData.slug || slugify(businessData.name || 'boutique')
+
+        if (!businessData.slug || businessData.slug !== cleanSlug) {
+          await supabase
+            .from('businesses')
+            .update({
+              slug: cleanSlug,
+              online_store_enabled: true
+            })
+            .eq('id', businessData.id)
+
+          businessData.slug = cleanSlug
+          businessData.online_store_enabled = true
+        }
+
+        setBusiness(businessData)
+      }
+
       setLoading(false)
     }
+
     init()
   }, [])
 
-  const origin = typeof window !== 'undefined' ? window.location.origin : 'https://caissepro.app'
+  const origin = typeof window !== 'undefined'
+    ? window.location.origin
+    : 'https://caissepro.app'
+
   const currentSlug = business?.slug || slugify(business?.name || 'boutique')
-  const shopUrl = `${origin}/shop/${currentSlug}`
+
+  const shopUrl = useMemo(() => {
+    return `${origin}/shop/${currentSlug}`
+  }, [origin, currentSlug])
 
   async function activateStorefront() {
     if (!business) return
+
     setSaving(true)
     setMessage('')
 
-    const slug = business.slug || slugify(business.name || `shop-${business.id.slice(0, 8)}`)
+    const slug = slugify(business.name || `shop-${business.id.slice(0, 8)}`)
+
+    const payload = {
+      slug,
+      online_store_enabled: true
+    }
 
     const { error } = await supabase
       .from('businesses')
-      .update({ slug, online_store_enabled: true })
+      .update(payload)
       .eq('id', business.id)
 
     setSaving(false)
@@ -86,8 +125,12 @@ export default function StorefrontPage() {
       return
     }
 
-    setBusiness({ ...business, slug, online_store_enabled: true })
-    setMessage('Boutique en ligne activée. Vous pouvez maintenant partager le lien.')
+    setBusiness({
+      ...business,
+      ...payload
+    })
+
+    setMessage('Boutique en ligne activée et synchronisée.')
   }
 
   async function copyLink() {
@@ -96,7 +139,9 @@ export default function StorefrontPage() {
     setTimeout(() => setCopied(false), 2000)
   }
 
-  if (loading) return <main className="flex min-h-screen items-center justify-center bg-slate-50"><p className="font-black text-slate-600">Chargement boutique...</p></main>
+  if (loading) {
+    return <main className="flex min-h-screen items-center justify-center bg-slate-50"><p className="font-black text-slate-600">Chargement boutique...</p></main>
+  }
 
   return (
     <AppShell title="Partager ma boutique" subtitle="Activez et partagez votre boutique en ligne.">
@@ -112,11 +157,11 @@ export default function StorefrontPage() {
             <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
               <div>
                 <h1 className="text-4xl font-black text-slate-950">{business?.name || 'Votre boutique'}</h1>
-                <p className="mt-2 text-lg font-semibold text-slate-500">{business?.slogan || 'Votre boutique en ligne CaissePro'}</p>
+                <p className="mt-2 text-lg font-semibold text-slate-500">{business?.slogan || 'Votre boutique premium'}</p>
                 <div className="mt-4 inline-flex rounded-full bg-emerald-50 px-4 py-2 text-xs font-black uppercase tracking-wide text-emerald-700">{business?.business_type || 'retail'}</div>
               </div>
               <button onClick={activateStorefront} disabled={saving} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-7 py-4 text-sm font-black text-white shadow-lg shadow-emerald-600/20 disabled:opacity-60">
-                <Globe2 size={18} /> {saving ? 'Activation...' : business?.online_store_enabled ? 'Mettre à jour lien' : 'Activer boutique'}
+                <Globe2 size={18} /> {saving ? 'Synchronisation...' : 'Synchroniser boutique'}
               </button>
             </div>
           </div>
@@ -129,7 +174,7 @@ export default function StorefrontPage() {
             <button onClick={copyLink} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-950 px-6 py-4 text-sm font-black text-white"><Copy size={17} /> {copied ? 'Copié' : 'Copier'}</button>
             <a href={shopUrl} target="_blank" className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-6 py-4 text-sm font-black text-slate-700"><ExternalLink size={17} /> Ouvrir</a>
           </div>
-          <p className="mt-4 flex items-center gap-2 text-sm font-bold text-slate-500"><CheckCircle2 size={16} className="text-emerald-600" /> Si vous obtenez 404, cliquez d’abord sur “Activer boutique”.</p>
+          <p className="mt-4 flex items-center gap-2 text-sm font-bold text-slate-500"><CheckCircle2 size={16} className="text-emerald-600" /> Boutique synchronisée pour le partage public.</p>
         </div>
       </div>
     </AppShell>
