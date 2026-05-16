@@ -34,50 +34,76 @@ type Product = {
 }
 
 function formatCfa(value: number) {
-  return `${value.toLocaleString('fr-FR')} CFA`
+  return `${Number(value || 0).toLocaleString('fr-FR')} CFA`
 }
 
 export default function PublicShopPage() {
-  const params = useParams<{ slug: string }>()
-  const slug = params.slug
+  const params = useParams()
+  const slug = Array.isArray(params?.slug) ? params.slug[0] : params?.slug
+
   const [business, setBusiness] = useState<Business | null>(null)
   const [products, setProducts] = useState<Product[]>([])
   const [search, setSearch] = useState('')
   const [category, setCategory] = useState('')
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     async function loadShop() {
-      setLoading(true)
+      try {
+        setLoading(true)
+        setError(null)
 
-      const { data: shop } = await supabase
-        .from('businesses')
-        .select('*')
-        .eq('slug', slug)
-        .maybeSingle()
+        if (!slug || typeof slug !== 'string') {
+          setError('Slug boutique invalide')
+          return
+        }
 
-      if (!shop) {
+        const response = await supabase
+          .from('businesses')
+          .select('*')
+          .eq('slug', slug)
+          .limit(1)
+
+        if (response.error) {
+          console.error(response.error)
+          setError(response.error.message)
+          return
+        }
+
+        const shop = response.data?.[0]
+
+        if (!shop) {
+          setError('Boutique introuvable')
+          return
+        }
+
+        setBusiness(shop as Business)
+
+        const productsResponse = await supabase
+          .from('products')
+          .select('*')
+          .eq('business_id', shop.id)
+          .order('created_at', { ascending: false })
+
+        if (productsResponse.error) {
+          console.error(productsResponse.error)
+        }
+
+        const visibleProducts = (productsResponse.data || []).filter((p: any) => {
+          if (p.deleted_at) return false
+          if (p.archived === true) return false
+          if (p.is_active === false) return false
+          return true
+        })
+
+        setProducts(visibleProducts as Product[])
+      } catch (err: any) {
+        console.error(err)
+        setError(err?.message || 'Erreur storefront')
+      } finally {
         setLoading(false)
-        return
       }
-
-      setBusiness(shop as Business)
-
-      const { data: productData } = await supabase
-        .from('products')
-        .select('*')
-        .eq('business_id', shop.id)
-        .order('created_at', { ascending: false })
-
-      const visibleProducts = (productData || []).filter((p: any) => {
-        if (p.deleted_at) return false
-        if (p.archived === true) return false
-        if (p.is_active === false) return false
-        return true
-      })
-
-      setProducts(visibleProducts as Product[])
-      setLoading(false)
     }
 
     loadShop()
@@ -92,8 +118,12 @@ export default function PublicShopPage() {
     const q = search.toLowerCase().trim()
 
     return products.filter((p) => {
-      const matchSearch = !q || p.name.toLowerCase().includes(q) || (p.category || '').toLowerCase().includes(q)
+      const name = p.name || ''
+      const cat = p.category || ''
+
+      const matchSearch = !q || name.toLowerCase().includes(q) || cat.toLowerCase().includes(q)
       const matchCategory = !category || p.category === category
+
       return matchSearch && matchCategory
     })
   }, [products, search, category])
@@ -113,19 +143,35 @@ export default function PublicShopPage() {
   async function shareShop() {
     const url = window.location.href
 
-    if (navigator.share) {
-      await navigator.share({
-        title: business?.name || 'Boutique CaissePro',
-        url
-      })
-    } else {
-      await navigator.clipboard.writeText(url)
-      alert('Lien boutique copié.')
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: business?.name || 'Boutique CaissePro',
+          url
+        })
+      } else {
+        await navigator.clipboard.writeText(url)
+        alert('Lien boutique copié.')
+      }
+    } catch (err) {
+      console.error(err)
     }
   }
 
   if (loading) {
     return <main className="flex min-h-screen items-center justify-center bg-black text-white"><div className="h-14 w-14 animate-pulse rounded-full bg-emerald-500" /></main>
+  }
+
+  if (error) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-black px-5 text-white">
+        <div className="rounded-[2rem] border border-white/10 bg-white/5 p-10 text-center backdrop-blur-xl">
+          <Store className="mx-auto mb-5 text-white/40" size={52} />
+          <h1 className="text-3xl font-black">Storefront Error</h1>
+          <p className="mt-4 text-sm font-bold text-white/60">{error}</p>
+        </div>
+      </main>
+    )
   }
 
   if (!business) {
@@ -141,8 +187,7 @@ export default function PublicShopPage() {
         <div className="relative mx-auto max-w-7xl px-5 pb-20 pt-10 md:pb-28 md:pt-20">
           <div className="mb-8 flex items-center justify-between">
             <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-4 py-2 text-xs font-black uppercase tracking-[0.3em] backdrop-blur-xl">
-              <Sparkles size={14} />
-              Premium Store
+              <Sparkles size={14} /> Premium Store
             </div>
 
             <button onClick={shareShop} className="rounded-full border border-white/10 bg-white/10 p-4 backdrop-blur-xl">
@@ -158,8 +203,7 @@ export default function PublicShopPage() {
 
               <div>
                 <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-emerald-500/20 px-4 py-2 text-xs font-black text-emerald-300">
-                  <Verified size={14} />
-                  Commerce vérifié
+                  <Verified size={14} /> Commerce vérifié
                 </div>
 
                 <h1 className="text-5xl font-black tracking-tight md:text-7xl">{business.name}</h1>
