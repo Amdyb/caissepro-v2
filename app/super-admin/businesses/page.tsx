@@ -2,7 +2,7 @@
 
 import AppShell from '@/components/AppShell'
 import { supabase } from '@/lib/supabaseClient'
-import { AlertTriangle, Building2, Search, ShieldCheck, Store, Users } from 'lucide-react'
+import { AlertTriangle, ArrowLeft, Building2, Search, ShieldCheck, Store, Users } from 'lucide-react'
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -97,6 +97,14 @@ export default function SuperAdminBusinessesPage() {
   return (
     <AppShell title="Super Admin Businesses" subtitle="Gestion globale des boutiques.">
       <div className="mx-auto max-w-7xl pb-20">
+        <button
+          onClick={() => router.back()}
+          className="mb-6 inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-700 shadow-sm"
+        >
+          <ArrowLeft size={18} />
+          Retour
+        </button>
+
         {message && (
           <div className="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-black text-emerald-700">
             {message}
