@@ -181,8 +181,8 @@ export default function PublicShopPage() {
   return (
     <main className="min-h-screen bg-[#050505] text-white">
       <section className="relative overflow-hidden">
-        <img src={business.banner_url || 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?q=80&w=1800&auto=format&fit=crop'} className="absolute inset-0 h-full w-full object-cover opacity-40" alt={business.name} />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/80 to-[#050505]" />
+        <img src={business.banner_url || 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?q=80&w=1800&auto=format&fit=crop'} className="absolute inset-0 h-full w-full object-cover opacity-55" alt={business.name} />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/45 to-[#050505]" />
 
         <div className="relative mx-auto max-w-7xl px-5 pb-20 pt-10 md:pb-28 md:pt-20">
           <div className="mb-8 flex items-center justify-between">
@@ -208,13 +208,13 @@ export default function PublicShopPage() {
 
                 <h1 className="text-5xl font-black tracking-tight md:text-7xl">{business.name}</h1>
 
-                <p className="mt-4 max-w-2xl text-lg font-medium leading-relaxed text-white/70 md:text-xl">
+                <p className="mt-4 max-w-2xl text-lg font-medium leading-relaxed text-white/85 md:text-xl">
                   {business.slogan || 'Une expérience shopping premium et moderne'}
                 </p>
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-3 text-sm font-bold text-white/70">
+            <div className="flex flex-wrap gap-3 text-sm font-bold text-white/80">
               {business.phone && <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-3 backdrop-blur-xl"><Phone size={15} />{business.phone}</div>}
               {business.address && <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-3 backdrop-blur-xl"><MapPin size={15} />{business.address}</div>}
             </div>
