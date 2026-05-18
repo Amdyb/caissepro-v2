@@ -3,7 +3,7 @@
 import AppShell from '@/components/AppShell'
 import POSCheckoutDrawer from '@/components/POSCheckoutDrawer'
 import { supabase } from '@/lib/supabaseClient'
-import { ImageIcon, Package, Search, ShoppingCart, Trash2, Zap } from 'lucide-react'
+import { ImageIcon, Search, ShoppingCart, Trash2, Zap } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 type Product = {
@@ -20,14 +20,12 @@ type Product = {
 
 export default function POSPage() {
   const barcodeInputRef = useRef<HTMLInputElement | null>(null)
-
   const [businessId, setBusinessId] = useState<string | null>(null)
   const [products, setProducts] = useState<Product[]>([])
   const [customers, setCustomers] = useState<any[]>([])
   const [cart, setCart] = useState<any[]>([])
   const [search, setSearch] = useState('')
   const [barcodeInput, setBarcodeInput] = useState('')
-  const [selectedCategory, setSelectedCategory] = useState('')
   const [checkoutOpen, setCheckoutOpen] = useState(false)
   const [selectedCustomerId, setSelectedCustomerId] = useState('')
   const [paymentMethod, setPaymentMethod] = useState('cash')
@@ -35,16 +33,12 @@ export default function POSPage() {
   const [message, setMessage] = useState('')
   const [newCustomer, setNewCustomer] = useState({ full_name: '', phone: '' })
 
-  const categories = useMemo(() => Array.from(new Set(products.map((p) => p.category).filter(Boolean))) as string[], [products])
-
   const filteredProducts = useMemo(() => {
     const q = search.toLowerCase().trim()
     return products.filter((product) => {
-      const matchesSearch = !q || product.name.toLowerCase().includes(q) || (product.category || '').toLowerCase().includes(q) || (product.barcode || '').toLowerCase().includes(q)
-      const matchesCategory = !selectedCategory || product.category === selectedCategory
-      return matchesSearch && matchesCategory
+      return !q || product.name.toLowerCase().includes(q)
     })
-  }, [products, search, selectedCategory])
+  }, [products, search])
 
   const total = cart.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 0)), 0)
   const totalItems = cart.reduce((sum, item) => sum + (item.quantity || 0), 0)
@@ -67,110 +61,43 @@ export default function POSPage() {
 
       const { data: productData } = await supabase
         .from('products')
-        .select('id,business_id,name,category,barcode,sell_price,minimum_price,stock,image')
+        .select('*')
         .eq('business_id', membership.business_id)
-        .order('name')
 
       const { data: customerData } = await supabase
         .from('customers')
         .select('id,full_name,phone')
         .eq('business_id', membership.business_id)
-        .order('full_name')
 
       setProducts((productData || []) as Product[])
       setCustomers(customerData || [])
-
-      const savedCart = localStorage.getItem('caissepro-pos-cart')
-      if (savedCart) {
-        try {
-          setCart(JSON.parse(savedCart))
-        } catch {}
-      }
     }
 
     init()
   }, [])
 
-  useEffect(() => {
-    localStorage.setItem('caissepro-pos-cart', JSON.stringify(cart))
-  }, [cart])
-
   function addToCart(product: Product) {
-    if (Number(product.stock || 0) <= 0) {
-      setMessage('Produit en rupture de stock.')
-      return
-    }
-
-    setCart((current: any[]) => {
-      const existing = current.find((item) => item.product.id === product.id)
+    setCart((prev: any[]) => {
+      const existing = prev.find((i) => i.product.id === product.id)
 
       if (existing) {
-        return current.map((item) => item.product.id === product.id ? { ...item, quantity: item.quantity + 1 } : item)
+        return prev.map((i) =>
+          i.product.id === product.id
+            ? { ...i, quantity: i.quantity + 1 }
+            : i
+        )
       }
 
-      return [...current, {
+      return [...prev, {
         product,
         quantity: 1,
         price: Number(product.sell_price || 0)
       }]
     })
-
-    barcodeInputRef.current?.focus()
   }
 
   function removeItem(productId: string) {
-    setCart((current: any[]) => current.filter((item) => item.product.id !== productId))
-  }
-
-  function handleBarcodeSubmit(e: React.FormEvent) {
-    e.preventDefault()
-
-    const code = barcodeInput.trim()
-    if (!code) return
-
-    const match = products.find((product) =>
-      (product.barcode || '').toLowerCase() === code.toLowerCase()
-    ) || products.find((product) =>
-      product.name.toLowerCase().includes(code.toLowerCase())
-    )
-
-    if (!match) {
-      setMessage('Produit introuvable.')
-      return
-    }
-
-    addToCart(match)
-    setBarcodeInput('')
-  }
-
-  async function addCustomer() {
-    if (!businessId || !newCustomer.full_name.trim()) return
-
-    const { data, error } = await supabase
-      .from('customers')
-      .insert({
-        business_id: businessId,
-        full_name: newCustomer.full_name.trim(),
-        phone: newCustomer.phone || null,
-        points: 0,
-        total_spent: 0,
-        debt_balance: 0
-      })
-      .select('id,full_name,phone')
-      .limit(1)
-
-    if (error) {
-      setMessage(error.message)
-      return
-    }
-
-    const created = data?.[0]
-
-    if (created) {
-      setCustomers((prev) => [created, ...prev])
-      setSelectedCustomerId(created.id)
-      setNewCustomer({ full_name: '', phone: '' })
-    }
+    setCart((prev: any[]) => prev.filter((i) => i.product.id !== productId))
   }
 
   async function checkout() {
@@ -179,24 +106,19 @@ export default function POSPage() {
     setCheckoutLoading(true)
 
     try {
-      const salePayload = {
-        business_id: businessId,
-        total,
-        customer_id: selectedCustomerId || null,
-        payment_method: paymentMethod
-      }
-
-      const { error: saleError } = await supabase
+      const { error } = await supabase
         .from('sales')
-        .insert(salePayload)
+        .insert({
+          business_id: businessId,
+          total,
+          customer_id: selectedCustomerId || null,
+          payment_method: paymentMethod
+        })
 
-      if (saleError) {
-        throw saleError
-      }
+      if (error) throw error
 
       for (const item of cart) {
-        const currentStock = Number(item.product.stock || 0)
-        const newStock = Math.max(0, currentStock - Number(item.quantity || 0))
+        const newStock = Math.max(0, Number(item.product.stock || 0) - Number(item.quantity || 0))
 
         await supabase
           .from('products')
@@ -204,46 +126,110 @@ export default function POSPage() {
           .eq('id', item.product.id)
       }
 
-      setProducts((prev) =>
-        prev.map((product) => {
-          const soldItem = cart.find((item: any) => item.product.id === product.id)
-
-          if (!soldItem) return product
-
-          return {
-            ...product,
-            stock: Math.max(0, Number(product.stock || 0) - Number(soldItem.quantity || 0))
-          }
-        })
-      )
-
-      setCheckoutLoading(false)
-      setCheckoutOpen(false)
       setCart([])
-      localStorage.removeItem('caissepro-pos-cart')
+      setCheckoutOpen(false)
       setMessage('Vente enregistrée avec succès.')
     } catch (err: any) {
-      setCheckoutLoading(false)
-      setMessage(err?.message || 'Erreur lors de l’enregistrement de la vente.')
-    }
-  }
-
-  function sendWhatsAppReceipt() {
-    const customer = customers.find((c) => c.id === selectedCustomerId)
-
-    if (!customer?.phone) {
-      setMessage('Numéro client requis.')
-      return
+      setMessage(err?.message || 'Erreur checkout')
     }
 
-    const phone = customer.phone.replace(/\D/g, '')
-
-    const text = encodeURIComponent(
-      `Bonjour ${customer.full_name},\n\nMerci pour votre achat.\n\nMontant: ${total.toLocaleString('fr-FR')} CFA\nPaiement: ${paymentMethod}\n\nMerci pour votre confiance.`
-    )
-
-    window.open(`https://wa.me/${phone}?text=${text}`, '_blank')
+    setCheckoutLoading(false)
   }
 
-  return <div />
+  return (
+    <AppShell title="Caisse POS" subtitle="Workflow rapide moderne.">
+      <div className="mx-auto max-w-7xl pb-36">
+        {message && (
+          <div className="mb-4 rounded-2xl bg-emerald-50 p-4 text-sm font-black text-emerald-700">
+            {message}
+          </div>
+        )}
+
+        <div className="mb-5 flex gap-3 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="relative flex-1">
+            <Zap className="absolute left-4 top-3.5 text-emerald-600" size={20} />
+            <input
+              ref={barcodeInputRef}
+              className="w-full rounded-2xl border border-slate-300 py-3 pl-12 pr-4 font-black outline-none"
+              placeholder="Rechercher produit..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+        </div>
+
+        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+          {filteredProducts.map((product) => (
+            <button
+              key={product.id}
+              onClick={() => addToCart(product)}
+              className="rounded-3xl border border-slate-200 bg-white p-4 text-left shadow-sm"
+            >
+              <div className="flex h-36 items-center justify-center rounded-2xl bg-slate-50">
+                {product.image ? (
+                  <img src={product.image} alt={product.name} className="max-h-full max-w-full object-contain" />
+                ) : (
+                  <ImageIcon className="text-slate-300" size={40} />
+                )}
+              </div>
+
+              <h3 className="mt-4 text-lg font-black text-slate-950">
+                {product.name}
+              </h3>
+
+              <p className="mt-2 text-2xl font-black text-emerald-600">
+                {Number(product.sell_price || 0).toLocaleString('fr-FR')} CFA
+              </p>
+            </button>
+          ))}
+        </div>
+
+        {cart.length > 0 && (
+          <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-200 bg-white p-4">
+            <div className="mx-auto flex max-w-7xl items-center justify-between">
+              <div className="flex items-center gap-3 overflow-x-auto">
+                <div className="flex items-center gap-2 rounded-2xl bg-slate-950 px-4 py-3 text-white">
+                  <ShoppingCart size={18} />
+                  <span className="font-black">{totalItems} article(s)</span>
+                </div>
+
+                {cart.map((item) => (
+                  <div key={item.product.id} className="flex items-center gap-2 rounded-2xl border border-slate-200 px-4 py-3">
+                    <span className="font-black">{item.product.name}</span>
+                    <button onClick={() => removeItem(item.product.id)}>
+                      <Trash2 size={15} className="text-red-600" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              <button
+                onClick={() => setCheckoutOpen(true)}
+                className="rounded-2xl bg-emerald-600 px-8 py-4 text-lg font-black text-white"
+              >
+                {total.toLocaleString('fr-FR')} CFA
+              </button>
+            </div>
+          </div>
+        )}
+
+        <POSCheckoutDrawer
+          open={checkoutOpen}
+          onClose={() => setCheckoutOpen(false)}
+          total={total}
+          customers={customers}
+          selectedCustomerId={selectedCustomerId}
+          setSelectedCustomerId={setSelectedCustomerId}
+          newCustomer={newCustomer}
+          setNewCustomer={setNewCustomer}
+          addCustomer={() => {}}
+          paymentMethod={paymentMethod}
+          setPaymentMethod={setPaymentMethod}
+          checkout={checkout}
+          checkoutLoading={checkoutLoading}
+          sendWhatsAppReceipt={() => {}}
+        />
+      </div>
+    </AppShell>
+  )
 }
