@@ -1,8 +1,9 @@
 'use client'
 
 import AppShell from '@/components/AppShell'
+import BrandingImageUploader from '@/components/BrandingImageUploader'
 import { supabase } from '@/lib/supabaseClient'
-import { CheckCircle2, Copy, ExternalLink, Globe2, Share2, Store } from 'lucide-react'
+import { CheckCircle2, Copy, ExternalLink, Globe2, Palette, Share2, Store } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
 type Business = {
@@ -133,6 +134,26 @@ export default function StorefrontPage() {
     setMessage('Boutique en ligne activée et synchronisée.')
   }
 
+  async function saveBranding() {
+    if (!business) return
+
+    const { error } = await supabase
+      .from('businesses')
+      .update({
+        slogan: business.slogan,
+        business_phone: business.business_phone,
+        business_address: business.business_address
+      })
+      .eq('id', business.id)
+
+    if (error) {
+      setMessage(error.message)
+      return
+    }
+
+    setMessage('Boutique mise à jour.')
+  }
+
   async function copyLink() {
     await navigator.clipboard.writeText(shopUrl)
     setCopied(true)
@@ -144,12 +165,12 @@ export default function StorefrontPage() {
   }
 
   return (
-    <AppShell title="Partager ma boutique" subtitle="Activez et partagez votre boutique en ligne.">
-      <div className="mx-auto max-w-5xl">
+    <AppShell title="Ma Boutique" subtitle="Personnalisez et partagez votre boutique.">
+      <div className="mx-auto max-w-6xl">
         {message && <div className="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-black text-emerald-700">{message}</div>}
 
         <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
-          <div className="h-56 bg-slate-950" style={{ backgroundImage: business?.banner_url ? `url(${business.banner_url})` : 'none', backgroundSize: 'cover', backgroundPosition: 'center' }} />
+          <div className="h-64 bg-slate-950" style={{ backgroundImage: business?.banner_url ? `url(${business.banner_url})` : 'none', backgroundSize: 'cover', backgroundPosition: 'center' }} />
           <div className="relative p-8 pt-20">
             <div className="absolute -top-16 flex h-32 w-32 items-center justify-center overflow-hidden rounded-[2rem] border-4 border-white bg-white shadow-xl">
               {business?.logo_url ? <img src={business.logo_url} alt="Logo" className="h-full w-full object-contain" /> : <Store size={52} className="text-slate-400" />}
@@ -160,21 +181,81 @@ export default function StorefrontPage() {
                 <p className="mt-2 text-lg font-semibold text-slate-500">{business?.slogan || 'Votre boutique premium'}</p>
                 <div className="mt-4 inline-flex rounded-full bg-emerald-50 px-4 py-2 text-xs font-black uppercase tracking-wide text-emerald-700">{business?.business_type || 'retail'}</div>
               </div>
-              <button onClick={activateStorefront} disabled={saving} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-7 py-4 text-sm font-black text-white shadow-lg shadow-emerald-600/20 disabled:opacity-60">
-                <Globe2 size={18} /> {saving ? 'Synchronisation...' : 'Synchroniser boutique'}
+              <button onClick={activateStorefront} disabled={saving} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-6 py-3 text-sm font-black text-white shadow-lg shadow-emerald-600/20 disabled:opacity-60">
+                <Globe2 size={18} /> {saving ? 'Synchronisation...' : 'Publier boutique'}
               </button>
             </div>
           </div>
         </div>
 
-        <div className="mt-8 rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="flex items-center gap-2 text-2xl font-black text-slate-950"><Share2 /> Lien public</h2>
-          <div className="mt-5 grid gap-3 lg:grid-cols-[1fr_auto_auto]">
-            <input readOnly value={shopUrl} className="rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-bold text-slate-700" />
-            <button onClick={copyLink} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-950 px-6 py-4 text-sm font-black text-white"><Copy size={17} /> {copied ? 'Copié' : 'Copier'}</button>
-            <a href={shopUrl} target="_blank" className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-6 py-4 text-sm font-black text-slate-700"><ExternalLink size={17} /> Ouvrir</a>
-          </div>
-          <p className="mt-4 flex items-center gap-2 text-sm font-bold text-slate-500"><CheckCircle2 size={16} className="text-emerald-600" /> Boutique synchronisée pour le partage public.</p>
+        <div className="mt-6 grid gap-6 xl:grid-cols-2">
+          <section className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm">
+            <div className="mb-6 flex items-center gap-3">
+              <div className="rounded-2xl bg-emerald-50 p-4 text-emerald-700">
+                <Palette size={24} />
+              </div>
+
+              <div>
+                <h2 className="text-3xl font-black text-slate-950">Personnalisation</h2>
+                <p className="mt-1 text-sm font-semibold text-slate-500">Logo, bannière et identité.</p>
+              </div>
+            </div>
+
+            {business && (
+              <div className="space-y-5">
+                <BrandingImageUploader
+                  businessId={business.id}
+                  label="Logo"
+                  value={business.logo_url || ''}
+                  folder="logos"
+                  onUploaded={(url) => setBusiness({ ...business, logo_url: url })}
+                />
+
+                <BrandingImageUploader
+                  businessId={business.id}
+                  label="Bannière"
+                  value={business.banner_url || ''}
+                  folder="banners"
+                  onUploaded={(url) => setBusiness({ ...business, banner_url: url })}
+                />
+
+                <input
+                  value={business.slogan || ''}
+                  onChange={(e) => setBusiness({ ...business, slogan: e.target.value })}
+                  placeholder="Slogan boutique"
+                  className="w-full rounded-2xl border border-slate-300 px-5 py-4 font-bold outline-none"
+                />
+
+                <input
+                  value={business.business_phone || ''}
+                  onChange={(e) => setBusiness({ ...business, business_phone: e.target.value })}
+                  placeholder="Téléphone boutique"
+                  className="w-full rounded-2xl border border-slate-300 px-5 py-4 font-bold outline-none"
+                />
+
+                <input
+                  value={business.business_address || ''}
+                  onChange={(e) => setBusiness({ ...business, business_address: e.target.value })}
+                  placeholder="Adresse boutique"
+                  className="w-full rounded-2xl border border-slate-300 px-5 py-4 font-bold outline-none"
+                />
+
+                <button onClick={saveBranding} className="w-full rounded-2xl bg-slate-950 py-4 text-sm font-black text-white">
+                  Sauvegarder boutique
+                </button>
+              </div>
+            )}
+          </section>
+
+          <section className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm">
+            <h2 className="flex items-center gap-2 text-3xl font-black text-slate-950"><Share2 /> Boutique publique</h2>
+            <div className="mt-6 grid gap-3 lg:grid-cols-[1fr_auto_auto]">
+              <input readOnly value={shopUrl} className="rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-bold text-slate-700" />
+              <button onClick={copyLink} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-950 px-6 py-4 text-sm font-black text-white"><Copy size={17} /> {copied ? 'Copié' : 'Copier'}</button>
+              <a href={shopUrl} target="_blank" className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-6 py-4 text-sm font-black text-slate-700"><ExternalLink size={17} /> Ouvrir</a>
+            </div>
+            <p className="mt-4 flex items-center gap-2 text-sm font-bold text-slate-500"><CheckCircle2 size={16} className="text-emerald-600" /> Boutique synchronisée pour le partage public.</p>
+          </section>
         </div>
       </div>
     </AppShell>
