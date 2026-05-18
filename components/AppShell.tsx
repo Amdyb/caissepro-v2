@@ -52,7 +52,7 @@ const adminNav: NavSection[] = [
       { label: 'Partager ma boutique', href: '/storefront', icon: Share2 },
       { label: 'Client Doit', href: '/debts', icon: HandCoins },
       { label: 'Employés', href: '/employees', icon: Users },
-      { label: 'Paramètres', href: '/settings', icon: Settings }
+      { label: 'Paramètres', href: '/settings/profile', icon: Settings }
     ]
   }
 ]
