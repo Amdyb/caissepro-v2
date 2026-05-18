@@ -5,7 +5,7 @@ import AppShell from '@/components/AppShell'
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Edit, PackagePlus, Plus, Search, Trash2 } from 'lucide-react'
+import { Download, Edit, FileSpreadsheet, PackagePlus, Plus, Search, Trash2, Upload } from 'lucide-react'
 import { supabase } from '@/lib/supabaseClient'
 
 type Product = {
@@ -37,6 +37,7 @@ export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
+  const [showImporter, setShowImporter] = useState(false)
 
   const filteredProducts = useMemo(() => {
     const q = search.toLowerCase().trim()
@@ -119,28 +120,77 @@ export default function ProductsPage() {
     )
   }
 
+  function downloadTemplate() {
+    const csv = 'name,prix,stock,categorie,barcode\nProduit Demo,5000,10,Vape,123456789'
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', 'template-produits.csv')
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
   if (loading) return <main className="flex min-h-screen items-center justify-center bg-slate-50"><p className="font-bold text-slate-700">Chargement...</p></main>
 
   return (
-    <AppShell title="Produits" subtitle="Inventaire, prix, stock et catalogue produit." action={<Link href="/products/new" className="inline-flex items-center gap-2 rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-black text-white shadow-lg"><Plus size={18} />Ajouter</Link>}>
+    <AppShell title="Produits" subtitle="Inventaire, prix, stock et catalogue produit.">
       <div className="mx-auto max-w-[1500px]">
-        {businessId && <ProductBulkImporter businessId={businessId} onImported={() => loadProducts(businessId)} />}
+        <div className="mb-5 grid grid-cols-2 gap-3">
+          <button
+            onClick={() => setShowImporter(!showImporter)}
+            className="flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-4 text-sm font-black text-slate-700 shadow-sm"
+          >
+            <Upload size={18} />
+            Importer
+          </button>
 
-        <div className="mb-8 flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-          <div className="relative w-full max-w-xl">
+          <button
+            onClick={downloadTemplate}
+            className="flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-4 text-sm font-black text-slate-700 shadow-sm"
+          >
+            <FileSpreadsheet size={18} />
+            Modèle
+          </button>
+        </div>
+
+        <Link
+          href="/products/new"
+          className="mb-5 flex items-center justify-center gap-2 rounded-[1.6rem] bg-emerald-600 px-6 py-4 text-base font-black text-white shadow-xl shadow-emerald-600/20"
+        >
+          <Plus size={20} />
+          Ajouter un produit
+        </Link>
+
+        {showImporter && businessId && (
+          <div className="mb-5 overflow-hidden rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
+            <ProductBulkImporter businessId={businessId} onImported={() => loadProducts(businessId)} />
+          </div>
+        )}
+
+        <div className="mb-6 flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+          <div className="relative w-full">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-            <input className="w-full rounded-2xl border border-slate-200 bg-white py-4 pl-12 pr-4 text-sm font-semibold text-slate-800 shadow-sm outline-none" placeholder="Rechercher un produit..." value={search} onChange={(e) => setSearch(e.target.value)} />
+            <input
+              className="w-full rounded-2xl border border-slate-200 bg-white py-4 pl-12 pr-4 text-sm font-semibold text-slate-800 shadow-sm outline-none"
+              placeholder="Rechercher un produit..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
           </div>
         </div>
 
         {filteredProducts.length === 0 ? (
-          <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-12 text-center shadow-sm">
-            <PackagePlus className="mx-auto mb-4 text-slate-300" size={54} />
+          <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-10 text-center shadow-sm">
+            <PackagePlus className="mx-auto mb-4 text-slate-300" size={48} />
             <h3 className="text-xl font-black text-slate-950">Aucun produit</h3>
-            <p className="mt-2 text-sm font-semibold text-slate-500">Ajoutez ou importez vos produits pour commencer l’inventaire.</p>
+            <p className="mt-2 text-sm font-semibold text-slate-500">Ajoutez vos produits pour commencer l’inventaire.</p>
           </div>
         ) : (
-          <div className="grid gap-7 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+          <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
             {filteredProducts.map((product) => {
               const status = stockStatus(Number(product.stock || 0))
 
