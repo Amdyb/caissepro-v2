@@ -5,6 +5,7 @@ import FreePlanAd from '@/components/FreePlanAd'
 import { getBusinessTemplate } from '@/lib/businessTemplates'
 import { getDashboardCards } from '@/lib/dashboardCards'
 import { supabase } from '@/lib/supabaseClient'
+import { ArrowRight, Bell, CalendarDays, CreditCard, Sparkles, Store } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
@@ -12,6 +13,15 @@ import { useEffect, useMemo, useState } from 'react'
 type Sale = { id: string; total: number | null; created_at: string }
 type Product = { id: string; name: string; stock: number | null }
 type Customer = { id: string; full_name: string; debt_balance: number | null }
+
+type BusinessInfo = {
+  id: string
+  name?: string | null
+  slogan?: string | null
+  banner_url?: string | null
+  logo_url?: string | null
+  business_type?: string | null
+}
 
 function cfa(value: number) {
   return `${value.toLocaleString('fr-FR')} CFA`
@@ -33,6 +43,7 @@ export default function DashboardPage() {
   const [customers, setCustomers] = useState<Customer[]>([])
   const [plan, setPlan] = useState('free')
   const [businessType, setBusinessType] = useState('retail')
+  const [business, setBusiness] = useState<BusinessInfo | null>(null)
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState('')
 
@@ -46,7 +57,7 @@ export default function DashboardPage() {
 
       const { data: membership, error } = await supabase
         .from('business_members')
-        .select('business_id, businesses(business_type)')
+        .select('business_id, businesses(*)')
         .eq('user_id', userData.user.id)
         .limit(1)
         .single()
@@ -59,7 +70,10 @@ export default function DashboardPage() {
 
       const member: any = membership
       const businessId = member.business_id
-      setBusinessType(member.businesses?.business_type || 'retail')
+      const businessData = member.businesses as BusinessInfo
+
+      setBusinessType(businessData?.business_type || 'retail')
+      setBusiness(businessData)
 
       const [salesResult, productsResult, customersResult, subscriptionResult] = await Promise.all([
         supabase.from('sales').select('id,total,created_at').eq('business_id', businessId).order('created_at', { ascending: false }).limit(200),
@@ -89,39 +103,234 @@ export default function DashboardPage() {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
     const weekStart = getWeekStart()
-    const todayTotal = sales.filter((sale) => new Date(sale.created_at) >= today).reduce((sum, sale) => sum + Number(sale.total || 0), 0)
-    const weekTotal = sales.filter((sale) => new Date(sale.created_at) >= weekStart).reduce((sum, sale) => sum + Number(sale.total || 0), 0)
+
+    const todayTotal = sales
+      .filter((sale) => new Date(sale.created_at) >= today)
+      .reduce((sum, sale) => sum + Number(sale.total || 0), 0)
+
+    const weekTotal = sales
+      .filter((sale) => new Date(sale.created_at) >= weekStart)
+      .reduce((sum, sale) => sum + Number(sale.total || 0), 0)
+
     const lowStock = products.filter((product) => Number(product.stock || 0) <= 5)
-    const totalDebt = customers.reduce((sum, customer) => sum + Number(customer.debt_balance || 0), 0)
+
+    const totalDebt = customers.reduce(
+      (sum, customer) => sum + Number(customer.debt_balance || 0),
+      0
+    )
+
     return { todayTotal, weekTotal, lowStock, totalDebt }
   }, [sales, products, customers])
 
-  if (loading) return <main className="flex min-h-screen items-center justify-center bg-slate-50"><p className="font-bold text-slate-700">Chargement dashboard...</p></main>
+  if (loading) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-slate-50">
+        <p className="font-bold text-slate-700">Chargement dashboard...</p>
+      </main>
+    )
+  }
 
-  const actionHref = businessType === 'tontine' ? '/tontines' : businessType === 'rental' ? '/properties' : '/pos'
+  const actionHref =
+    businessType === 'tontine'
+      ? '/tontines'
+      : businessType === 'rental'
+        ? '/properties'
+        : '/pos'
 
   return (
-    <AppShell title={template.dashboardTitle} subtitle={`Template: ${template.label}`} action={<Link href={actionHref} className="rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700">Action rapide</Link>}>
+    <AppShell>
       <div className="mx-auto max-w-[1600px]">
-        {message && <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-bold text-red-700">{message}</div>}
-        {plan === 'free' && <div className="mb-8"><FreePlanAd title="Votre business mérite plus" text="Passez à Business pour débloquer plus d’automatisations, de rapports et de templates premium." /></div>}
+        {message && (
+          <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-bold text-red-700">
+            {message}
+          </div>
+        )}
 
-        <div className="mb-8 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-          <Link href="/sales" className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:shadow-lg"><p className="text-sm font-bold text-slate-500">Aujourd’hui</p><p className="mt-2 text-3xl font-black text-slate-950">{cfa(stats.todayTotal)}</p></Link>
-          <Link href="/sales" className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:shadow-lg"><p className="text-sm font-bold text-slate-500">Cette semaine</p><p className="mt-2 text-3xl font-black text-slate-950">{cfa(stats.weekTotal)}</p></Link>
-          <Link href="/products" className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:shadow-lg"><p className="text-sm font-bold text-slate-500">Alertes</p><p className="mt-2 text-3xl font-black text-amber-600">{stats.lowStock.length}</p></Link>
-          <Link href="/debts" className="rounded-3xl border border-red-200 bg-white p-6 shadow-sm transition hover:shadow-lg"><p className="text-sm font-bold text-slate-500">À récupérer</p><p className="mt-2 text-3xl font-black text-red-600">{cfa(stats.totalDebt)}</p></Link>
+        <section className="relative overflow-hidden rounded-[2.5rem] border border-slate-200 bg-slate-950 shadow-2xl">
+          <div
+            className="absolute inset-0 bg-cover bg-center opacity-40"
+            style={{
+              backgroundImage: `url(${business?.banner_url || 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?q=80&w=1600&auto=format&fit=crop'})`
+            }}
+          />
+
+          <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/55 to-black/20" />
+
+          <div className="relative flex flex-col gap-8 p-6 md:p-10 xl:flex-row xl:items-end xl:justify-between">
+            <div className="max-w-3xl">
+              <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-4 py-2 text-xs font-black uppercase tracking-[0.25em] text-white backdrop-blur-xl">
+                <Sparkles size={14} />
+                Dashboard Premium
+              </div>
+
+              <div className="flex items-center gap-5">
+                <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-[2rem] border border-white/10 bg-white shadow-2xl">
+                  {business?.logo_url ? (
+                    <img src={business.logo_url} alt="Logo" className="h-full w-full object-cover" />
+                  ) : (
+                    <Store size={40} className="text-slate-400" />
+                  )}
+                </div>
+
+                <div>
+                  <h1 className="text-4xl font-black tracking-tight text-white md:text-6xl">
+                    {business?.name || template.dashboardTitle}
+                  </h1>
+
+                  <p className="mt-3 max-w-2xl text-sm font-semibold text-white/70 md:text-lg">
+                    {business?.slogan || 'Pilotez votre activité avec une vue claire sur vos ventes, votre stock et vos performances.'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-3">
+              <div className="rounded-2xl border border-white/10 bg-white/10 px-5 py-4 text-white backdrop-blur-xl">
+                <p className="text-xs font-black uppercase tracking-wide text-white/60">
+                  Plan actuel
+                </p>
+                <p className="mt-1 text-lg font-black uppercase">
+                  {plan}
+                </p>
+              </div>
+
+              <Link
+                href={actionHref}
+                className="inline-flex items-center gap-2 rounded-2xl bg-emerald-500 px-6 py-4 text-sm font-black text-white shadow-xl shadow-emerald-500/20 transition hover:bg-emerald-600"
+              >
+                Action rapide
+                <ArrowRight size={18} />
+              </Link>
+            </div>
+          </div>
+        </section>
+
+        {plan === 'free' && (
+          <div className="mt-6">
+            <FreePlanAd
+              title="Votre business mérite plus"
+              text="Passez à Business pour débloquer plus d’automatisations, de rapports et de templates premium."
+            />
+          </div>
+        )}
+
+        <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <Link href="/sales" className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-xl">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-black uppercase tracking-wide text-slate-500">
+                  Ventes aujourd’hui
+                </p>
+                <p className="mt-2 text-3xl font-black text-slate-950">
+                  {cfa(stats.todayTotal)}
+                </p>
+              </div>
+              <CalendarDays className="text-emerald-600" size={24} />
+            </div>
+          </Link>
+
+          <Link href="/sales" className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-xl">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-black uppercase tracking-wide text-slate-500">
+                  Performance semaine
+                </p>
+                <p className="mt-2 text-3xl font-black text-slate-950">
+                  {cfa(stats.weekTotal)}
+                </p>
+              </div>
+              <Sparkles className="text-emerald-600" size={24} />
+            </div>
+          </Link>
+
+          <Link href="/products" className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-xl">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-black uppercase tracking-wide text-slate-500">
+                  Stock critique
+                </p>
+                <p className="mt-2 text-3xl font-black text-amber-600">
+                  {stats.lowStock.length}
+                </p>
+              </div>
+              <Bell className="text-amber-500" size={24} />
+            </div>
+          </Link>
+
+          <Link href="/debts" className="rounded-[2rem] border border-red-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-xl">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-black uppercase tracking-wide text-slate-500">
+                  Paiements à récupérer
+                </p>
+                <p className="mt-2 text-3xl font-black text-red-600">
+                  {cfa(stats.totalDebt)}
+                </p>
+              </div>
+              <CreditCard className="text-red-500" size={24} />
+            </div>
+          </Link>
         </div>
 
-        <div className="mb-8 rounded-[2rem] border border-emerald-200 bg-emerald-50 p-6">
-          <h3 className="text-2xl font-black text-slate-950">Modules actifs pour {template.label}</h3>
-          <div className="mt-4 flex flex-wrap gap-2">{template.modules.map((module) => <span key={module} className="rounded-full bg-white px-4 py-2 text-xs font-black text-emerald-700 shadow-sm">{module}</span>)}</div>
+        <div className="mt-6 rounded-[2rem] border border-emerald-200 bg-gradient-to-r from-emerald-50 to-white p-6 shadow-sm">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <h3 className="text-2xl font-black text-slate-950">
+                Modules actifs pour {template.label}
+              </h3>
+              <p className="mt-2 text-sm font-semibold text-slate-500">
+                Vos outils principaux sont organisés selon votre activité.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              {template.modules.map((module) => (
+                <span
+                  key={module}
+                  className="rounded-full bg-white px-4 py-2 text-xs font-black text-emerald-700 shadow-sm"
+                >
+                  {module}
+                </span>
+              ))}
+            </div>
+          </div>
         </div>
 
-        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+        <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {cards.map((card) => {
             const Icon = card.icon
-            return <Link key={card.href + card.title} href={card.href} className={`group rounded-3xl border p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-xl ${card.primary ? 'border-emerald-200 bg-emerald-600 text-white' : 'border-slate-200 bg-white text-slate-950'}`}><div className={`mb-6 inline-flex rounded-2xl p-4 ${card.primary ? 'bg-white/15 text-white' : 'bg-emerald-50 text-emerald-700'}`}><Icon size={26} /></div><h3 className="text-2xl font-black">{card.title}</h3><p className={`mt-2 text-sm font-semibold ${card.primary ? 'text-white/80' : 'text-slate-500'}`}>{card.text}</p></Link>
+
+            return (
+              <Link
+                key={card.href + card.title}
+                href={card.href}
+                className={`group rounded-[2rem] border p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-xl ${card.primary
+                  ? 'border-emerald-200 bg-emerald-600 text-white'
+                  : 'border-slate-200 bg-white text-slate-950'
+                  }`}
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <div className={`mb-4 inline-flex rounded-2xl p-3 ${card.primary
+                      ? 'bg-white/15 text-white'
+                      : 'bg-emerald-50 text-emerald-700'
+                      }`}>
+                      <Icon size={24} />
+                    </div>
+
+                    <h3 className="text-xl font-black">
+                      {card.title}
+                    </h3>
+
+                    <p className={`mt-2 text-sm font-semibold ${card.primary ? 'text-white/80' : 'text-slate-500'}`}>
+                      {card.text}
+                    </p>
+                  </div>
+
+                  <ArrowRight className={`${card.primary ? 'text-white/70' : 'text-slate-400'} transition group-hover:translate-x-1`} />
+                </div>
+              </Link>
+            )
           })}
         </div>
       </div>
