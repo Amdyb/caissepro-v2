@@ -4,10 +4,8 @@ import AppShell from '@/components/AppShell'
 import { supabase } from '@/lib/supabaseClient'
 import {
   AlertTriangle,
-  CreditCard,
   Download,
   Lock,
-  Shield,
   Trash2,
   User
 } from 'lucide-react'
@@ -20,9 +18,12 @@ export default function ProfileSettingsPage() {
   const [message, setMessage] = useState('')
 
   const [passwords, setPasswords] = useState({
+    current: '',
     password: '',
     confirm: ''
   })
+
+  const [deletePassword, setDeletePassword] = useState('')
 
   useEffect(() => {
     async function init() {
@@ -55,6 +56,18 @@ export default function ProfileSettingsPage() {
   }, [])
 
   async function changePassword() {
+    const { data: userData } = await supabase.auth.getUser()
+
+    if (!userData.user?.email) {
+      setMessage('Utilisateur introuvable.')
+      return
+    }
+
+    if (!passwords.current) {
+      setMessage('Veuillez saisir votre mot de passe actuel.')
+      return
+    }
+
     if (passwords.password.length < 8) {
       setMessage('Le mot de passe doit contenir au moins 8 caractères.')
       return
@@ -62,6 +75,16 @@ export default function ProfileSettingsPage() {
 
     if (passwords.password !== passwords.confirm) {
       setMessage('Les mots de passe ne correspondent pas.')
+      return
+    }
+
+    const { error: authError } = await supabase.auth.signInWithPassword({
+      email: userData.user.email,
+      password: passwords.current
+    })
+
+    if (authError) {
+      setMessage('Mot de passe actuel incorrect.')
       return
     }
 
@@ -74,7 +97,12 @@ export default function ProfileSettingsPage() {
       return
     }
 
-    setPasswords({ password: '', confirm: '' })
+    setPasswords({
+      current: '',
+      password: '',
+      confirm: ''
+    })
+
     setMessage('Mot de passe mis à jour.')
   }
 
@@ -123,9 +151,31 @@ export default function ProfileSettingsPage() {
   }
 
   async function deleteAccount() {
+    const { data: userData } = await supabase.auth.getUser()
+
+    if (!userData.user?.email) {
+      setMessage('Utilisateur introuvable.')
+      return
+    }
+
+    if (!deletePassword) {
+      setMessage('Veuillez confirmer votre mot de passe.')
+      return
+    }
+
     const confirmDelete = confirm('Cette action supprimera votre boutique. Continuer ?')
 
     if (!confirmDelete) return
+
+    const { error: authError } = await supabase.auth.signInWithPassword({
+      email: userData.user.email,
+      password: deletePassword
+    })
+
+    if (authError) {
+      setMessage('Mot de passe incorrect.')
+      return
+    }
 
     if (!business?.id) return
 
@@ -139,6 +189,7 @@ export default function ProfileSettingsPage() {
       return
     }
 
+    setDeletePassword('')
     setMessage('Compte désactivé.')
   }
 
@@ -189,10 +240,6 @@ export default function ProfileSettingsPage() {
                 <p className="mt-2 text-3xl font-black uppercase text-emerald-300">
                   {business?.plan || 'free'}
                 </p>
-
-                <p className="mt-2 text-sm font-bold text-white/60">
-                  Expiration: {business?.subscription_expires_at || 'Non définie'}
-                </p>
               </div>
             </div>
           </div>
@@ -209,9 +256,6 @@ export default function ProfileSettingsPage() {
                 <h2 className="text-3xl font-black text-slate-950">
                   Informations
                 </h2>
-                <p className="mt-1 text-sm font-semibold text-slate-500">
-                  Informations du compte et boutique.
-                </p>
               </div>
             </div>
 
@@ -246,13 +290,18 @@ export default function ProfileSettingsPage() {
                 <h2 className="text-3xl font-black text-slate-950">
                   Sécurité
                 </h2>
-                <p className="mt-1 text-sm font-semibold text-slate-500">
-                  Modifier le mot de passe.
-                </p>
               </div>
             </div>
 
             <div className="space-y-4">
+              <input
+                type="password"
+                placeholder="Mot de passe actuel"
+                value={passwords.current}
+                onChange={(e) => setPasswords({ ...passwords, current: e.target.value })}
+                className="w-full rounded-2xl border border-slate-300 px-5 py-4 font-bold outline-none"
+              />
+
               <input
                 type="password"
                 placeholder="Nouveau mot de passe"
@@ -290,15 +339,12 @@ export default function ProfileSettingsPage() {
                 <h2 className="text-3xl font-black text-slate-950">
                   Sauvegarde
                 </h2>
-                <p className="mt-1 text-sm font-semibold text-slate-500">
-                  Exportez vos données.
-                </p>
               </div>
             </div>
 
             <button
               onClick={exportProducts}
-              className="w-full rounded-2xl border border-slate-200 bg-slate-950 py-4 text-sm font-black text-white"
+              className="w-full rounded-2xl border border-slate-200 bg-slate-950 py-3 text-sm font-black text-white"
             >
               Exporter produits
             </button>
@@ -314,23 +360,28 @@ export default function ProfileSettingsPage() {
                 <h2 className="text-3xl font-black text-slate-950">
                   Zone dangereuse
                 </h2>
-                <p className="mt-1 text-sm font-semibold text-slate-500">
-                  Actions irréversibles.
-                </p>
               </div>
             </div>
 
             <div className="space-y-4">
               <button
                 onClick={resetProducts}
-                className="w-full rounded-2xl border border-red-300 bg-white py-4 text-sm font-black text-red-700"
+                className="w-full rounded-2xl border border-red-300 bg-white py-3 text-sm font-black text-red-700"
               >
                 Réinitialiser produits
               </button>
 
+              <input
+                type="password"
+                placeholder="Confirmer mot de passe"
+                value={deletePassword}
+                onChange={(e) => setDeletePassword(e.target.value)}
+                className="w-full rounded-2xl border border-red-200 px-5 py-4 font-bold outline-none"
+              />
+
               <button
                 onClick={deleteAccount}
-                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-red-600 py-4 text-sm font-black text-white"
+                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-red-600 py-3 text-sm font-black text-white"
               >
                 <Trash2 size={18} />
                 Supprimer compte
