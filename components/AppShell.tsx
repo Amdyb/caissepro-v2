@@ -19,7 +19,9 @@ import {
   Share2,
   ShoppingCart,
   Store,
-  Users
+  Trash2,
+  Users,
+  Wallet
 } from 'lucide-react'
 import { supabase } from '@/lib/supabaseClient'
 
@@ -33,7 +35,6 @@ const employeeNav: NavSection[] = [
     items: [
       { label: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard },
       { label: 'Vendre', href: '/pos', icon: ShoppingCart },
-      { label: 'Caisse', href: '/register-shifts', icon: CalendarClock },
       { label: 'Clients', href: '/customers', icon: Users },
       { label: 'Rapport du jour', href: '/reports', icon: ReceiptText },
       { label: 'Partager ma boutique', href: '/storefront', icon: Share2 }
@@ -49,17 +50,29 @@ const adminNav: NavSection[] = [
       { label: 'Vendre', href: '/pos', icon: ShoppingCart },
       { label: 'Remboursements', href: '/refunds', icon: RotateCcw },
       { label: 'Produits', href: '/products', icon: Package },
-      { label: 'Partager ma boutique', href: '/storefront', icon: Share2 },
+      { label: 'Clients', href: '/customers', icon: Users },
       { label: 'Client Doit', href: '/debts', icon: HandCoins },
+      { label: 'Caisse jour', href: '/register-shifts', icon: Wallet },
+      { label: 'Partager ma boutique', href: '/storefront', icon: Share2 },
       { label: 'Employés', href: '/employees', icon: Users },
-      { label: 'Paramètres', href: '/settings/profile', icon: Settings }
+      { label: 'Paramètres', href: '/settings/profile', icon: Settings },
+      { label: 'Reset Produits', href: '/settings/profile', icon: Trash2 },
+      { label: 'Supprimer boutique', href: '/settings/profile', icon: Trash2 }
     ]
   }
 ]
 
 function getNavForRole(role: string) {
-  const normalized = role.toLowerCase()
-  if (normalized.includes('employee') || normalized.includes('sales')) return employeeNav
+  const normalized = (role || 'admin').toLowerCase()
+
+  if (
+    normalized.includes('employee') ||
+    normalized.includes('sales') ||
+    normalized.includes('vendeur')
+  ) {
+    return employeeNav
+  }
+
   return adminNav
 }
 
@@ -71,11 +84,16 @@ export default function AppShell({ children, title, subtitle, action }: AppShell
   const [businessName, setBusinessName] = useState('CaissePro')
   const [businessLogo, setBusinessLogo] = useState<string | null>(null)
   const [role, setRole] = useState('admin')
+  const [ready, setReady] = useState(false)
 
   useEffect(() => {
     async function loadBranding() {
       const { data: userData } = await supabase.auth.getUser()
-      if (!userData.user) return
+
+      if (!userData.user) {
+        setReady(true)
+        return
+      }
 
       const { data: membership } = await supabase
         .from('business_members')
@@ -85,12 +103,19 @@ export default function AppShell({ children, title, subtitle, action }: AppShell
         .maybeSingle()
 
       const member: any = membership
-      setRole(member?.role || 'admin')
+
+      if (member?.role) {
+        setRole(member.role)
+      } else {
+        setRole('admin')
+      }
 
       if (member?.businesses) {
         setBusinessName(member.businesses.name || 'CaissePro')
         setBusinessLogo(member.businesses.logo_url || null)
       }
+
+      setReady(true)
     }
 
     loadBranding()
@@ -102,6 +127,14 @@ export default function AppShell({ children, title, subtitle, action }: AppShell
   }
 
   const navSections = getNavForRole(role)
+
+  if (!ready) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-slate-50">
+        <p className="font-black text-slate-600">Chargement...</p>
+      </main>
+    )
+  }
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-950">
@@ -127,8 +160,14 @@ export default function AppShell({ children, title, subtitle, action }: AppShell
                   {section.items.map((item) => {
                     const Icon = item.icon
                     const active = pathname === item.href
+
                     return (
-                      <Link key={item.href} href={item.href} className={`flex items-center gap-4 rounded-2xl px-4 py-3 text-sm font-black ${active ? 'bg-emerald-50 text-emerald-700' : 'text-slate-600 hover:bg-slate-50'}`}>
+                      <Link
+                        key={item.label + item.href}
+                        href={item.href}
+                        className={`flex items-center gap-4 rounded-2xl px-4 py-3 text-sm font-black ${active ? 'bg-emerald-50 text-emerald-700' : 'text-slate-600 hover:bg-slate-50'}`}
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
                         <Icon size={20} />
                         {sidebarOpen && <span>{item.label}</span>}
                       </Link>
