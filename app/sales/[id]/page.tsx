@@ -13,6 +13,7 @@ type SaleItem = {
   total: number | null
   products?: {
     name: string
+    image_url?: string | null
   } | null
 }
 
@@ -34,6 +35,7 @@ type Sale = {
     email: string | null
     address: string | null
     currency: string | null
+    logo_url?: string | null
   } | null
   customers?: {
     full_name: string
@@ -73,22 +75,15 @@ export default function ReceiptPage() {
 
     const business = sale.businesses?.name || 'CaissePro'
     const date = new Date(sale.created_at)
+
     const lines = (sale.sale_items || [])
       .map((item) => {
         const name = item.products?.name || 'Produit'
         return `- ${name} x${item.quantity || 0}: ${Number(item.total || 0).toLocaleString('fr-FR')} CFA`
       })
-      .join('\\n')
+      .join('\n')
 
-    const customerLine = sale.customers?.full_name
-      ? `Client: ${sale.customers.full_name}${sale.customers.phone ? ` (${sale.customers.phone})` : ''}\\n`
-      : ''
-
-    const debtLine = Number(sale.remaining_amount || 0) > 0
-      ? `Reste à payer: ${Number(sale.remaining_amount || 0).toLocaleString('fr-FR')} CFA\\n`
-      : ''
-
-    return `Reçu ${business}\\nVente #${sale.id.slice(0, 8)}\\nDate: ${date.toLocaleDateString('fr-FR')} ${date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}\\n${customerLine}\\n${lines}\\n\\nTotal: ${Number(sale.total || 0).toLocaleString('fr-FR')} CFA\\nPaiement: ${paymentLabel(sale.payment_method)}\\n${debtLine}Merci pour votre achat.`
+    return `Reçu ${business}\nClient: ${sale.customers?.full_name || 'Client comptoir'}\n\n${lines}\n\nTotal: ${Number(sale.total || 0).toLocaleString('fr-FR')} CFA`
   }, [sale])
 
   useEffect(() => {
@@ -117,7 +112,8 @@ export default function ReceiptPage() {
           phone,
           email,
           address,
-          currency
+          currency,
+          logo_url
         ),
         customers (
           full_name,
@@ -129,7 +125,8 @@ export default function ReceiptPage() {
           price,
           total,
           products (
-            name
+            name,
+            image_url
           )
         )
       `)
@@ -168,192 +165,144 @@ export default function ReceiptPage() {
           <ReceiptText className="mx-auto text-slate-400" size={44} />
           <h1 className="mt-4 text-2xl font-black text-slate-950">Reçu introuvable</h1>
           <p className="mt-2 text-slate-500">{message || 'Cette vente est introuvable.'}</p>
-          <Link href="/sales" className="mt-6 inline-block rounded-2xl bg-slate-950 px-6 py-3 font-black text-white">
-            Retour aux ventes
-          </Link>
         </div>
       </main>
     )
   }
 
   const date = new Date(sale.created_at)
-  const receiptWidthClass = paperSize === '58mm' ? 'max-w-[260px]' : 'max-w-[360px]'
+  const receiptWidthClass = paperSize === '58mm' ? 'max-w-[260px]' : 'max-w-[380px]'
 
   return (
-    <main className="min-h-screen bg-slate-50">
-      <style jsx global>{`
-        @media print {
-          @page {
-            size: ${paperSize};
-            margin: 4mm;
-          }
-
-          html,
-          body {
-            background: white !important;
-            margin: 0 !important;
-            padding: 0 !important;
-          }
-
-          .no-print {
-            display: none !important;
-          }
-
-          .receipt-shell {
-            border: none !important;
-            box-shadow: none !important;
-            margin: 0 auto !important;
-            padding: 0 !important;
-            width: ${paperSize === '58mm' ? '58mm' : '80mm'} !important;
-            max-width: ${paperSize === '58mm' ? '58mm' : '80mm'} !important;
-          }
-
-          .receipt-paper {
-            border: none !important;
-            box-shadow: none !important;
-            padding: 0 !important;
-            font-size: ${paperSize === '58mm' ? '10px' : '12px'} !important;
-            line-height: 1.25 !important;
-          }
-
-          .thermal-title {
-            font-size: ${paperSize === '58mm' ? '16px' : '20px'} !important;
-          }
-
-          .thermal-total {
-            font-size: ${paperSize === '58mm' ? '18px' : '22px'} !important;
-          }
-        }
-      `}</style>
-
-      <header className="no-print border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-5xl flex-col gap-4 px-6 py-4 md:flex-row md:items-center md:justify-between">
-          <Link href="/sales" className="inline-flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-brand-700">
-            <ArrowLeft size={16} /> Historique des ventes
+    <main className="min-h-screen bg-slate-100">
+      <header className="border-b border-slate-200 bg-white no-print">
+        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
+          <Link href="/sales" className="inline-flex items-center gap-2 text-sm font-black text-slate-600">
+            <ArrowLeft size={16} /> Retour
           </Link>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <select
-              className="rounded-full border border-slate-300 bg-white px-4 py-3 text-sm font-black text-slate-700 outline-none"
-              value={paperSize}
-              onChange={(e) => setPaperSize(e.target.value as '58mm' | '80mm')}
-            >
-              <option value="80mm">Thermal 80mm</option>
-              <option value="58mm">Thermal 58mm</option>
-            </select>
-
-            <button onClick={shareWhatsApp} className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-black text-slate-700 hover:bg-slate-100">
-              <MessageCircle size={17} /> WhatsApp
+          <div className="flex gap-3">
+            <button onClick={shareWhatsApp} className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-black text-slate-700">
+              <MessageCircle size={16} /> WhatsApp
             </button>
 
-            <button onClick={printReceipt} className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-5 py-3 text-sm font-black text-white hover:bg-slate-800">
-              <Printer size={17} /> Imprimer
+            <button onClick={printReceipt} className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-5 py-3 text-sm font-black text-white">
+              <Printer size={16} /> Imprimer
             </button>
           </div>
         </div>
       </header>
 
       <section className="mx-auto max-w-5xl px-6 py-10">
-        <div className={`receipt-shell mx-auto ${receiptWidthClass}`}>
-          <div className="receipt-paper rounded-3xl border border-slate-200 bg-white p-5 font-mono shadow-sm">
+        <div className={`mx-auto ${receiptWidthClass}`}>
+          <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-xl">
             <div className="text-center">
-              <h1 className="thermal-title text-2xl font-black uppercase tracking-tight text-slate-950">
+              {sale.businesses?.logo_url && (
+                <div className="mb-4 flex justify-center">
+                  <img
+                    src={sale.businesses.logo_url}
+                    alt="logo"
+                    className="h-20 w-20 rounded-2xl object-cover border border-slate-200"
+                  />
+                </div>
+              )}
+
+              <h1 className="text-3xl font-black text-slate-950">
                 {sale.businesses?.name || 'CaissePro'}
               </h1>
 
-              {sale.businesses?.address && (
-                <p className="mt-1 text-xs font-bold text-slate-600">{sale.businesses.address}</p>
-              )}
-
-              <p className="mt-1 text-xs font-bold text-slate-600">
-                {sale.businesses?.phone || ''} {sale.businesses?.email ? `• ${sale.businesses.email}` : ''}
+              <p className="mt-2 text-xs font-bold text-slate-500">
+                {sale.businesses?.address || ''}
               </p>
             </div>
 
-            <div className="my-4 border-t border-dashed border-slate-400" />
+            <div className="my-5 border-t border-dashed border-slate-300" />
 
-            <div className="space-y-1 text-xs font-bold text-slate-700">
-              <div className="flex justify-between gap-2">
-                <span>REÇU</span>
-                <span>#{sale.id.slice(0, 8)}</span>
+            <div className="space-y-2 text-sm font-bold text-slate-700">
+              <div className="flex justify-between">
+                <span>Client</span>
+                <span>{sale.customers?.full_name || 'Client comptoir'}</span>
               </div>
 
-              <div className="flex justify-between gap-2">
-                <span>DATE</span>
+              {sale.customers?.phone && (
+                <div className="flex justify-between">
+                  <span>Téléphone</span>
+                  <span>{sale.customers.phone}</span>
+                </div>
+              )}
+
+              <div className="flex justify-between">
+                <span>Date</span>
                 <span>{date.toLocaleDateString('fr-FR')}</span>
               </div>
 
-              <div className="flex justify-between gap-2">
-                <span>HEURE</span>
-                <span>{date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
-              </div>
-
-              <div className="flex justify-between gap-2">
-                <span>PAIEMENT</span>
+              <div className="flex justify-between">
+                <span>Paiement</span>
                 <span>{paymentLabel(sale.payment_method)}</span>
               </div>
-
-              {sale.customers?.full_name && (
-                <div className="flex justify-between gap-2">
-                  <span>CLIENT</span>
-                  <span className="text-right">{sale.customers.full_name}</span>
-                </div>
-              )}
             </div>
 
-            <div className="my-4 border-t border-dashed border-slate-400" />
+            <div className="my-5 border-t border-dashed border-slate-300" />
 
-            <div className="space-y-3">
+            <div className="space-y-4">
               {(sale.sale_items || []).map((item) => (
-                <div key={item.id}>
-                  <div className="font-black text-slate-950">
-                    {item.products?.name || 'Produit supprimé'}
-                  </div>
+                <div key={item.id} className="rounded-2xl border border-slate-100 bg-slate-50 p-3">
+                  <div className="flex gap-3">
+                    {item.products?.image_url ? (
+                      <img
+                        src={item.products.image_url}
+                        alt={item.products?.name || 'product'}
+                        className="h-16 w-16 rounded-xl object-cover border border-slate-200 bg-white"
+                      />
+                    ) : (
+                      <div className="h-16 w-16 rounded-xl border border-slate-200 bg-white" />
+                    )}
 
-                  <div className="mt-1 flex justify-between gap-2 text-xs font-bold text-slate-700">
-                    <span>{item.quantity || 0} x {Number(item.price || 0).toLocaleString('fr-FR')}</span>
-                    <span>{Number(item.total || 0).toLocaleString('fr-FR')}</span>
+                    <div className="flex-1">
+                      <p className="font-black text-slate-950">
+                        {item.products?.name || 'Produit'}
+                      </p>
+
+                      <div className="mt-2 flex items-center justify-between text-xs font-bold text-slate-600">
+                        <span>
+                          {item.quantity || 0} × {Number(item.price || 0).toLocaleString('fr-FR')} CFA
+                        </span>
+
+                        <span className="text-sm font-black text-slate-950">
+                          {Number(item.total || 0).toLocaleString('fr-FR')} CFA
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               ))}
             </div>
 
-            <div className="my-4 border-t border-dashed border-slate-400" />
+            <div className="my-5 border-t border-dashed border-slate-300" />
 
-            <div className="space-y-2 text-sm font-black">
-              <div className="flex justify-between">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between text-lg font-black text-slate-950">
                 <span>TOTAL</span>
                 <span>{Number(sale.total || 0).toLocaleString('fr-FR')} CFA</span>
               </div>
 
-              {Number(sale.paid_amount || 0) > 0 && (
-                <div className="flex justify-between text-xs">
-                  <span>PAYÉ</span>
-                  <span>{Number(sale.paid_amount || 0).toLocaleString('fr-FR')} CFA</span>
-                </div>
-              )}
-
               {Number(sale.remaining_amount || 0) > 0 && (
-                <div className="flex justify-between text-xs text-red-700">
+                <div className="flex items-center justify-between text-sm font-black text-red-700">
                   <span>RESTE</span>
                   <span>{Number(sale.remaining_amount || 0).toLocaleString('fr-FR')} CFA</span>
                 </div>
               )}
             </div>
 
-            <div className="my-4 border-t border-dashed border-slate-400" />
+            <div className="my-5 border-t border-dashed border-slate-300" />
 
-            <p className="text-center text-xs font-bold text-slate-700">
+            <p className="text-center text-xs font-black text-slate-600">
               Merci pour votre achat.
             </p>
 
-            <p className="mt-2 text-center text-[10px] font-bold text-slate-500">
-              Reçu généré par CaissePro
+            <p className="mt-2 text-center text-[10px] font-bold text-slate-400">
+              Généré avec CaissePro
             </p>
-
-            <div className="mt-4 text-center text-xs">
-              --------------------
-            </div>
           </div>
         </div>
       </section>
