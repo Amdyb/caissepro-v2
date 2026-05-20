@@ -3,7 +3,7 @@
 import AppShell from '@/components/AppShell'
 import POSCheckoutDrawer from '@/components/POSCheckoutDrawer'
 import { supabase } from '@/lib/supabaseClient'
-import { ImageIcon, Search, ShoppingCart, Trash2, Zap } from 'lucide-react'
+import { ImageIcon, ShoppingCart, Trash2, Zap } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 type Product = {
@@ -21,20 +21,23 @@ type Product = {
 export default function POSPage() {
   const barcodeInputRef = useRef<HTMLInputElement | null>(null)
   const [businessId, setBusinessId] = useState<string | null>(null)
+  const [businessName, setBusinessName] = useState('CaissePro')
+  const [businessLogo, setBusinessLogo] = useState('')
   const [products, setProducts] = useState<Product[]>([])
   const [customers, setCustomers] = useState<any[]>([])
   const [cart, setCart] = useState<any[]>([])
   const [search, setSearch] = useState('')
-  const [barcodeInput, setBarcodeInput] = useState('')
   const [checkoutOpen, setCheckoutOpen] = useState(false)
   const [selectedCustomerId, setSelectedCustomerId] = useState('')
   const [paymentMethod, setPaymentMethod] = useState('cash')
   const [checkoutLoading, setCheckoutLoading] = useState(false)
   const [message, setMessage] = useState('')
+  const [lastReceipt, setLastReceipt] = useState('')
   const [newCustomer, setNewCustomer] = useState({ full_name: '', phone: '' })
 
   const filteredProducts = useMemo(() => {
     const q = search.toLowerCase().trim()
+
     return products.filter((product) => {
       return !q || product.name.toLowerCase().includes(q)
     })
@@ -46,28 +49,34 @@ export default function POSPage() {
   useEffect(() => {
     async function init() {
       const { data: userData } = await supabase.auth.getUser()
+
       if (!userData.user) return
 
       const { data: membership } = await supabase
         .from('business_members')
-        .select('business_id')
+        .select('business_id, businesses(name, logo_url)')
         .eq('user_id', userData.user.id)
         .limit(1)
         .maybeSingle()
 
       if (!membership?.business_id) return
 
-      setBusinessId(membership.business_id)
+      const member: any = membership
+
+      setBusinessId(member.business_id)
+      setBusinessName(member?.businesses?.name || 'CaissePro')
+      setBusinessLogo(member?.businesses?.logo_url || '')
 
       const { data: productData } = await supabase
         .from('products')
         .select('*')
-        .eq('business_id', membership.business_id)
+        .eq('business_id', member.business_id)
 
       const { data: customerData } = await supabase
         .from('customers')
         .select('id,full_name,phone')
-        .eq('business_id', membership.business_id)
+        .eq('business_id', member.business_id)
+        .order('created_at', { ascending: false })
 
       setProducts((productData || []) as Product[])
       setCustomers(customerData || [])
@@ -100,13 +109,48 @@ export default function POSPage() {
     setCart((prev: any[]) => prev.filter((i) => i.product.id !== productId))
   }
 
+  async function addCustomer() {
+    if (!businessId) return
+
+    if (!newCustomer.full_name || !newCustomer.phone) {
+      setMessage('Nom et téléphone requis.')
+      return
+    }
+
+    const payload = {
+      business_id: businessId,
+      full_name: newCustomer.full_name,
+      phone: newCustomer.phone
+    }
+
+    const { data, error } = await supabase
+      .from('customers')
+      .insert(payload)
+      .select()
+      .single()
+
+    if (error) {
+      setMessage(error.message)
+      return
+    }
+
+    const updatedCustomers = [data, ...customers]
+
+    setCustomers(updatedCustomers)
+    setSelectedCustomerId(data.id)
+
+    setMessage('Client ajouté avec succès.')
+
+    setNewCustomer({ full_name: '', phone: '' })
+  }
+
   async function checkout() {
     if (!businessId || cart.length === 0) return
 
     setCheckoutLoading(true)
 
     try {
-      const { error } = await supabase
+      const { data: saleData, error } = await supabase
         .from('sales')
         .insert({
           business_id: businessId,
@@ -114,6 +158,8 @@ export default function POSPage() {
           customer_id: selectedCustomerId || null,
           payment_method: paymentMethod
         })
+        .select()
+        .single()
 
       if (error) throw error
 
@@ -126,14 +172,50 @@ export default function POSPage() {
           .eq('id', item.product.id)
       }
 
+      const customer = customers.find((c) => c.id === selectedCustomerId)
+
+      const receiptLines = cart.map((item) => {
+        return `• ${item.product.name} x${item.quantity} - ${(item.price * item.quantity).toLocaleString('fr-FR')} CFA`
+      }).join('%0A')
+
+      const receipt = `🧾 ${businessName}%0A%0A${receiptLines}%0A%0ATotal: ${total.toLocaleString('fr-FR')} CFA%0APaiement: ${paymentMethod}%0AClient: ${customer?.full_name || 'Client inconnu'}%0A%0AMerci pour votre achat.`
+
+      setLastReceipt(receipt)
+
       setCart([])
       setCheckoutOpen(false)
       setMessage('Vente enregistrée avec succès.')
+
+      const refreshedProducts = products.map((product) => {
+        const sold = cart.find((i) => i.product.id === product.id)
+
+        if (!sold) return product
+
+        return {
+          ...product,
+          stock: Math.max(0, Number(product.stock || 0) - Number(sold.quantity || 0))
+        }
+      })
+
+      setProducts(refreshedProducts)
     } catch (err: any) {
       setMessage(err?.message || 'Erreur checkout')
     }
 
     setCheckoutLoading(false)
+  }
+
+  function sendWhatsAppReceipt() {
+    const customer = customers.find((c) => c.id === selectedCustomerId)
+
+    if (!customer?.phone) {
+      setMessage('Ajoutez un client avec téléphone.')
+      return
+    }
+
+    const cleanPhone = customer.phone.replace(/\D/g, '')
+
+    window.open(`https://wa.me/${cleanPhone}?text=${lastReceipt}`, '_blank')
   }
 
   return (
@@ -165,9 +247,9 @@ export default function POSPage() {
               onClick={() => addToCart(product)}
               className="rounded-3xl border border-slate-200 bg-white p-4 text-left shadow-sm"
             >
-              <div className="flex h-36 items-center justify-center rounded-2xl bg-slate-50">
+              <div className="flex h-36 items-center justify-center overflow-hidden rounded-2xl bg-slate-50">
                 {product.image ? (
-                  <img src={product.image} alt={product.name} className="max-h-full max-w-full object-contain" />
+                  <img src={product.image} alt={product.name} className="h-full w-full object-cover" />
                 ) : (
                   <ImageIcon className="text-slate-300" size={40} />
                 )}
@@ -222,12 +304,12 @@ export default function POSPage() {
           setSelectedCustomerId={setSelectedCustomerId}
           newCustomer={newCustomer}
           setNewCustomer={setNewCustomer}
-          addCustomer={() => {}}
+          addCustomer={addCustomer}
           paymentMethod={paymentMethod}
           setPaymentMethod={setPaymentMethod}
           checkout={checkout}
           checkoutLoading={checkoutLoading}
-          sendWhatsAppReceipt={() => {}}
+          sendWhatsAppReceipt={sendWhatsAppReceipt}
         />
       </div>
     </AppShell>
