@@ -22,7 +22,6 @@ export default function POSPage() {
   const barcodeInputRef = useRef<HTMLInputElement | null>(null)
   const [businessId, setBusinessId] = useState<string | null>(null)
   const [businessName, setBusinessName] = useState('CaissePro')
-  const [businessLogo, setBusinessLogo] = useState('')
   const [products, setProducts] = useState<Product[]>([])
   const [customers, setCustomers] = useState<any[]>([])
   const [cart, setCart] = useState<any[]>([])
@@ -37,10 +36,7 @@ export default function POSPage() {
 
   const filteredProducts = useMemo(() => {
     const q = search.toLowerCase().trim()
-
-    return products.filter((product) => {
-      return !q || product.name.toLowerCase().includes(q)
-    })
+    return products.filter((product) => !q || product.name.toLowerCase().includes(q))
   }, [products, search])
 
   const total = cart.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 0)), 0)
@@ -49,12 +45,11 @@ export default function POSPage() {
   useEffect(() => {
     async function init() {
       const { data: userData } = await supabase.auth.getUser()
-
       if (!userData.user) return
 
       const { data: membership } = await supabase
         .from('business_members')
-        .select('business_id, businesses(name, logo_url)')
+        .select('business_id, businesses(name)')
         .eq('user_id', userData.user.id)
         .limit(1)
         .maybeSingle()
@@ -62,21 +57,11 @@ export default function POSPage() {
       if (!membership?.business_id) return
 
       const member: any = membership
-
       setBusinessId(member.business_id)
       setBusinessName(member?.businesses?.name || 'CaissePro')
-      setBusinessLogo(member?.businesses?.logo_url || '')
 
-      const { data: productData } = await supabase
-        .from('products')
-        .select('*')
-        .eq('business_id', member.business_id)
-
-      const { data: customerData } = await supabase
-        .from('customers')
-        .select('id,full_name,phone')
-        .eq('business_id', member.business_id)
-        .order('created_at', { ascending: false })
+      const { data: productData } = await supabase.from('products').select('*').eq('business_id', member.business_id)
+      const { data: customerData } = await supabase.from('customers').select('id,full_name,phone').eq('business_id', member.business_id)
 
       setProducts((productData || []) as Product[])
       setCustomers(customerData || [])
@@ -88,13 +73,8 @@ export default function POSPage() {
   function addToCart(product: Product) {
     setCart((prev: any[]) => {
       const existing = prev.find((i) => i.product.id === product.id)
-
       if (existing) {
-        return prev.map((i) =>
-          i.product.id === product.id
-            ? { ...i, quantity: i.quantity + 1 }
-            : i
-        )
+        return prev.map((i) => i.product.id === product.id ? { ...i, quantity: i.quantity + 1 } : i)
       }
 
       return [...prev, {
@@ -112,20 +92,13 @@ export default function POSPage() {
   async function addCustomer() {
     if (!businessId) return
 
-    if (!newCustomer.full_name || !newCustomer.phone) {
-      setMessage('Nom et téléphone requis.')
-      return
-    }
-
-    const payload = {
-      business_id: businessId,
-      full_name: newCustomer.full_name,
-      phone: newCustomer.phone
-    }
-
     const { data, error } = await supabase
       .from('customers')
-      .insert(payload)
+      .insert({
+        business_id: businessId,
+        full_name: newCustomer.full_name,
+        phone: newCustomer.phone
+      })
       .select()
       .single()
 
@@ -134,14 +107,10 @@ export default function POSPage() {
       return
     }
 
-    const updatedCustomers = [data, ...customers]
-
-    setCustomers(updatedCustomers)
+    setCustomers([data, ...customers])
     setSelectedCustomerId(data.id)
-
-    setMessage('Client ajouté avec succès.')
-
     setNewCustomer({ full_name: '', phone: '' })
+    setMessage('Client ajouté avec succès.')
   }
 
   async function checkout() {
@@ -163,6 +132,22 @@ export default function POSPage() {
 
       if (error) throw error
 
+      const saleItems = cart.map((item) => ({
+        sale_id: saleData.id,
+        product_id: item.product.id,
+        quantity: item.quantity,
+        price: item.price,
+        total: item.quantity * item.price
+      }))
+
+      const { error: itemError } = await supabase
+        .from('sale_items')
+        .insert(saleItems)
+
+      if (itemError) {
+        console.error(itemError)
+      }
+
       for (const item of cart) {
         const newStock = Math.max(0, Number(item.product.stock || 0) - Number(item.quantity || 0))
 
@@ -174,30 +159,13 @@ export default function POSPage() {
 
       const customer = customers.find((c) => c.id === selectedCustomerId)
 
-      const receiptLines = cart.map((item) => {
-        return `• ${item.product.name} x${item.quantity} - ${(item.price * item.quantity).toLocaleString('fr-FR')} CFA`
-      }).join('%0A')
+      const receiptLines = cart.map((item) => `• ${item.product.name} x${item.quantity} - ${(item.price * item.quantity).toLocaleString('fr-FR')} CFA`).join('%0A')
 
-      const receipt = `🧾 ${businessName}%0A%0A${receiptLines}%0A%0ATotal: ${total.toLocaleString('fr-FR')} CFA%0APaiement: ${paymentMethod}%0AClient: ${customer?.full_name || 'Client inconnu'}%0A%0AMerci pour votre achat.`
-
-      setLastReceipt(receipt)
+      setLastReceipt(`🧾 ${businessName}%0A%0A${receiptLines}%0A%0ATotal: ${total.toLocaleString('fr-FR')} CFA%0AClient: ${customer?.full_name || 'Client inconnu'}`)
 
       setCart([])
       setCheckoutOpen(false)
       setMessage('Vente enregistrée avec succès.')
-
-      const refreshedProducts = products.map((product) => {
-        const sold = cart.find((i) => i.product.id === product.id)
-
-        if (!sold) return product
-
-        return {
-          ...product,
-          stock: Math.max(0, Number(product.stock || 0) - Number(sold.quantity || 0))
-        }
-      })
-
-      setProducts(refreshedProducts)
     } catch (err: any) {
       setMessage(err?.message || 'Erreur checkout')
     }
@@ -214,54 +182,30 @@ export default function POSPage() {
     }
 
     const cleanPhone = customer.phone.replace(/\D/g, '')
-
     window.open(`https://wa.me/${cleanPhone}?text=${lastReceipt}`, '_blank')
   }
 
   return (
     <AppShell title="Caisse POS" subtitle="Workflow rapide moderne.">
       <div className="mx-auto max-w-7xl pb-36">
-        {message && (
-          <div className="mb-4 rounded-2xl bg-emerald-50 p-4 text-sm font-black text-emerald-700">
-            {message}
-          </div>
-        )}
+        {message && <div className="mb-4 rounded-2xl bg-emerald-50 p-4 text-sm font-black text-emerald-700">{message}</div>}
 
         <div className="mb-5 flex gap-3 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="relative flex-1">
             <Zap className="absolute left-4 top-3.5 text-emerald-600" size={20} />
-            <input
-              ref={barcodeInputRef}
-              className="w-full rounded-2xl border border-slate-300 py-3 pl-12 pr-4 font-black outline-none"
-              placeholder="Rechercher produit..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
+            <input ref={barcodeInputRef} className="w-full rounded-2xl border border-slate-300 py-3 pl-12 pr-4 font-black outline-none" placeholder="Rechercher produit..." value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
         </div>
 
         <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
           {filteredProducts.map((product) => (
-            <button
-              key={product.id}
-              onClick={() => addToCart(product)}
-              className="rounded-3xl border border-slate-200 bg-white p-4 text-left shadow-sm"
-            >
+            <button key={product.id} onClick={() => addToCart(product)} className="rounded-3xl border border-slate-200 bg-white p-4 text-left shadow-sm">
               <div className="flex h-36 items-center justify-center overflow-hidden rounded-2xl bg-slate-50">
-                {product.image ? (
-                  <img src={product.image} alt={product.name} className="h-full w-full object-cover" />
-                ) : (
-                  <ImageIcon className="text-slate-300" size={40} />
-                )}
+                {product.image ? <img src={product.image} alt={product.name} className="h-full w-full object-cover" /> : <ImageIcon className="text-slate-300" size={40} />}
               </div>
 
-              <h3 className="mt-4 text-lg font-black text-slate-950">
-                {product.name}
-              </h3>
-
-              <p className="mt-2 text-2xl font-black text-emerald-600">
-                {Number(product.sell_price || 0).toLocaleString('fr-FR')} CFA
-              </p>
+              <h3 className="mt-4 text-lg font-black text-slate-950">{product.name}</h3>
+              <p className="mt-2 text-2xl font-black text-emerald-600">{Number(product.sell_price || 0).toLocaleString('fr-FR')} CFA</p>
             </button>
           ))}
         </div>
@@ -285,10 +229,7 @@ export default function POSPage() {
                 ))}
               </div>
 
-              <button
-                onClick={() => setCheckoutOpen(true)}
-                className="rounded-2xl bg-emerald-600 px-8 py-4 text-lg font-black text-white"
-              >
+              <button onClick={() => setCheckoutOpen(true)} className="rounded-2xl bg-emerald-600 px-8 py-4 text-lg font-black text-white">
                 {total.toLocaleString('fr-FR')} CFA
               </button>
             </div>
