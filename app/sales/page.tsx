@@ -466,6 +466,13 @@ export default function SalesPage() {
 
                       <div className="flex justify-end gap-2">
                         <Link
+                          href={`/sales/${sale.id}/receipt`}
+                          className="inline-flex items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-black text-emerald-700 hover:bg-emerald-100"
+                        >
+                          <ReceiptText size={16} />
+                          Reçu
+                        </Link>
+                        <Link
                           href={`/sales/${sale.id}`}
                           className="inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-4 py-3 text-sm font-black text-white hover:bg-slate-800"
                         >
