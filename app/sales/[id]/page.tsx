@@ -207,6 +207,10 @@ export default function ReceiptPage() {
           </Link>
 
           <div className="flex gap-3">
+            <Link href={`/sales/${saleId}/receipt`} className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-5 py-3 text-sm font-black text-emerald-700">
+              <ReceiptText size={16} /> Reçu premium
+            </Link>
+
             <button onClick={shareWhatsApp} className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-black text-slate-700">
               <MessageCircle size={16} /> WhatsApp
             </button>
