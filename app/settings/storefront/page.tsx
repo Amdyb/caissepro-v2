@@ -3,7 +3,7 @@
 import AppShell from '@/components/AppShell'
 import BusinessImageUploader from '@/components/BusinessImageUploader'
 import { supabase } from '@/lib/supabaseClient'
-import { Copy, Download, ExternalLink, Printer, QrCode, Save } from 'lucide-react'
+import { Copy, Download, ExternalLink, MessageCircle, Printer, QrCode, Save } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
@@ -169,6 +169,14 @@ export default function StorefrontSettingsPage() {
                 >
                   <Printer size={17} /> Imprimer
                 </button>
+                <a
+                  href={`https://wa.me/?text=${encodeURIComponent(`🛍️ Visitez ma boutique en ligne !\n\n${shopUrl}`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 rounded-2xl bg-[#25D366] px-6 py-3 text-sm font-black text-white hover:bg-[#1ebe5d]"
+                >
+                  <MessageCircle size={17} /> WhatsApp
+                </a>
               </div>
             </div>
           </div>

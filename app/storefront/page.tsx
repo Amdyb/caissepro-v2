@@ -3,7 +3,7 @@
 import AppShell from '@/components/AppShell'
 import BrandingImageUploader from '@/components/BrandingImageUploader'
 import { supabase } from '@/lib/supabaseClient'
-import { CheckCircle2, Copy, Download, ExternalLink, Globe2, Palette, Printer, QrCode, Share2, Store } from 'lucide-react'
+import { CheckCircle2, Copy, Download, ExternalLink, Globe2, MessageCircle, Palette, Printer, QrCode, Share2, Store } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
 type Business = {
@@ -341,6 +341,14 @@ export default function StorefrontPage() {
                   >
                     <Printer size={17} /> Imprimer
                   </button>
+                  <a
+                    href={`https://wa.me/?text=${encodeURIComponent(`🛍️ Visitez ma boutique en ligne !\n\n${shopUrl}`)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 rounded-2xl bg-[#25D366] px-6 py-3 text-sm font-black text-white hover:bg-[#1ebe5d]"
+                  >
+                    <MessageCircle size={17} /> Partager WhatsApp
+                  </a>
                   <button
                     onClick={copyLink}
                     className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-6 py-3 text-sm font-black text-slate-700 hover:bg-slate-50"
