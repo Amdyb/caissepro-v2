@@ -2,7 +2,8 @@
 
 import AppShell from '@/components/AppShell'
 import { supabase } from '@/lib/supabaseClient'
-import { CreditCard, MessageCircle, ShoppingCart, UserPlus } from 'lucide-react'
+import { CreditCard, MessageCircle, ReceiptText, ShoppingCart, UserPlus } from 'lucide-react'
+import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 
 const paymentMethods = [
@@ -21,6 +22,8 @@ export default function CheckoutPage() {
   const [message, setMessage] = useState('')
   const [newCustomer, setNewCustomer] = useState({ full_name: '', phone: '' })
   const [business, setBusiness] = useState<any>(null)
+  const [checkoutLoading, setCheckoutLoading] = useState(false)
+  const [completedSaleId, setCompletedSaleId] = useState<string | null>(null)
 
   const total = useMemo(() => cart.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 0)), 0), [cart])
   const selectedCustomer = customers.find((c) => c.id === selectedCustomerId)
@@ -162,6 +165,113 @@ export default function CheckoutPage() {
     window.open(`https://wa.me/${phone}?text=${text}`, '_blank')
   }
 
+  async function handleCheckout() {
+    if (cart.length === 0) return
+    setCheckoutLoading(true)
+    setMessage('')
+
+    const { data: userData } = await supabase.auth.getUser()
+    if (!userData.user) { setCheckoutLoading(false); return }
+
+    const { data: membership } = await supabase
+      .from('business_members')
+      .select('business_id')
+      .eq('user_id', userData.user.id)
+      .limit(1)
+      .maybeSingle()
+
+    if (!membership?.business_id) {
+      setMessage('Aucune boutique trouvée.')
+      setCheckoutLoading(false)
+      return
+    }
+
+    const { data: saleData, error: saleError } = await supabase
+      .from('sales')
+      .insert({
+        business_id: membership.business_id,
+        customer_id: selectedCustomerId || null,
+        payment_method: paymentMethod,
+        total,
+        paid_amount: paymentMethod === 'credit' ? 0 : total,
+        remaining_amount: paymentMethod === 'credit' ? total : 0,
+        status: 'completed'
+      })
+      .select()
+      .maybeSingle()
+
+    if (saleError || !saleData) {
+      setMessage(saleError?.message || 'Erreur lors de la vente.')
+      setCheckoutLoading(false)
+      return
+    }
+
+    const saleItems = cart.map((item) => ({
+      sale_id: saleData.id,
+      product_id: item.product?.id || null,
+      quantity: item.quantity,
+      price: item.price,
+      total: item.quantity * item.price,
+      product_name: item.product?.name || item.name || null,
+      product_image: item.product?.image || null,
+      unit_price: item.price
+    }))
+
+    await supabase.from('sale_items').insert(saleItems)
+
+    for (const item of cart) {
+      if (!item.product?.id) continue
+      const newStock = Math.max(0, Number(item.product.stock || 0) - Number(item.quantity || 0))
+      await supabase.from('products').update({ stock: newStock }).eq('id', item.product.id)
+    }
+
+    localStorage.removeItem('caissepro-pos-cart')
+    setCart([])
+    setCompletedSaleId(saleData.id)
+    setCheckoutLoading(false)
+  }
+
+  if (completedSaleId) {
+    return (
+      <AppShell title="Paiement confirmé" subtitle="La vente a été enregistrée avec succès.">
+        <div className="mx-auto max-w-lg space-y-4">
+          <div className="rounded-[2rem] border border-emerald-200 bg-emerald-50 p-8 text-center shadow-sm">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-600 text-white">
+              <ReceiptText size={28} />
+            </div>
+            <h2 className="text-2xl font-black text-slate-950">Vente enregistrée !</h2>
+            <p className="mt-2 text-sm font-semibold text-slate-500">
+              {selectedCustomer ? `Client : ${selectedCustomer.full_name}` : 'Vente comptoir'}
+              {' · '}
+              {total.toLocaleString('fr-FR')} CFA
+            </p>
+          </div>
+
+          <Link
+            href={`/sales/${completedSaleId}/receipt`}
+            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 py-4 text-base font-black text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700"
+          >
+            <ReceiptText size={20} /> Voir le reçu premium
+          </Link>
+
+          <button
+            onClick={sendWhatsAppReceipt}
+            className="flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white py-4 text-base font-black text-slate-700 hover:bg-slate-50"
+          >
+            <MessageCircle size={20} /> Partager sur WhatsApp
+          </button>
+
+          <Link
+            href="/pos"
+            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 py-4 text-base font-black text-white hover:bg-slate-800"
+          >
+            Nouvelle vente
+          </Link>
+        </div>
+      </AppShell>
+    )
+  }
+
   return (
     <AppShell title="Paiement" subtitle="Finalisez la vente et envoyez le reçu WhatsApp.">
       <div className="mx-auto grid max-w-6xl gap-6 lg:grid-cols-[1fr_420px]">
@@ -219,8 +329,12 @@ export default function CheckoutPage() {
               ))}
             </div>
 
-            <button className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 py-5 text-lg font-black text-white">
-              <CreditCard size={20} />Confirmer la vente
+            <button
+              onClick={handleCheckout}
+              disabled={checkoutLoading || cart.length === 0}
+              className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 py-5 text-lg font-black text-white disabled:opacity-60"
+            >
+              <CreditCard size={20} />{checkoutLoading ? 'Validation...' : 'Confirmer la vente'}
             </button>
 
             <button onClick={sendWhatsAppReceipt} className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/10 py-4 text-sm font-black text-white">

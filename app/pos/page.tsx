@@ -3,7 +3,8 @@
 import AppShell from '@/components/AppShell'
 import POSCheckoutDrawer from '@/components/POSCheckoutDrawer'
 import { supabase } from '@/lib/supabaseClient'
-import { ImageIcon, ShoppingCart, Trash2, Zap } from 'lucide-react'
+import { ImageIcon, ReceiptText, ShoppingCart, Trash2, Zap } from 'lucide-react'
+import Link from 'next/link'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 type Product = {
@@ -32,6 +33,7 @@ export default function POSPage() {
   const [checkoutLoading, setCheckoutLoading] = useState(false)
   const [message, setMessage] = useState('')
   const [lastReceipt, setLastReceipt] = useState('')
+  const [lastSaleId, setLastSaleId] = useState<string | null>(null)
   const [newCustomer, setNewCustomer] = useState({ full_name: '', phone: '' })
 
   const filteredProducts = useMemo(() => {
@@ -165,6 +167,7 @@ export default function POSPage() {
 
       setCart([])
       setCheckoutOpen(false)
+      setLastSaleId(saleData.id)
       setMessage('Vente enregistrée avec succès.')
     } catch (err: any) {
       setMessage(err?.message || 'Erreur lors du paiement')
@@ -188,7 +191,19 @@ export default function POSPage() {
   return (
     <AppShell title="Point de Vente" subtitle="Encaissement rapide et moderne.">
       <div className="mx-auto max-w-7xl pb-36">
-        {message && <div className="mb-4 rounded-2xl bg-emerald-50 p-4 text-sm font-black text-emerald-700">{message}</div>}
+        {message && (
+          <div className="mb-4 flex items-center justify-between gap-4 rounded-2xl bg-emerald-50 p-4 shadow-sm">
+            <p className="text-sm font-black text-emerald-700">{message}</p>
+            {lastSaleId && (
+              <Link
+                href={`/sales/${lastSaleId}/receipt`}
+                className="inline-flex shrink-0 items-center gap-2 rounded-2xl bg-emerald-600 px-4 py-2.5 text-sm font-black text-white hover:bg-emerald-700"
+              >
+                <ReceiptText size={16} /> Voir le reçu
+              </Link>
+            )}
+          </div>
+        )}
 
         <div className="mb-5 flex gap-3 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="relative flex-1">
