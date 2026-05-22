@@ -1,6 +1,7 @@
 'use client'
 
-import { CreditCard, MessageCircle, X } from 'lucide-react'
+import { CreditCard, MessageCircle, ReceiptText, X } from 'lucide-react'
+import Link from 'next/link'
 
 export default function POSCheckoutDrawer({
   open,
@@ -16,9 +17,65 @@ export default function POSCheckoutDrawer({
   setPaymentMethod,
   checkout,
   checkoutLoading,
-  sendWhatsAppReceipt
+  sendWhatsAppReceipt,
+  completedSaleId
 }: any) {
   if (!open) return null
+
+  if (completedSaleId) {
+    const customer = customers.find((c: any) => c.id === selectedCustomerId)
+    return (
+      <>
+        <div className="fixed inset-0 z-[998] bg-black/40 backdrop-blur-sm" onClick={onClose} />
+        <div className="fixed right-0 top-0 z-[999] flex h-full w-full max-w-md flex-col border-l border-slate-200 bg-white shadow-2xl">
+          <div className="flex items-center justify-between border-b border-slate-200 px-6 py-5">
+            <h2 className="text-2xl font-black text-slate-950">Vente confirmée</h2>
+            <button onClick={onClose} className="rounded-2xl bg-slate-100 p-3 text-slate-700">
+              <X size={20} />
+            </button>
+          </div>
+
+          <div className="flex flex-1 flex-col items-center justify-center gap-6 px-8 py-10 text-center">
+            <div className="flex h-20 w-20 items-center justify-center rounded-[2rem] bg-emerald-600 text-white shadow-xl shadow-emerald-600/20">
+              <ReceiptText size={36} />
+            </div>
+
+            <div>
+              <p className="text-3xl font-black text-slate-950">
+                {Number(total || 0).toLocaleString('fr-FR')} CFA
+              </p>
+              {customer && (
+                <p className="mt-1 text-sm font-bold text-slate-500">{customer.full_name}</p>
+              )}
+            </div>
+
+            <div className="w-full space-y-3">
+              <Link
+                href={`/sales/${completedSaleId}/receipt`}
+                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 py-4 text-base font-black text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700"
+              >
+                <ReceiptText size={20} /> Voir le reçu premium
+              </Link>
+
+              <button
+                onClick={sendWhatsAppReceipt}
+                className="flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white py-4 text-base font-black text-slate-700 hover:bg-slate-50"
+              >
+                <MessageCircle size={20} /> Envoyer sur WhatsApp
+              </button>
+
+              <button
+                onClick={onClose}
+                className="flex w-full items-center justify-center rounded-2xl bg-slate-950 py-4 text-base font-black text-white hover:bg-slate-800"
+              >
+                Nouvelle vente
+              </button>
+            </div>
+          </div>
+        </div>
+      </>
+    )
+  }
 
   const paymentMethods = [
     { id: 'cash', label: 'Cash' },

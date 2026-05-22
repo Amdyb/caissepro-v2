@@ -166,7 +166,6 @@ export default function POSPage() {
       setLastReceipt(`🧾 ${businessName}%0A%0A${receiptLines}%0A%0ATotal: ${total.toLocaleString('fr-FR')} CFA%0AClient: ${customer?.full_name || 'Client inconnu'}`)
 
       setCart([])
-      setCheckoutOpen(false)
       setLastSaleId(saleData.id)
       setMessage('Vente enregistrée avec succès.')
     } catch (err: any) {
@@ -253,7 +252,7 @@ export default function POSPage() {
 
         <POSCheckoutDrawer
           open={checkoutOpen}
-          onClose={() => setCheckoutOpen(false)}
+          onClose={() => { setCheckoutOpen(false); setLastSaleId(null) }}
           total={total}
           customers={customers}
           selectedCustomerId={selectedCustomerId}
@@ -266,6 +265,7 @@ export default function POSPage() {
           checkout={checkout}
           checkoutLoading={checkoutLoading}
           sendWhatsAppReceipt={sendWhatsAppReceipt}
+          completedSaleId={lastSaleId}
         />
       </div>
     </AppShell>
