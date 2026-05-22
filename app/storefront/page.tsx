@@ -3,7 +3,7 @@
 import AppShell from '@/components/AppShell'
 import BrandingImageUploader from '@/components/BrandingImageUploader'
 import { supabase } from '@/lib/supabaseClient'
-import { CheckCircle2, Copy, ExternalLink, Globe2, Palette, Share2, Store } from 'lucide-react'
+import { CheckCircle2, Copy, Download, ExternalLink, Globe2, Palette, Printer, QrCode, Share2, Store } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
 type Business = {
@@ -160,6 +160,45 @@ export default function StorefrontPage() {
     setTimeout(() => setCopied(false), 2000)
   }
 
+  const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(shopUrl)}&margin=10&format=png`
+
+  async function downloadQRCode() {
+    const response = await fetch(`https://api.qrserver.com/v1/create-qr-code/?size=512x512&data=${encodeURIComponent(shopUrl)}&margin=20&format=png`)
+    const blob = await response.blob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `qrcode-${currentSlug || 'boutique'}.png`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  function printQRCode() {
+    const win = window.open('', '_blank')
+    if (!win) return
+    win.document.write(`
+      <!DOCTYPE html>
+      <html><head><title>QR Code — ${business?.name || 'Boutique'}</title>
+      <style>
+        body { font-family: sans-serif; text-align: center; padding: 60px 40px; }
+        h1 { font-size: 28px; font-weight: 900; margin-bottom: 8px; }
+        p { color: #64748b; font-size: 14px; margin-bottom: 24px; }
+        img { width: 260px; height: 260px; border: 1px solid #e2e8f0; border-radius: 16px; padding: 12px; }
+        .url { margin-top: 20px; font-size: 13px; color: #475569; word-break: break-all; }
+        .footer { margin-top: 32px; font-size: 11px; color: #94a3b8; }
+      </style></head>
+      <body>
+        <h1>${business?.name || 'Ma Boutique'}</h1>
+        <p>Scannez pour accéder à la boutique en ligne</p>
+        <img src="${qrApiUrl}" alt="QR Code" />
+        <div class="url">${shopUrl}</div>
+        <div class="footer">Propulsé par CaissePro</div>
+        <script>window.onload = () => { window.print(); }</script>
+      </body></html>
+    `)
+    win.document.close()
+  }
+
   if (loading) {
     return <main className="flex min-h-screen items-center justify-center bg-slate-50"><p className="font-black text-slate-600">Chargement boutique...</p></main>
   }
@@ -255,6 +294,62 @@ export default function StorefrontPage() {
               <a href={shopUrl} target="_blank" className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-6 py-4 text-sm font-black text-slate-700"><ExternalLink size={17} /> Ouvrir</a>
             </div>
             <p className="mt-4 flex items-center gap-2 text-sm font-bold text-slate-500"><CheckCircle2 size={16} className="text-emerald-600" /> Boutique synchronisée pour le partage public.</p>
+          </section>
+
+          <section className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm xl:col-span-2">
+            <div className="mb-6 flex items-center gap-3">
+              <div className="rounded-2xl bg-slate-950 p-4 text-white">
+                <QrCode size={24} />
+              </div>
+              <div>
+                <h2 className="text-3xl font-black text-slate-950">QR Code boutique</h2>
+                <p className="mt-1 text-sm font-semibold text-slate-500">Imprimez ou partagez le QR code de votre vitrine.</p>
+              </div>
+            </div>
+
+            <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-start">
+              <div className="shrink-0 rounded-[2rem] border-2 border-slate-100 bg-white p-4 shadow-lg">
+                <img
+                  src={qrApiUrl}
+                  alt="QR Code boutique"
+                  width={200}
+                  height={200}
+                  className="rounded-2xl"
+                />
+              </div>
+
+              <div className="flex flex-1 flex-col gap-4">
+                <div>
+                  <p className="text-sm font-black text-slate-700">Lien encodé dans le QR code</p>
+                  <p className="mt-1 break-all rounded-2xl bg-slate-50 px-4 py-3 text-sm font-bold text-slate-500">{shopUrl}</p>
+                </div>
+
+                <p className="text-sm font-semibold text-slate-500">
+                  Vos clients scannent le QR code avec leur téléphone pour accéder directement à votre boutique en ligne.
+                </p>
+
+                <div className="flex flex-wrap gap-3">
+                  <button
+                    onClick={downloadQRCode}
+                    className="inline-flex items-center gap-2 rounded-2xl bg-emerald-600 px-6 py-3 text-sm font-black text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700"
+                  >
+                    <Download size={17} /> Télécharger
+                  </button>
+                  <button
+                    onClick={printQRCode}
+                    className="inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-6 py-3 text-sm font-black text-white hover:bg-slate-800"
+                  >
+                    <Printer size={17} /> Imprimer
+                  </button>
+                  <button
+                    onClick={copyLink}
+                    className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-6 py-3 text-sm font-black text-slate-700 hover:bg-slate-50"
+                  >
+                    <Copy size={17} /> {copied ? 'Copié !' : 'Copier le lien'}
+                  </button>
+                </div>
+              </div>
+            </div>
           </section>
         </div>
       </div>

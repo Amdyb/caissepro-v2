@@ -3,7 +3,7 @@
 import AppShell from '@/components/AppShell'
 import BusinessImageUploader from '@/components/BusinessImageUploader'
 import { supabase } from '@/lib/supabaseClient'
-import { Copy, ExternalLink, Save } from 'lucide-react'
+import { Copy, Download, ExternalLink, Printer, QrCode, Save } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
@@ -76,6 +76,45 @@ export default function StorefrontSettingsPage() {
 
   async function copyShopLink() { await navigator.clipboard.writeText(shopUrl); setMessage('Lien boutique copié.') }
 
+  const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(shopUrl)}&margin=10&format=png`
+
+  async function downloadQRCode() {
+    const response = await fetch(`https://api.qrserver.com/v1/create-qr-code/?size=512x512&data=${encodeURIComponent(shopUrl)}&margin=20&format=png`)
+    const blob = await response.blob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `qrcode-${form.slug || 'boutique'}.png`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  function printQRCode() {
+    const win = window.open('', '_blank')
+    if (!win) return
+    win.document.write(`
+      <!DOCTYPE html>
+      <html><head><title>QR Code — ${form.name || 'Boutique'}</title>
+      <style>
+        body { font-family: sans-serif; text-align: center; padding: 60px 40px; }
+        h1 { font-size: 28px; font-weight: 900; margin-bottom: 8px; }
+        p { color: #64748b; font-size: 14px; margin-bottom: 24px; }
+        img { width: 260px; height: 260px; border: 1px solid #e2e8f0; border-radius: 16px; padding: 12px; }
+        .url { margin-top: 20px; font-size: 13px; color: #475569; word-break: break-all; }
+        .footer { margin-top: 32px; font-size: 11px; color: #94a3b8; }
+      </style></head>
+      <body>
+        <h1>${form.name || 'Ma Boutique'}</h1>
+        <p>Scannez pour accéder à la boutique en ligne</p>
+        <img src="${qrApiUrl}" alt="QR Code" />
+        <div class="url">${shopUrl}</div>
+        <div class="footer">Propulsé par CaissePro</div>
+        <script>window.onload = () => { window.print(); }</script>
+      </body></html>
+    `)
+    win.document.close()
+  }
+
   if (loading) return <main className="flex min-h-screen items-center justify-center bg-slate-50"><p className="font-bold text-slate-700">Chargement boutique...</p></main>
 
   return (
@@ -83,6 +122,57 @@ export default function StorefrontSettingsPage() {
       <div className="mx-auto max-w-5xl">
         {message && <div className="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-bold text-emerald-700">{message}</div>}
         <div className="mb-8 rounded-[2rem] border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-8"><h1 className="text-5xl font-black tracking-tight text-slate-950">Votre boutique publique.</h1><p className="mt-4 max-w-3xl text-lg font-semibold leading-8 text-slate-600">Créez un lien partageable pour vendre avec WhatsApp.</p><div className="mt-6 flex flex-wrap gap-3"><button onClick={copyShopLink} className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-4 text-sm font-black text-slate-700"><Copy size={18}/>Copier le lien</button><Link href={`/shop/${form.slug || 'votre-boutique'}`} target="_blank" className="inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-5 py-4 text-sm font-black text-white"><ExternalLink size={18}/>Voir boutique</Link></div></div>
+
+        {/* QR Code section */}
+        <div className="mb-8 rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm">
+          <div className="mb-6 flex items-center gap-3">
+            <div className="rounded-2xl bg-slate-950 p-4 text-white">
+              <QrCode size={24} />
+            </div>
+            <div>
+              <h2 className="text-2xl font-black text-slate-950">QR Code boutique</h2>
+              <p className="mt-1 text-sm font-semibold text-slate-500">Imprimez ou partagez le QR code de votre vitrine.</p>
+            </div>
+          </div>
+
+          <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-start">
+            <div className="shrink-0 rounded-[2rem] border-2 border-slate-100 bg-white p-4 shadow-lg">
+              <img
+                src={qrApiUrl}
+                alt="QR Code boutique"
+                width={180}
+                height={180}
+                className="rounded-2xl"
+              />
+            </div>
+
+            <div className="flex flex-1 flex-col gap-4">
+              <div>
+                <p className="text-sm font-black text-slate-700">Lien encodé</p>
+                <p className="mt-1 break-all rounded-2xl bg-slate-50 px-4 py-3 text-sm font-bold text-slate-500">{shopUrl}</p>
+              </div>
+              <p className="text-sm font-semibold text-slate-500">
+                Vos clients scannent ce QR code pour accéder directement à votre boutique en ligne.
+              </p>
+              <div className="flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={downloadQRCode}
+                  className="inline-flex items-center gap-2 rounded-2xl bg-emerald-600 px-6 py-3 text-sm font-black text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700"
+                >
+                  <Download size={17} /> Télécharger
+                </button>
+                <button
+                  type="button"
+                  onClick={printQRCode}
+                  className="inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-6 py-3 text-sm font-black text-white hover:bg-slate-800"
+                >
+                  <Printer size={17} /> Imprimer
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
 
         <form onSubmit={saveSettings} className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm"><div className="grid gap-6">
           <div><label className="mb-2 block text-sm font-black text-slate-700">Nom de la boutique</label><input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value, slug: form.slug || slugify(e.target.value) })} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-semibold outline-none focus:border-emerald-500" placeholder="Dakar Vapes" /></div>
