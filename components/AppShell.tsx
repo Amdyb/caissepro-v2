@@ -196,8 +196,17 @@ export default function AppShell({ children, title, subtitle, action }: AppShell
             ))}
           </nav>
 
-          <div className="border-t border-slate-100 p-4">
+          <div className="border-t border-slate-100 p-4 space-y-3">
             <button onClick={logout} className="w-full rounded-2xl bg-slate-950 px-4 py-3 text-sm font-black text-white">Déconnexion</button>
+            {sidebarOpen && (
+              <div className="flex justify-center gap-4 text-xs font-bold text-slate-400">
+                <Link href="/help" className="hover:text-slate-700" onClick={() => setMobileMenuOpen(false)}>Aide</Link>
+                <span>·</span>
+                <Link href="/legal" className="hover:text-slate-700" onClick={() => setMobileMenuOpen(false)}>Mentions légales</Link>
+                <span>·</span>
+                <Link href="/feedback" className="hover:text-slate-700" onClick={() => setMobileMenuOpen(false)}>Feedback</Link>
+              </div>
+            )}
           </div>
         </div>
       </aside>
