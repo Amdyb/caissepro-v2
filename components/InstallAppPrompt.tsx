@@ -1,174 +1,208 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { Download, Smartphone, X } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { Download, X } from 'lucide-react'
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>
-  userChoice: Promise<{
-    outcome: 'accepted' | 'dismissed'
-    platform: string
-  }>
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>
 }
 
-function isAppInstalled() {
+function isInstalled() {
   if (typeof window === 'undefined') return false
-
-  const isStandalone =
+  return (
     window.matchMedia('(display-mode: standalone)').matches ||
     (window.navigator as any).standalone === true
+  )
+}
 
-  return isStandalone
+function getSnoozedUntil(): number {
+  try {
+    return Number(localStorage.getItem('caissepro-install-snooze') || '0')
+  } catch {
+    return 0
+  }
+}
+
+function setSnoozeDays(days: number) {
+  try {
+    localStorage.setItem('caissepro-install-snooze', String(Date.now() + days * 86_400_000))
+  } catch {}
 }
 
 export default function InstallAppPrompt() {
   const [installEvent, setInstallEvent] = useState<BeforeInstallPromptEvent | null>(null)
-  const [showPrompt, setShowPrompt] = useState(false)
+  const [mounted, setMounted] = useState(false)
+  const [animateIn, setAnimateIn] = useState(false)
   const [isIOS, setIsIOS] = useState(false)
+  const timer = useRef<ReturnType<typeof setTimeout>>()
 
   useEffect(() => {
-    const installed = isAppInstalled()
-    const dismissed = localStorage.getItem('caissepro-install-dismissed') === 'true'
+    if (isInstalled() || getSnoozedUntil() > Date.now()) return
 
-    const userAgent = window.navigator.userAgent.toLowerCase()
-    const ios = /iphone|ipad|ipod/.test(userAgent)
-
+    const ua = navigator.userAgent.toLowerCase()
+    const ios = /iphone|ipad|ipod/.test(ua) && !(window as any).MSStream
     setIsIOS(ios)
 
-    if (installed || dismissed) {
-      setShowPrompt(false)
-      return
+    function show() {
+      if (isInstalled() || getSnoozedUntil() > Date.now()) return
+      setMounted(true)
+      // double rAF so the browser has painted the initial (offscreen) state before animating
+      requestAnimationFrame(() => requestAnimationFrame(() => setAnimateIn(true)))
     }
 
-    function handleBeforeInstallPrompt(event: Event) {
-      event.preventDefault()
-      setInstallEvent(event as BeforeInstallPromptEvent)
-
-      setTimeout(() => {
-        if (!isAppInstalled()) {
-          setShowPrompt(true)
-        }
-      }, 1500)
+    function onBeforeInstall(e: Event) {
+      e.preventDefault()
+      setInstallEvent(e as BeforeInstallPromptEvent)
+      clearTimeout(timer.current)
+      timer.current = setTimeout(show, 600)
     }
 
-    function handleAppInstalled() {
-      setShowPrompt(false)
-      setInstallEvent(null)
-      localStorage.setItem('caissepro-installed', 'true')
+    function onInstalled() {
+      slideOut()
+      setSnoozeDays(365)
     }
 
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
-    window.addEventListener('appinstalled', handleAppInstalled)
+    window.addEventListener('beforeinstallprompt', onBeforeInstall)
+    window.addEventListener('appinstalled', onInstalled)
 
     if (ios) {
-      setTimeout(() => {
-        if (!isAppInstalled()) {
-          setShowPrompt(true)
-        }
-      }, 1500)
+      timer.current = setTimeout(show, 600)
     }
 
     return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
-      window.removeEventListener('appinstalled', handleAppInstalled)
+      window.removeEventListener('beforeinstallprompt', onBeforeInstall)
+      window.removeEventListener('appinstalled', onInstalled)
+      clearTimeout(timer.current)
     }
   }, [])
 
-  async function installApp() {
+  function slideOut(cb?: () => void) {
+    setAnimateIn(false)
+    setTimeout(() => {
+      setMounted(false)
+      cb?.()
+    }, 320)
+  }
+
+  async function install() {
     if (!installEvent) return
-
     await installEvent.prompt()
-
-    const choice = await installEvent.userChoice
-
-    if (choice.outcome === 'accepted') {
-      setShowPrompt(false)
-      localStorage.setItem('caissepro-installed', 'true')
-    } else {
-      localStorage.setItem('caissepro-install-dismissed', 'true')
-      setShowPrompt(false)
-    }
-
+    const { outcome } = await installEvent.userChoice
+    setSnoozeDays(outcome === 'accepted' ? 365 : 7)
     setInstallEvent(null)
+    slideOut()
   }
 
-  function dismissPrompt() {
-    localStorage.setItem('caissepro-install-dismissed', 'true')
-    setShowPrompt(false)
+  function dismiss() {
+    setSnoozeDays(3)
+    slideOut()
   }
 
-  if (!showPrompt) return null
+  function close() {
+    setSnoozeDays(7)
+    slideOut()
+  }
+
+  if (!mounted) return null
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-[9999] p-4 md:bottom-6 md:right-6 md:left-auto md:max-w-md">
-      <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
-        <div className="bg-gradient-to-r from-emerald-600 to-emerald-500 p-5 text-white">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-emerald-700 shadow-lg">
-                <Smartphone size={30} />
-              </div>
+    <div
+      aria-live="polite"
+      role="dialog"
+      aria-label="Installer CaissePro"
+      className="fixed inset-x-0 bottom-0 z-[9999] p-3 sm:bottom-5 sm:left-auto sm:right-5 sm:max-w-sm"
+      style={{
+        transform: animateIn ? 'translateY(0)' : 'translateY(calc(100% + 12px))',
+        opacity: animateIn ? 1 : 0,
+        transition: 'transform 0.32s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.32s ease',
+        willChange: 'transform, opacity',
+      }}
+    >
+      <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-2xl shadow-slate-900/15">
 
-              <div>
-                <h3 className="text-xl font-black">Installer CaissePro</h3>
-                <p className="mt-1 text-sm font-semibold text-white/85">
-                  Accès rapide depuis votre écran d’accueil.
-                </p>
-              </div>
+        {/* Coloured header */}
+        <div className="relative bg-gradient-to-br from-emerald-600 to-emerald-700 px-5 py-4">
+          <button
+            onClick={close}
+            className="absolute right-4 top-4 rounded-full bg-white/15 p-1.5 text-white transition-colors hover:bg-white/25"
+            aria-label="Fermer"
+          >
+            <X size={15} />
+          </button>
+
+          <div className="flex items-center gap-3.5 pr-9">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white shadow-md">
+              <img src="/icons/caissepro-icon.svg" alt="" className="h-8 w-8" />
             </div>
-
-            <button
-              onClick={dismissPrompt}
-              className="rounded-full bg-white/15 p-2 text-white hover:bg-white/25"
-            >
-              <X size={18} />
-            </button>
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-widest text-emerald-200">
+                Application mobile
+              </p>
+              <h3 className="text-lg font-black leading-tight text-white">Installer CaissePro</h3>
+            </div>
           </div>
         </div>
 
-        <div className="p-5">
+        {/* Body */}
+        <div className="px-5 pb-5 pt-4">
           {isIOS && !installEvent ? (
-            <div>
-              <p className="text-sm font-semibold text-slate-600">
-                Sur iPhone/iPad:
+            <>
+              <p className="mb-3 text-xs font-bold uppercase tracking-wide text-slate-400">
+                3 étapes sur iPhone / iPad
               </p>
-
-              <ol className="mt-3 space-y-2 text-sm font-bold text-slate-700">
-                <li>1. Appuyez sur le bouton Partager dans Safari.</li>
-                <li>2. Choisissez “Ajouter à l’écran d’accueil”.</li>
-                <li>3. Appuyez sur “Ajouter”.</li>
-              </ol>
-
+              <div className="space-y-2">
+                {([
+                  ['⬆️', 'Appuyez sur', 'Partager', 'dans Safari'],
+                  ['➕', 'Choisissez', "Sur l'écran d'accueil", ''],
+                  ['✅', 'Appuyez sur', 'Ajouter', ''],
+                ] as const).map(([icon, pre, bold, post], i) => (
+                  <div key={i} className="flex items-center gap-3 rounded-2xl bg-slate-50 px-4 py-3">
+                    <span className="text-lg leading-none">{icon}</span>
+                    <p className="text-sm text-slate-600">
+                      {pre} <span className="font-black text-slate-950">{bold}</span> {post}
+                    </p>
+                  </div>
+                ))}
+              </div>
               <button
-                onClick={dismissPrompt}
-                className="mt-5 w-full rounded-2xl bg-slate-950 py-4 font-black text-white"
+                onClick={dismiss}
+                className="mt-4 w-full rounded-2xl bg-slate-950 py-3.5 text-sm font-black text-white transition-opacity hover:opacity-90 active:scale-[0.98]"
               >
-                Compris
+                Compris !
               </button>
-            </div>
+            </>
           ) : (
-            <div>
-              <p className="text-sm font-semibold text-slate-600">
-                Utilisez CaissePro comme une vraie application: plus rapide, plus propre, sans taper l’adresse web.
-              </p>
+            <>
+              <div className="mb-4 space-y-1.5">
+                {([
+                  ['⚡', "Accès instantané depuis l'écran d'accueil"],
+                  ['📶', 'Fonctionne avec connexion lente ou nulle'],
+                  ['🔒', 'Sécurisé et toujours à jour'],
+                ] as const).map(([icon, text]) => (
+                  <div key={text} className="flex items-center gap-3 rounded-xl bg-slate-50 px-3.5 py-2.5">
+                    <span className="text-base leading-none">{icon}</span>
+                    <p className="text-sm font-semibold text-slate-700">{text}</p>
+                  </div>
+                ))}
+              </div>
 
-              <div className="mt-5 grid grid-cols-2 gap-3">
+              <div className="flex gap-2.5">
                 <button
-                  onClick={dismissPrompt}
-                  className="rounded-2xl border border-slate-300 bg-white py-4 font-black text-slate-700 hover:bg-slate-50"
+                  onClick={dismiss}
+                  className="flex-1 rounded-2xl border border-slate-200 py-3.5 text-sm font-black text-slate-600 transition-colors hover:bg-slate-50 active:scale-[0.98]"
                 >
                   Plus tard
                 </button>
-
                 <button
-                  onClick={installApp}
-                  className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 py-4 font-black text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700"
+                  onClick={install}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-emerald-600 py-3.5 text-sm font-black text-white shadow-lg shadow-emerald-600/20 transition-colors hover:bg-emerald-700 active:scale-[0.98]"
                 >
-                  <Download size={18} />
+                  <Download size={15} />
                   Installer
                 </button>
               </div>
-            </div>
+            </>
           )}
         </div>
       </div>
