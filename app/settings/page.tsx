@@ -85,7 +85,7 @@ export default function SettingsPage() {
         .from('business_members')
         .select('business_id')
         .eq('user_id', userData.user.id)
-        .single()
+        .maybeSingle()
 
       if (error || !membership) {
         setLoading(false)
@@ -96,7 +96,7 @@ export default function SettingsPage() {
         .from('businesses')
         .select('*')
         .eq('id', membership.business_id)
-        .single()
+        .maybeSingle()
 
       if (businessData) {
         setBusiness(businessData)

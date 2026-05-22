@@ -50,7 +50,7 @@ export default function StaffPage() {
         .select('business_id, role, businesses(name, currency)')
         .eq('user_id', userData.user.id)
         .limit(1)
-        .single()
+        .maybeSingle()
 
       if (error || !membership) {
         setMessage('Aucune boutique trouvée pour ce compte.')

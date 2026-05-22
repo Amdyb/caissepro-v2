@@ -34,7 +34,7 @@ export default function StorefrontSettingsPage() {
       const { data: userData } = await supabase.auth.getUser()
       if (!userData.user) { router.push('/login'); return }
 
-      const { data: membership } = await supabase.from('business_members').select('business_id, businesses(*)').eq('user_id', userData.user.id).limit(1).single()
+      const { data: membership } = await supabase.from('business_members').select('business_id, businesses(*)').eq('user_id', userData.user.id).limit(1).maybeSingle()
       const member: any = membership
       if (!member?.business_id) { setMessage('Aucun business trouvé.'); setLoading(false); return }
 

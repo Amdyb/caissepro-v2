@@ -41,7 +41,7 @@ export default function PaymentLinksPage() {
         router.push('/login')
         return
       }
-      const { data: membership } = await supabase.from('business_members').select('business_id').eq('user_id', userData.user.id).limit(1).single()
+      const { data: membership } = await supabase.from('business_members').select('business_id').eq('user_id', userData.user.id).limit(1).maybeSingle()
       if (!membership) {
         setMessage('Aucune boutique trouvée.')
         setLoading(false)

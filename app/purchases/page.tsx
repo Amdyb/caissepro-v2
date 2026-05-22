@@ -95,7 +95,7 @@ export default function PurchasesPage() {
         .select('business_id, businesses(name)')
         .eq('user_id', userData.user.id)
         .limit(1)
-        .single()
+        .maybeSingle()
 
       if (error || !membership) {
         setMessage('Aucune boutique trouvée.')

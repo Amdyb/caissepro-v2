@@ -46,7 +46,7 @@ export default function AutomationRemindersPage() {
         .select('business_id')
         .eq('user_id', userData.user.id)
         .limit(1)
-        .single()
+        .maybeSingle()
 
       if (!membership) {
         setMessage('Aucune boutique trouvée.')

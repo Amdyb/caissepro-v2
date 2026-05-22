@@ -116,7 +116,7 @@ export default function CustomerProfilePage() {
       .from('customers')
       .select('*')
       .eq('id', customerId)
-      .single()
+      .maybeSingle()
 
     if (error) {
       setMessage(error.message)

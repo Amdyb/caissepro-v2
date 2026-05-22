@@ -41,7 +41,7 @@ export default function PaymentSettingsPage() {
         .select('business_id')
         .eq('user_id', userData.user.id)
         .limit(1)
-        .single()
+        .maybeSingle()
 
       if (!membership) {
         setMessage('Aucun business trouvé.')

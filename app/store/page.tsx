@@ -42,7 +42,7 @@ export default function StorePage() {
         .from('business_members')
         .select('business_id')
         .eq('user_id', userData.user.id)
-        .single()
+        .maybeSingle()
 
       if (!membership) {
         setLoading(false)
@@ -52,7 +52,7 @@ export default function StorePage() {
       setBusinessId(membership.business_id)
 
       const [{ data: business }, { data: subscription }] = await Promise.all([
-        supabase.from('businesses').select('*').eq('id', membership.business_id).single(),
+        supabase.from('businesses').select('*').eq('id', membership.business_id).maybeSingle(),
         supabase.from('subscriptions').select('plan,status').eq('business_id', membership.business_id).eq('status', 'active').order('created_at', { ascending: false }).limit(1).maybeSingle()
       ])
 
