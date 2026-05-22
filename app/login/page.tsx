@@ -12,20 +12,42 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
 
-  async function getNextRoute(userId: string) {
-    const { data: memberships, error } = await supabase
+  async function getNextRoute(userId: string, userEmail: string) {
+    // Primary lookup by user_id
+    let { data: memberships } = await supabase
       .from('business_members')
-      .select('business_id, businesses(id, onboarding_completed, name, business_type)')
+      .select('id, business_id, temp_password, businesses(id, onboarding_completed, name, business_type)')
       .eq('user_id', userId)
       .limit(1)
 
-    if (error) return '/onboarding'
+    // Fallback: employee was added by email before they registered
+    if (!memberships || memberships.length === 0) {
+      const { data: byEmail } = await supabase
+        .from('business_members')
+        .select('id, business_id, temp_password, businesses(id, onboarding_completed, name, business_type)')
+        .eq('email', userEmail.toLowerCase())
+        .is('user_id', null)
+        .limit(1)
+
+      if (byEmail && byEmail.length > 0) {
+        await supabase
+          .from('business_members')
+          .update({ user_id: userId })
+          .eq('id', (byEmail[0] as any).id)
+        memberships = byEmail
+      }
+    }
 
     const member: any = memberships?.[0]
     const business = member?.businesses
 
     if (!member?.business_id || !business?.id) {
       return '/onboarding'
+    }
+
+    // Employee must change temporary password before accessing the app
+    if (member.temp_password) {
+      return '/change-password'
     }
 
     const hasUsableBusiness = Boolean(business.name && business.business_type)
@@ -56,7 +78,9 @@ export default function LoginPage() {
       return
     }
 
-    const nextRoute = data.user ? await getNextRoute(data.user.id) : '/onboarding'
+    const nextRoute = data.user
+      ? await getNextRoute(data.user.id, data.user.email || '')
+      : '/onboarding'
     router.push(nextRoute)
   }
 
@@ -85,7 +109,8 @@ export default function LoginPage() {
           <button disabled={loading} className="w-full rounded-2xl bg-brand-600 py-4 font-black text-white hover:bg-brand-700 disabled:opacity-60">{loading ? 'Connexion...' : 'Se connecter'}</button>
         </form>
 
-        <p className="mt-6 text-center text-sm text-slate-600">Pas encore de compte? <Link href="/register" className="font-black text-brand-700">Créer un compte</Link></p>
+        <p className="mt-6 text-center text-sm text-slate-600">Pas encore de compte ? <Link href="/register" className="font-black text-brand-700">Créer un compte</Link></p>
+        <p className="mt-2 text-center text-sm text-slate-500">Employé avec un code temporaire ? <Link href="/employee-setup" className="font-black text-emerald-700">Activer mon compte</Link></p>
       </div>
     </main>
   )
