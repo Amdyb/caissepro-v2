@@ -20,6 +20,7 @@ export default function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState('cash')
   const [message, setMessage] = useState('')
   const [newCustomer, setNewCustomer] = useState({ full_name: '', phone: '' })
+  const [business, setBusiness] = useState<any>(null)
 
   const total = useMemo(() => cart.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 0)), 0), [cart])
   const selectedCustomer = customers.find((c) => c.id === selectedCustomerId)
@@ -45,13 +46,21 @@ export default function CheckoutPage() {
 
       if (!membership?.business_id) return
 
-      const { data } = await supabase
-        .from('customers')
-        .select('id, full_name, phone')
-        .eq('business_id', membership.business_id)
-        .order('full_name')
+      const [customersResult, businessResult] = await Promise.all([
+        supabase
+          .from('customers')
+          .select('id, full_name, phone')
+          .eq('business_id', membership.business_id)
+          .order('full_name'),
+        supabase
+          .from('businesses')
+          .select('id, name, phone')
+          .eq('id', membership.business_id)
+          .maybeSingle()
+      ])
 
-      setCustomers(data || [])
+      setCustomers(customersResult.data || [])
+      setBusiness(businessResult.data)
     }
 
     loadCustomers()
@@ -101,15 +110,53 @@ export default function CheckoutPage() {
   }
 
   function sendWhatsAppReceipt() {
-    if (!selectedCustomer?.phone) {
-      setMessage('Numéro client requis pour WhatsApp.')
+    const targetPhone = selectedCustomer?.phone || business?.phone
+
+    if (!targetPhone) {
+      setMessage('Aucun numéro disponible (client ou boutique).')
       return
     }
 
-    const phone = selectedCustomer.phone.replace(/\D/g, '')
+    const phone = String(targetPhone).replace(/\D/g, '')
+
+    const receiptNumber = `REC-${Date.now().toString().slice(-6)}`
+    const date = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    const businessName = business?.name || 'CaissePro'
+    const customerLine = selectedCustomer?.full_name ? `👤 Client: ${selectedCustomer.full_name}` : '👤 Client: Vente comptoir'
+
+    const itemLines = cart
+      .map((item) => {
+        const name = item.product?.name || item.name || 'Article'
+        const qty = item.quantity || 1
+        const price = (item.price || 0) * qty
+        return `• ${name} x${qty} — ${price.toLocaleString('fr-FR')} CFA`
+      })
+      .join('\n')
+
+    const paymentLabel: Record<string, string> = {
+      cash: 'Espèces',
+      wave: 'Wave',
+      orange_money: 'Orange Money',
+      card: 'Carte bancaire',
+      credit: 'Client Doit'
+    }
 
     const text = encodeURIComponent(
-      `Bonjour ${selectedCustomer.full_name},\n\nMerci pour votre achat avec CaissePro.\n\nMontant: ${total.toLocaleString('fr-FR')} CFA\nPaiement: ${paymentMethod}\n\nMerci pour votre confiance.`
+      `🧾 *REÇU DE VENTE*\n` +
+      `📍 *${businessName}*\n` +
+      `━━━━━━━━━━━━━━━━━━━━\n` +
+      `N° ${receiptNumber}\n` +
+      `📅 ${date}\n\n` +
+      `${customerLine}\n` +
+      `━━━━━━━━━━━━━━━━━━━━\n` +
+      `🛍️ *ARTICLES*\n\n` +
+      `${itemLines}\n` +
+      `━━━━━━━━━━━━━━━━━━━━\n` +
+      `💰 *TOTAL: ${total.toLocaleString('fr-FR')} CFA*\n` +
+      `💳 Paiement: ${paymentLabel[paymentMethod] || paymentMethod}\n` +
+      `━━━━━━━━━━━━━━━━━━━━\n` +
+      `Merci pour votre confiance ! 🙏\n` +
+      `Propulsé par *CaissePro*`
     )
 
     window.open(`https://wa.me/${phone}?text=${text}`, '_blank')
