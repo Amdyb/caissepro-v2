@@ -78,7 +78,7 @@ export default function POSCheckoutDrawer({
   }
 
   const paymentMethods = [
-    { id: 'cash', label: 'Cash' },
+    { id: 'cash', label: 'Espèces' },
     { id: 'wave', label: 'Wave' },
     { id: 'orange_money', label: 'Orange Money' },
     { id: 'card', label: 'Carte' },

@@ -10,6 +10,7 @@ import {
   ChevronRight,
   Globe,
   HandCoins,
+  HelpCircle,
   LayoutDashboard,
   Menu,
   Package,
@@ -61,6 +62,7 @@ const adminNav: NavSection[] = [
     title: 'Caisse du jour',
     items: [
       { label: 'Vendre', href: '/pos', icon: ShoppingCart },
+      { label: 'Historique des ventes', href: '/sales', icon: ReceiptText },
       { label: 'Remboursements', href: '/refunds', icon: RotateCcw },
       { label: 'Caisse du jour', href: '/register-shifts', icon: Wallet },
       { label: 'Client Doit', href: '/debts', icon: HandCoins },
@@ -71,6 +73,7 @@ const adminNav: NavSection[] = [
     title: 'Profil',
     items: [
       { label: 'Paramètres', href: '/settings/profile', icon: Settings },
+      { label: 'Aide', href: '/help', icon: HelpCircle },
       { label: 'Reset Produits', href: '/settings/reset', icon: Trash2 },
       { label: 'Supprimer Boutique', href: '/settings/delete', icon: Trash2 }
     ]
@@ -220,8 +223,15 @@ export default function AppShell({ children, title, subtitle, action }: AppShell
         <div className="px-5 py-8">{children}</div>
 
         <footer className="border-t border-slate-200 bg-white px-5 py-5">
-          <div className="flex justify-center">
+          <div className="flex flex-col items-center gap-3">
             <AmdyLabsBrand />
+            <div className="flex gap-4 text-xs font-bold text-slate-400">
+              <Link href="/help" className="hover:text-slate-700">Aide</Link>
+              <span>·</span>
+              <Link href="/legal" className="hover:text-slate-700">Mentions légales</Link>
+              <span>·</span>
+              <Link href="/feedback" className="hover:text-slate-700">Feedback</Link>
+            </div>
           </div>
         </footer>
       </section>

@@ -61,7 +61,7 @@ export default function DashboardPage() {
         .select('business_id, businesses(*)')
         .eq('user_id', userData.user.id)
         .limit(1)
-        .single()
+        .maybeSingle()
 
       if (error || !membership) {
         setMessage('Aucune boutique trouvée pour ce compte.')

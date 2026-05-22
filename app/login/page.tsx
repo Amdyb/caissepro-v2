@@ -114,6 +114,11 @@ export default function LoginPage() {
 
         <p className="mt-6 text-center text-sm text-slate-600">Pas encore de compte ? <Link href="/register" className="font-black text-brand-700">Créer un compte</Link></p>
         <p className="mt-2 text-center text-sm text-slate-500">Employé avec un code temporaire ? <Link href="/employee-setup" className="font-black text-emerald-700">Activer mon compte</Link></p>
+        <p className="mt-4 text-center text-xs text-slate-400">
+          <Link href="/help" className="hover:text-slate-600">Aide</Link>
+          {' · '}
+          <Link href="/legal" className="hover:text-slate-600">Mentions légales</Link>
+        </p>
       </div>
     </main>
   )

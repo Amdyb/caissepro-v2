@@ -321,6 +321,16 @@ export default function PublicShopPage() {
         </div>
       </section>
 
+      {/* Footer */}
+      <footer className="border-t border-white/5 py-8 text-center">
+        <p className="text-xs font-bold text-white/30">
+          Boutique propulsée par{' '}
+          <a href="https://caissepro.app" target="_blank" rel="noopener noreferrer" className="text-white/50 hover:text-white/80">CaissePro</a>
+          {' · '}
+          <a href="/legal" className="hover:text-white/50">Mentions légales</a>
+        </p>
+      </footer>
+
       {/* Floating WhatsApp */}
       <button
         onClick={whatsappGeneral}
