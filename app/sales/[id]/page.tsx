@@ -11,6 +11,9 @@ type SaleItem = {
   quantity: number | null
   price: number | null
   total: number | null
+  product_name?: string | null
+  product_image?: string | null
+  unit_price?: number | null
   products?: {
     name: string
     image_url?: string | null
@@ -46,7 +49,7 @@ type Sale = {
 function paymentLabel(method: string | null) {
   switch (method) {
     case 'cash':
-      return 'Cash'
+      return 'Espèces'
     case 'wave':
       return 'Wave'
     case 'orange_money':
@@ -78,8 +81,9 @@ export default function ReceiptPage() {
 
     const lines = (sale.sale_items || [])
       .map((item) => {
-        const name = item.products?.name || 'Produit'
-        return `- ${name} x${item.quantity || 0}: ${Number(item.total || 0).toLocaleString('fr-FR')} CFA`
+        const name = item.product_name || item.products?.name || 'Produit'
+        const unitPrice = item.unit_price ?? item.price ?? 0
+        return `- ${name} x${item.quantity || 0}: ${Number(item.total || (unitPrice * (item.quantity || 1))).toLocaleString('fr-FR')} CFA`
       })
       .join('\n')
 
@@ -103,38 +107,59 @@ export default function ReceiptPage() {
   }, [router, saleId])
 
   async function loadSale() {
-    const { data, error } = await supabase
-      .from('sales')
-      .select(`
-        *,
-        businesses (
+    const query = `
+      *,
+      businesses (
+        name,
+        phone,
+        email,
+        address,
+        currency,
+        logo_url
+      ),
+      customers (
+        full_name,
+        phone
+      ),
+      sale_items (
+        id,
+        quantity,
+        price,
+        total,
+        product_name,
+        product_image,
+        unit_price,
+        products (
           name,
-          phone,
-          email,
-          address,
-          currency,
-          logo_url
-        ),
-        customers (
-          full_name,
-          phone
-        ),
-        sale_items (
-          id,
-          quantity,
-          price,
-          total,
-          products (
-            name,
-            image_url
-          )
+          image_url
         )
-      `)
+      )
+    `
+
+    let { data, error } = await supabase
+      .from('sales')
+      .select(query)
       .eq('id', saleId)
-      .single()
+      .maybeSingle()
+
+    // Fallback: try treating saleId as a receipt_number
+    if (!data && !error) {
+      const result = await supabase
+        .from('sales')
+        .select(query)
+        .eq('receipt_number', saleId)
+        .maybeSingle()
+      data = result.data
+      error = result.error
+    }
 
     if (error) {
       setMessage(error.message)
+      return
+    }
+
+    if (!data) {
+      setMessage('Cette vente est introuvable.')
       return
     }
 
@@ -245,37 +270,42 @@ export default function ReceiptPage() {
             <div className="my-5 border-t border-dashed border-slate-300" />
 
             <div className="space-y-4">
-              {(sale.sale_items || []).map((item) => (
-                <div key={item.id} className="rounded-2xl border border-slate-100 bg-slate-50 p-3">
-                  <div className="flex gap-3">
-                    {item.products?.image_url ? (
-                      <img
-                        src={item.products.image_url}
-                        alt={item.products?.name || 'product'}
-                        className="h-16 w-16 rounded-xl object-cover border border-slate-200 bg-white"
-                      />
-                    ) : (
-                      <div className="h-16 w-16 rounded-xl border border-slate-200 bg-white" />
-                    )}
+              {(sale.sale_items || []).map((item) => {
+                const itemName = item.product_name || item.products?.name || 'Produit'
+                const itemImage = item.product_image || item.products?.image_url
+                const itemUnitPrice = item.unit_price ?? item.price ?? 0
+                return (
+                  <div key={item.id} className="rounded-2xl border border-slate-100 bg-slate-50 p-3">
+                    <div className="flex gap-3">
+                      {itemImage ? (
+                        <img
+                          src={itemImage}
+                          alt={itemName}
+                          className="h-16 w-16 rounded-xl object-cover border border-slate-200 bg-white"
+                        />
+                      ) : (
+                        <div className="h-16 w-16 rounded-xl border border-slate-200 bg-white" />
+                      )}
 
-                    <div className="flex-1">
-                      <p className="font-black text-slate-950">
-                        {item.products?.name || 'Produit'}
-                      </p>
+                      <div className="flex-1">
+                        <p className="font-black text-slate-950">
+                          {itemName}
+                        </p>
 
-                      <div className="mt-2 flex items-center justify-between text-xs font-bold text-slate-600">
-                        <span>
-                          {item.quantity || 0} × {Number(item.price || 0).toLocaleString('fr-FR')} CFA
-                        </span>
+                        <div className="mt-2 flex items-center justify-between text-xs font-bold text-slate-600">
+                          <span>
+                            {item.quantity || 0} × {Number(itemUnitPrice).toLocaleString('fr-FR')} CFA
+                          </span>
 
-                        <span className="text-sm font-black text-slate-950">
-                          {Number(item.total || 0).toLocaleString('fr-FR')} CFA
-                        </span>
+                          <span className="text-sm font-black text-slate-950">
+                            {Number(item.total || 0).toLocaleString('fr-FR')} CFA
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
 
             <div className="my-5 border-t border-dashed border-slate-300" />
