@@ -106,7 +106,7 @@ export default function UpgradePage() {
   if (loading) return <main className="flex min-h-screen items-center justify-center bg-slate-50"><p className="font-black text-slate-600">Chargement...</p></main>
 
   return (
-    <AppShell title="Upgrade CaissePro" subtitle="Choisissez un plan pour votre boutique existante.">
+    <AppShell title="Mise à niveau" subtitle="Choisissez un plan pour votre boutique existante.">
       <div className="mx-auto max-w-6xl">
         {message && <div className="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-black text-emerald-700">{message}</div>}
 

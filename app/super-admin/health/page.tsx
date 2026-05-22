@@ -174,8 +174,8 @@ export default function MerchantHealthPage() {
         <div className="mx-auto flex max-w-7xl items-center justify-between">
           <div>
             <Link href="/super-admin" className="text-sm font-black text-emerald-300 hover:text-emerald-200">← Super Admin</Link>
-            <p className="mt-3 text-xs font-black uppercase tracking-[0.25em] text-emerald-400">Merchant Intelligence</p>
-            <h1 className="mt-1 text-4xl font-black tracking-tight">Merchant Health Dashboard</h1>
+            <p className="mt-3 text-xs font-black uppercase tracking-[0.25em] text-emerald-400">Intelligence Marchands</p>
+            <h1 className="mt-1 text-4xl font-black tracking-tight">Tableau de Santé Marchands</h1>
           </div>
           <div className="rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-black text-emerald-300">Score moyen: {summary.avg}/100</div>
         </div>
@@ -185,11 +185,11 @@ export default function MerchantHealthPage() {
         {message && <div className="mb-6 rounded-2xl border border-red-400/20 bg-red-400/10 p-4 text-sm font-black text-red-200">{message}</div>}
 
         <div className="mb-8 grid gap-5 md:grid-cols-3 xl:grid-cols-6">
-          <Stat icon={Building2} label="Businesses" value={summary.total} />
+          <Stat icon={Building2} label="Boutiques" value={summary.total} />
           <Stat icon={HeartPulse} label="Sains" value={summary.healthy} tone="text-emerald-300" />
           <Stat icon={AlertTriangle} label="À risque" value={summary.risk} tone="text-red-300" />
           <Stat icon={Clock3} label="Setup incomplet" value={summary.incomplete} tone="text-amber-300" />
-          <Stat icon={Shield} label="Founders" value={summary.founder} tone="text-sky-300" />
+          <Stat icon={Shield} label="Fondateurs" value={summary.founder} tone="text-sky-300" />
           <Stat icon={TrendingUp} label="Score moyen" value={`${summary.avg}%`} tone="text-violet-300" />
         </div>
 
@@ -204,7 +204,7 @@ export default function MerchantHealthPage() {
               <option value="risk">À risque</option>
               <option value="healthy">Sains</option>
               <option value="incomplete">Setup incomplet</option>
-              <option value="founder">Founders</option>
+              <option value="founder">Fondateurs</option>
             </select>
           </div>
         </div>
@@ -215,16 +215,16 @@ export default function MerchantHealthPage() {
               <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
                 <div>
                   <div className="flex flex-wrap items-center gap-3">
-                    <h2 className="text-2xl font-black">{business.name || 'Business sans nom'}</h2>
+                    <h2 className="text-2xl font-black">{business.name || 'Boutique sans nom'}</h2>
                     <span className={`rounded-full border px-3 py-1 text-xs font-black ${risk.tone}`}>{risk.label}</span>
-                    {(business.beta_access || business.founding_member) && <span className="rounded-full border border-sky-300/20 bg-sky-400/10 px-3 py-1 text-xs font-black text-sky-300">Founder Beta</span>}
+                    {(business.beta_access || business.founding_member) && <span className="rounded-full border border-sky-300/20 bg-sky-400/10 px-3 py-1 text-xs font-black text-sky-300">Fondateur Bêta</span>}
                   </div>
                   <p className="mt-2 text-sm font-bold text-white/45">/{business.slug || 'no-slug'} · {business.business_type || 'retail'} · créé le {cfaDate(business.created_at)}</p>
-                  {business.beta_expires_at && <p className="mt-1 text-xs font-black text-amber-300">Beta expire: {cfaDate(business.beta_expires_at)}</p>}
+                  {business.beta_expires_at && <p className="mt-1 text-xs font-black text-amber-300">Bêta expire : {cfaDate(business.beta_expires_at)}</p>}
                 </div>
 
                 <div className="min-w-[220px]">
-                  <div className="mb-2 flex items-center justify-between text-xs font-black text-white/50"><span>Health Score</span><span>{score}/100</span></div>
+                  <div className="mb-2 flex items-center justify-between text-xs font-black text-white/50"><span>Score Santé</span><span>{score}/100</span></div>
                   <div className="h-3 overflow-hidden rounded-full bg-white/10">
                     <div className={`h-full rounded-full ${score >= 65 ? 'bg-emerald-400' : score >= 35 ? 'bg-amber-400' : 'bg-red-400'}`} style={{ width: `${score}%` }} />
                   </div>
@@ -235,8 +235,8 @@ export default function MerchantHealthPage() {
                 <Mini label="Produits" value={metrics.products} />
                 <Mini label="Ventes" value={metrics.sales} />
                 <Mini label="Commandes" value={metrics.orders} />
-                <Mini label="Feedback" value={metrics.feedback} />
-                <Mini label="Backups" value={metrics.backups} />
+                <Mini label="Retours" value={metrics.feedback} />
+                <Mini label="Sauvegardes" value={metrics.backups} />
               </div>
 
               <div className="mt-5 flex flex-wrap gap-3">

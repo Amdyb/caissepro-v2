@@ -95,7 +95,7 @@ export default function SuperAdminBusinessesPage() {
   }
 
   return (
-    <AppShell title="Super Admin Businesses" subtitle="Gestion globale des boutiques.">
+    <AppShell title="Super Admin — Boutiques" subtitle="Gestion globale des boutiques.">
       <div className="mx-auto max-w-7xl pb-20">
         <button
           onClick={() => router.back()}
@@ -155,7 +155,7 @@ export default function SuperAdminBusinessesPage() {
                     <p className="mt-1 text-sm font-bold text-slate-500">/{business.slug || 'no-slug'} · {business.business_type || 'retail'}</p>
                     <div className="mt-3 flex gap-2">
                       <span className={`rounded-full px-3 py-1 text-xs font-black ${business.status === 'suspended' ? 'bg-orange-100 text-orange-700' : 'bg-emerald-100 text-emerald-700'}`}>
-                        {business.status === 'suspended' ? 'SUSPENDED' : 'ACTIVE'}
+                        {business.status === 'suspended' ? 'SUSPENDU' : 'ACTIF'}
                       </span>
                     </div>
                   </div>

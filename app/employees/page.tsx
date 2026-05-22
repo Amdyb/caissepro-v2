@@ -136,7 +136,7 @@ export default function EmployeesPage() {
             <select value={role} onChange={(e) => setRole(e.target.value)} className="rounded-2xl border border-slate-300 bg-white px-5 py-4 font-bold outline-none focus:border-emerald-500">
               <option value="sales">Vendeur</option>
               <option value="manager">Manager</option>
-              <option value="admin">Admin</option>
+              <option value="admin">Administrateur</option>
             </select>
             <button disabled={saving} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-6 py-4 font-black text-white disabled:opacity-60 lg:col-span-2"><UserPlus size={18} />{saving ? 'Ajout...' : 'Ajouter'}</button>
           </form>

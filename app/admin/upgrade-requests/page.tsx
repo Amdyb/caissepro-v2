@@ -147,7 +147,7 @@ export default function AdminUpgradeRequestsPage() {
   }
 
   return (
-    <AppShell title="Demandes Upgrade" subtitle="Validation manuelle des paiements CaissePro.">
+    <AppShell title="Demandes mise à niveau" subtitle="Validation manuelle des paiements CaissePro.">
       <div className="mx-auto max-w-7xl">
         {message && (
           <div className="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-black text-emerald-700">

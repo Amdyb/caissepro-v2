@@ -20,7 +20,7 @@ type StaffMember = {
 
 const roleLabels: Record<string, string> = {
   owner: 'Propriétaire',
-  admin: 'Admin',
+  admin: 'Administrateur',
   manager: 'Manager',
   cashier: 'Vendeur / Caissier'
 }
@@ -231,7 +231,7 @@ export default function StaffPage() {
               <h3 className="font-black text-slate-950">Permissions recommandées</h3>
             </div>
             <div className="space-y-3 text-sm text-slate-600">
-              <p><strong>Owner/Admin:</strong> tout gérer, employés, produits, ventes, rapports.</p>
+              <p><strong>Propriétaire / Admin :</strong> tout gérer, employés, produits, ventes, rapports.</p>
               <p><strong>Manager:</strong> produits, stock, ventes, rapports.</p>
               <p><strong>Caissier:</strong> caisse, ventes, lecture des produits.</p>
             </div>
@@ -278,7 +278,7 @@ export default function StaffPage() {
                         onChange={(e) => updateRole(member.id, e.target.value)}
                       >
                         <option value="owner">Propriétaire</option>
-                        <option value="admin">Admin</option>
+                        <option value="admin">Administrateur</option>
                         <option value="manager">Manager</option>
                         <option value="cashier">Vendeur / Caissier</option>
                       </select>

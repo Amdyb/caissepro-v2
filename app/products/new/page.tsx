@@ -123,7 +123,7 @@ export default function NewProductPage() {
 
             <div className="grid gap-5 md:grid-cols-2">
               <input type="number" placeholder="Stock" value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} className="rounded-2xl border border-slate-300 px-5 py-4 font-bold outline-none" />
-              <input placeholder="Image URL" value={form.image} onChange={(e) => setForm({ ...form, image: e.target.value })} className="rounded-2xl border border-slate-300 px-5 py-4 font-bold outline-none" />
+              <input placeholder="URL de l'image" value={form.image} onChange={(e) => setForm({ ...form, image: e.target.value })} className="rounded-2xl border border-slate-300 px-5 py-4 font-bold outline-none" />
             </div>
 
             {businessId && (

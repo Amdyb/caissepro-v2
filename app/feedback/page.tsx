@@ -6,7 +6,7 @@ import { Bug, Lightbulb, LifeBuoy, MessageSquare, Send, Star } from 'lucide-reac
 import { useEffect, useState } from 'react'
 
 const feedbackTypes = [
-  { value: 'feedback', label: 'Feedback général', icon: MessageSquare },
+  { value: 'feedback', label: 'Retour général', icon: MessageSquare },
   { value: 'bug', label: 'Problème / Bug', icon: Bug },
   { value: 'feature_request', label: 'Nouvelle fonctionnalité', icon: Lightbulb },
   { value: 'support', label: 'Besoin d’aide', icon: LifeBuoy },
@@ -79,7 +79,7 @@ export default function FeedbackPage() {
   }
 
   return (
-    <AppShell title="Feedback" subtitle="Aidez-nous à améliorer CaissePro pendant la bêta.">
+    <AppShell title="Retours & Suggestions" subtitle="Aidez-nous à améliorer CaissePro pendant la bêta.">
       <div className="mx-auto max-w-5xl">
         <div className="mb-8 rounded-[2rem] border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-8">
           <h1 className="text-5xl font-black tracking-tight text-slate-950">Votre avis compte.</h1>
@@ -153,7 +153,7 @@ export default function FeedbackPage() {
 
             <button disabled={loading} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-8 py-5 text-lg font-black text-white shadow-xl shadow-emerald-600/20 disabled:opacity-60">
               <Send size={20} />
-              {loading ? 'Envoi...' : 'Envoyer le feedback'}
+              {loading ? 'Envoi...' : 'Envoyer le retour'}
             </button>
           </div>
         </form>

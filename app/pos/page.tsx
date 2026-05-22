@@ -167,7 +167,7 @@ export default function POSPage() {
       setCheckoutOpen(false)
       setMessage('Vente enregistrée avec succès.')
     } catch (err: any) {
-      setMessage(err?.message || 'Erreur checkout')
+      setMessage(err?.message || 'Erreur lors du paiement')
     }
 
     setCheckoutLoading(false)
@@ -186,7 +186,7 @@ export default function POSPage() {
   }
 
   return (
-    <AppShell title="Caisse POS" subtitle="Workflow rapide moderne.">
+    <AppShell title="Point de Vente" subtitle="Encaissement rapide et moderne.">
       <div className="mx-auto max-w-7xl pb-36">
         {message && <div className="mb-4 rounded-2xl bg-emerald-50 p-4 text-sm font-black text-emerald-700">{message}</div>}
 

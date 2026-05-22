@@ -112,7 +112,7 @@ export default function BackupPage() {
     }
 
     setBackups((prev) => [data as Backup, ...prev])
-    setMessage('Backup manuel demandé. Le système de génération automatique sera connecté ensuite.')
+    setMessage('Sauvegarde manuelle demandée. Le système de génération automatique sera connecté ensuite.')
   }
 
   async function requestExport(type: string) {
@@ -143,10 +143,10 @@ export default function BackupPage() {
   }, [backups])
 
   return (
-    <AppShell title="Backup & Export" subtitle="Sécurisez et exportez les données de votre commerce.">
+    <AppShell title="Sauvegarde & Export" subtitle="Sécurisez et exportez les données de votre commerce.">
       <div className="mx-auto max-w-7xl">
         {message && (
-          <div className={`mb-6 rounded-2xl p-4 text-sm font-bold ${message.includes('demand') || message.includes('Backup') ? 'border border-emerald-200 bg-emerald-50 text-emerald-700' : 'border border-red-200 bg-red-50 text-red-700'}`}>
+          <div className={`mb-6 rounded-2xl p-4 text-sm font-bold ${message.includes('demand') || message.includes('Sauvegarde') ? 'border border-emerald-200 bg-emerald-50 text-emerald-700' : 'border border-red-200 bg-red-50 text-red-700'}`}>
             {message}
           </div>
         )}
@@ -168,7 +168,7 @@ export default function BackupPage() {
               className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-950 px-7 py-5 text-sm font-black text-white shadow-xl disabled:opacity-60"
             >
               <Cloud size={20} />
-              {creating ? 'Demande...' : 'Créer backup manuel'}
+              {creating ? 'Demande...' : 'Créer sauvegarde manuelle'}
             </button>
           </div>
         </div>
@@ -176,7 +176,7 @@ export default function BackupPage() {
         <div className="mb-8 grid gap-5 md:grid-cols-4">
           <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
             <Database className="text-emerald-600" />
-            <p className="mt-5 text-sm font-bold text-slate-500">Backups</p>
+            <p className="mt-5 text-sm font-bold text-slate-500">Sauvegardes</p>
             <p className="mt-2 text-4xl font-black text-slate-950">{backups.length}</p>
           </div>
           <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
@@ -218,12 +218,12 @@ export default function BackupPage() {
 
         <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
           <div className="mb-5 flex items-center justify-between">
-            <h2 className="text-2xl font-black text-slate-950">Historique backups & exports</h2>
+            <h2 className="text-2xl font-black text-slate-950">Historique sauvegardes & exports</h2>
             <span className="rounded-full bg-slate-100 px-4 py-2 text-xs font-black text-slate-500">{backups.length} élément(s)</span>
           </div>
 
           {loading ? (
-            <div className="rounded-2xl bg-slate-50 p-10 text-center font-black text-slate-500">Chargement backups...</div>
+            <div className="rounded-2xl bg-slate-50 p-10 text-center font-black text-slate-500">Chargement sauvegardes...</div>
           ) : backups.length === 0 ? (
             <div className="rounded-2xl bg-slate-50 p-12 text-center">
               <Archive className="mx-auto text-slate-300" size={60} />

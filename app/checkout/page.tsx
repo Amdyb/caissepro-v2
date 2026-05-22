@@ -163,7 +163,7 @@ export default function CheckoutPage() {
   }
 
   return (
-    <AppShell title="Checkout" subtitle="Finalisez la vente et envoyez le reçu WhatsApp.">
+    <AppShell title="Paiement" subtitle="Finalisez la vente et envoyez le reçu WhatsApp.">
       <div className="mx-auto grid max-w-6xl gap-6 lg:grid-cols-[1fr_420px]">
         <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
           <div className="mb-6 flex items-center gap-3">

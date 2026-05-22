@@ -106,7 +106,7 @@ export default function MerchantProfilePage() {
   }
 
   return (
-    <AppShell title="Merchant Control Center" subtitle="Gestion détaillée du marchand.">
+    <AppShell title="Profil Marchand" subtitle="Gestion détaillée du marchand.">
       <div className="mx-auto max-w-7xl pb-20">
         {message && (
           <div className="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-black text-emerald-700">
@@ -130,7 +130,7 @@ export default function MerchantProfilePage() {
 
               <div className="mt-4 flex gap-2">
                 <span className={`rounded-full px-4 py-2 text-xs font-black ${business?.status === 'suspended' ? 'bg-orange-100 text-orange-700' : 'bg-emerald-100 text-emerald-700'}`}>
-                  {business?.status === 'suspended' ? 'SUSPENDED' : 'ACTIVE'}
+                  {business?.status === 'suspended' ? 'SUSPENDU' : 'ACTIF'}
                 </span>
               </div>
             </div>
@@ -172,14 +172,14 @@ export default function MerchantProfilePage() {
           <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
             <Activity className="text-violet-500" />
             <p className="mt-5 text-sm font-black uppercase text-slate-500">Activité</p>
-            <p className="mt-2 text-lg font-black text-emerald-600">ACTIVE</p>
+            <p className="mt-2 text-lg font-black text-emerald-600">ACTIF</p>
           </div>
 
           <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
             <ShieldAlert className="text-orange-500" />
             <p className="mt-5 text-sm font-black uppercase text-slate-500">Storefront</p>
             <p className="mt-2 text-lg font-black text-slate-950">
-              {business?.online_store_enabled ? 'ENABLED' : 'DISABLED'}
+              {business?.online_store_enabled ? 'ACTIVÉ' : 'DÉSACTIVÉ'}
             </p>
           </div>
         </div>

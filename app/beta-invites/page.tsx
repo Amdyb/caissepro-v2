@@ -22,7 +22,7 @@ export default function BetaInvitesPage() {
   }
 
   return (
-    <AppShell title="Invitations Beta" subtitle="Programme Fondateur CaissePro">
+    <AppShell title="Invitations Bêta" subtitle="Programme Fondateur CaissePro">
       <div className="mx-auto max-w-6xl">
         <div className="relative overflow-hidden rounded-[2rem] border border-amber-200 bg-gradient-to-br from-[#071B2F] via-slate-900 to-emerald-950 p-8 text-white shadow-2xl">
           <div className="absolute right-0 top-0 h-72 w-72 rounded-full bg-emerald-500/10 blur-3xl" />
@@ -31,7 +31,7 @@ export default function BetaInvitesPage() {
             <div className="max-w-3xl">
               <div className="mb-5 inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-xs font-black uppercase tracking-widest text-amber-300">
                 <Sparkles size={14} />
-                Founding Beta Program
+                Programme Fondateur Bêta
               </div>
 
               <h1 className="text-5xl font-black tracking-tight">
@@ -45,7 +45,7 @@ export default function BetaInvitesPage() {
 
             <div className="rounded-[2rem] border border-white/10 bg-white/5 p-5 backdrop-blur lg:w-[360px]">
               <p className="text-xs font-black uppercase tracking-widest text-amber-300">
-                Code Beta
+                Code Bêta
               </p>
 
               <div className="mt-3 rounded-2xl bg-black/20 p-4 text-xl font-black tracking-wider">
@@ -82,7 +82,7 @@ export default function BetaInvitesPage() {
 
           <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
             <Sparkles className="text-emerald-600" size={30} />
-            <h3 className="mt-4 text-2xl font-black">Fondateur Beta</h3>
+            <h3 className="mt-4 text-2xl font-black">Fondateur Bêta</h3>
             <p className="mt-2 text-sm font-semibold text-slate-500">
               Les premiers utilisateurs obtiennent des avantages spéciaux.
             </p>

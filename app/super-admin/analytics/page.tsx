@@ -56,18 +56,18 @@ export default function SuperAdminAnalyticsPage() {
   }, [businesses, sales, subscriptions])
 
   if (loading) {
-    return <main className="flex min-h-screen items-center justify-center bg-slate-50"><p className="font-black text-slate-600">Chargement analytics...</p></main>
+    return <main className="flex min-h-screen items-center justify-center bg-slate-50"><p className="font-black text-slate-600">Chargement statistiques...</p></main>
   }
 
   const cards = [
-    { title: 'Revenue', value: `${Number(stats.revenue).toLocaleString('fr-FR')} CFA`, icon: CreditCard },
-    { title: 'Businesses', value: stats.businesses, icon: Store },
-    { title: 'Subscriptions', value: stats.activeSubscriptions, icon: Users },
-    { title: 'Sales', value: stats.totalSales, icon: TrendingUp }
+    { title: 'Revenus', value: `${Number(stats.revenue).toLocaleString('fr-FR')} CFA`, icon: CreditCard },
+    { title: 'Boutiques', value: stats.businesses, icon: Store },
+    { title: 'Abonnements', value: stats.activeSubscriptions, icon: Users },
+    { title: 'Ventes', value: stats.totalSales, icon: TrendingUp }
   ]
 
   return (
-    <AppShell title="Analytics" subtitle="Vue globale de la plateforme.">
+    <AppShell title="Statistiques" subtitle="Vue globale de la plateforme.">
       <div className="mx-auto max-w-7xl pb-20">
         <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
           {cards.map((card) => {
@@ -85,7 +85,7 @@ export default function SuperAdminAnalyticsPage() {
         <div className="mt-8 rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
           <div className="flex items-center gap-3">
             <BarChart3 className="text-emerald-600" />
-            <h2 className="text-3xl font-black text-slate-950">Top Businesses</h2>
+            <h2 className="text-3xl font-black text-slate-950">Top Boutiques</h2>
           </div>
 
           <div className="mt-6 space-y-4">
