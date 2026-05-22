@@ -339,6 +339,15 @@ export default function ReceiptPage() {
             </p>
           </div>
         </div>
+
+        <div className="mx-auto mt-6 flex max-w-[380px] gap-3 no-print">
+          <Link
+            href={`/sales/${saleId}/receipt`}
+            className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-emerald-600 py-4 text-sm font-black text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700"
+          >
+            <ReceiptText size={18} /> Voir le reçu premium
+          </Link>
+        </div>
       </section>
     </main>
   )
