@@ -369,6 +369,14 @@ export default function PremiumReceiptPage() {
               <p className="mt-1 text-xs font-bold text-slate-400">Propulsé par CaissePro</p>
             </div>
 
+            {/* WhatsApp CTA inside receipt card */}
+            <button
+              onClick={shareWhatsApp}
+              className="no-print flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 py-4 text-sm font-black text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700"
+            >
+              <MessageCircle size={18} /> Partager sur WhatsApp
+            </button>
+
           </div>
         </div>
 
