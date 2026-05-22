@@ -107,12 +107,15 @@ export default function SuperAdminPage() {
 
     const { data: userData } = await supabase.auth.getUser()
 
-    const { data: targetUser } = await supabase
-      .from('auth_users_view' as any)
-      .select('id')
-      .eq('email', inviteEmail.trim())
-      .maybeSingle()
-      .catch(() => ({ data: null }))
+    let targetUser: any = null
+    try {
+      const { data } = await supabase
+        .from('auth_users_view' as any)
+        .select('id')
+        .eq('email', inviteEmail.trim())
+        .maybeSingle()
+      targetUser = data
+    } catch {}
 
     if (!targetUser) {
       const { error } = await supabase.from('platform_admins').insert({
