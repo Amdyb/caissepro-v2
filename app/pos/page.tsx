@@ -140,7 +140,8 @@ export default function POSPage() {
           paid_amount: isCredit ? 0 : total,
           remaining_amount: isCredit ? total : 0,
           customer_id: selectedCustomerId || null,
-          payment_method: paymentMethod
+          payment_method: paymentMethod,
+          status: 'completed'
         })
         .select()
         .single()

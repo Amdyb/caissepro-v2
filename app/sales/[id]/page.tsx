@@ -16,7 +16,7 @@ type SaleItem = {
   unit_price?: number | null
   products?: {
     name: string
-    image_url?: string | null
+    image?: string | null
   } | null
 }
 
@@ -131,7 +131,7 @@ export default function ReceiptPage() {
         unit_price,
         products (
           name,
-          image_url
+          image
         )
       )
     `
@@ -287,7 +287,7 @@ export default function ReceiptPage() {
             <div className="space-y-4">
               {(sale.sale_items || []).map((item) => {
                 const itemName = item.product_name || item.products?.name || 'Produit'
-                const itemImage = item.product_image || item.products?.image_url
+                const itemImage = item.product_image || item.products?.image
                 const itemUnitPrice = item.unit_price ?? item.price ?? 0
                 return (
                   <div key={item.id} className="rounded-2xl border border-slate-100 bg-slate-50 p-3">

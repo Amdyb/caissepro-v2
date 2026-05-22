@@ -74,8 +74,8 @@ const adminNav: NavSection[] = [
     items: [
       { label: 'Paramètres', href: '/settings/profile', icon: Settings },
       { label: 'Aide', href: '/help', icon: HelpCircle },
-      { label: 'Reset Produits', href: '/settings/reset', icon: Trash2 },
-      { label: 'Supprimer Boutique', href: '/settings/delete', icon: Trash2 }
+      { label: 'Reset Produits', href: '/reset-products', icon: Trash2 },
+      { label: 'Paramètres boutique', href: '/settings', icon: Settings }
     ]
   }
 ]

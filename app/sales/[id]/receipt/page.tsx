@@ -14,7 +14,7 @@ type SaleItem = {
   product_name?: string | null
   product_image?: string | null
   unit_price?: number | null
-  products?: { name: string; image_url?: string | null } | null
+  products?: { name: string; image?: string | null } | null
 }
 
 type Sale = {
@@ -54,7 +54,7 @@ const SALE_QUERY = `
   sale_items (
     id, quantity, price, total,
     product_name, product_image, unit_price,
-    products ( name, image_url )
+    products ( name, image )
   )
 `
 
@@ -305,7 +305,7 @@ export default function PremiumReceiptPage() {
               ) : (
                 items.map((item) => {
                   const name = item.product_name || item.products?.name || 'Article'
-                  const image = item.product_image || item.products?.image_url
+                  const image = item.product_image || item.products?.image
                   const qty = item.quantity || 1
                   const unit = Number(item.unit_price ?? item.price ?? 0)
                   const sub = Number(item.total || unit * qty)

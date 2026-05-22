@@ -112,7 +112,12 @@ export default function EmployeesPage() {
       temp_password: tempPassword
     }
 
-    const { error } = await supabase.from('business_members').insert(newMember)
+    const { error } = await supabase.from('business_members').insert({
+      business_id: businessId,
+      email: cleanEmail,
+      full_name: fullName || cleanEmail.split('@')[0],
+      role
+    })
 
     setSaving(false)
 
