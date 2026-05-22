@@ -6,9 +6,9 @@ import { ReactNode, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import {
-  CalendarClock,
   ChevronLeft,
   ChevronRight,
+  Globe,
   HandCoins,
   LayoutDashboard,
   Menu,
@@ -16,10 +16,10 @@ import {
   ReceiptText,
   RotateCcw,
   Settings,
-  Share2,
   ShoppingCart,
   Store,
   Trash2,
+  UserCog,
   Users,
   Wallet
 } from 'lucide-react'
@@ -31,33 +31,48 @@ type NavSection = { title: string; items: NavItem[] }
 
 const employeeNav: NavSection[] = [
   {
-    title: 'Employé',
+    title: 'Tableau de bord',
     items: [
       { label: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard },
+      { label: 'Clients', href: '/customers', icon: Users }
+    ]
+  },
+  {
+    title: 'Caisse du jour',
+    items: [
       { label: 'Vendre', href: '/pos', icon: ShoppingCart },
-      { label: 'Clients', href: '/customers', icon: Users },
       { label: 'Rapport du jour', href: '/reports', icon: ReceiptText },
-      { label: 'Partager ma boutique', href: '/storefront', icon: Share2 }
+      { label: 'Ma Boutique en ligne', href: '/storefront', icon: Globe }
     ]
   }
 ]
 
 const adminNav: NavSection[] = [
   {
-    title: 'Commerce',
+    title: 'Tableau de bord',
     items: [
       { label: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard },
-      { label: 'Vendre', href: '/pos', icon: ShoppingCart },
-      { label: 'Remboursements', href: '/refunds', icon: RotateCcw },
       { label: 'Produits', href: '/products', icon: Package },
       { label: 'Clients', href: '/customers', icon: Users },
+      { label: 'Employés', href: '/employees', icon: UserCog }
+    ]
+  },
+  {
+    title: 'Caisse du jour',
+    items: [
+      { label: 'Vendre', href: '/pos', icon: ShoppingCart },
+      { label: 'Remboursements', href: '/refunds', icon: RotateCcw },
+      { label: 'Caisse du jour', href: '/register-shifts', icon: Wallet },
       { label: 'Client Doit', href: '/debts', icon: HandCoins },
-      { label: 'Caisse jour', href: '/register-shifts', icon: Wallet },
-      { label: 'Partager ma boutique', href: '/storefront', icon: Share2 },
-      { label: 'Employés', href: '/employees', icon: Users },
+      { label: 'Ma Boutique en ligne', href: '/storefront', icon: Globe }
+    ]
+  },
+  {
+    title: 'Profil',
+    items: [
       { label: 'Paramètres', href: '/settings/profile', icon: Settings },
-      { label: 'Reset Produits', href: '/settings/profile', icon: Trash2 },
-      { label: 'Supprimer boutique', href: '/settings/profile', icon: Trash2 }
+      { label: 'Reset Produits', href: '/settings/reset', icon: Trash2 },
+      { label: 'Supprimer Boutique', href: '/settings/delete', icon: Trash2 }
     ]
   }
 ]
@@ -147,7 +162,7 @@ export default function AppShell({ children, title, subtitle, action }: AppShell
               <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl bg-emerald-600 text-white">
                 {businessLogo ? <img src={businessLogo} alt={businessName} className="h-full w-full object-contain bg-white p-1" /> : <Store size={22} />}
               </div>
-              {sidebarOpen && <div><h1 className="text-xl font-black text-slate-950">{businessName}</h1><p className="text-xs font-bold text-slate-500">Powered by CaissePro</p></div>}
+              {sidebarOpen && <div><h1 className="text-xl font-black text-slate-950">{businessName}</h1><p className="text-xs font-bold text-slate-500">Propulsé par CaissePro</p></div>}
             </div>
             <button onClick={() => setSidebarOpen(!sidebarOpen)} className="hidden lg:block">{sidebarOpen ? <ChevronLeft size={18} /> : <ChevronRight size={18} />}</button>
           </div>
