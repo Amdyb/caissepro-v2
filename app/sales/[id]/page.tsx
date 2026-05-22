@@ -199,6 +199,13 @@ export default function ReceiptPage() {
   const receiptWidthClass = paperSize === '58mm' ? 'max-w-[260px]' : 'max-w-[380px]'
 
   return (
+    <>
+    <style>{`
+      @media print {
+        .no-print { display: none !important; }
+        body { background: white; }
+      }
+    `}</style>
     <main className="min-h-screen bg-slate-100">
       <header className="border-b border-slate-200 bg-white no-print">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
@@ -350,5 +357,7 @@ export default function ReceiptPage() {
         </div>
       </section>
     </main>
+    </>
+
   )
 }

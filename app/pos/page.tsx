@@ -121,11 +121,14 @@ export default function POSPage() {
     setCheckoutLoading(true)
 
     try {
+      const isCredit = paymentMethod === 'credit'
       const { data: saleData, error } = await supabase
         .from('sales')
         .insert({
           business_id: businessId,
           total,
+          paid_amount: isCredit ? 0 : total,
+          remaining_amount: isCredit ? total : 0,
           customer_id: selectedCustomerId || null,
           payment_method: paymentMethod
         })
@@ -137,6 +140,9 @@ export default function POSPage() {
       const saleItems = cart.map((item) => ({
         sale_id: saleData.id,
         product_id: item.product.id,
+        product_name: item.product.name,
+        product_image: item.product.image || null,
+        unit_price: item.price,
         quantity: item.quantity,
         price: item.price,
         total: item.quantity * item.price
