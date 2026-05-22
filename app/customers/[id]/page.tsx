@@ -49,7 +49,7 @@ type Payment = {
 function paymentLabel(method: string | null) {
   switch (method) {
     case 'cash':
-      return 'Cash'
+      return 'Espèces'
     case 'wave':
       return 'Wave'
     case 'orange_money':
