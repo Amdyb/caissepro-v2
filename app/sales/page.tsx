@@ -48,7 +48,7 @@ type Sale = {
 function paymentLabel(method: string | null) {
   switch (method) {
     case 'cash':
-      return 'Cash'
+      return 'Espèces'
     case 'wave':
       return 'Wave'
     case 'orange_money':
@@ -95,7 +95,7 @@ export default function SalesPage() {
   const [message, setMessage] = useState('')
 
   const navItems = [
-    { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+    { label: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard },
     { label: 'Caisse POS', href: '/pos', icon: ShoppingCart },
     { label: 'Produits', href: '/products', icon: Package },
     { label: 'Catégories', href: '/categories', icon: Boxes },
@@ -105,9 +105,9 @@ export default function SalesPage() {
     { label: 'Fournisseurs', href: '/suppliers', icon: Truck },
     { label: 'Achats', href: '/purchases', icon: PackagePlus },
     { label: 'Dépenses', href: '/expenses', icon: Wallet },
-    { label: 'Analytics', href: '/analytics', icon: BarChart3 },
+    { label: 'Statistiques', href: '/analytics', icon: BarChart3 },
     { label: 'Rapports', href: '/reports', icon: CreditCard },
-    { label: 'Caisse jour', href: '/register-shifts', icon: CalendarClock },
+    { label: 'Caisse du jour', href: '/register-shifts', icon: CalendarClock },
     { label: 'Multi-boutiques', href: '/branches', icon: Building2 },
     { label: 'Paramètres', href: '/settings', icon: Settings }
   ]
@@ -166,7 +166,7 @@ export default function SalesPage() {
         .select('business_id, businesses(name, logo_url)')
         .eq('user_id', userData.user.id)
         .limit(1)
-        .single()
+        .maybeSingle()
 
       if (error || !membership) {
         setMessage('Aucune boutique trouvée.')
