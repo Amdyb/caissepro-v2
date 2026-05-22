@@ -172,7 +172,7 @@ export default function DashboardPage() {
         : '/pos'
 
   return (
-    <AppShell title="Gestion commerciale" subtitle={`Template: ${template.label}`}>
+    <AppShell title="Tableau de bord" subtitle={business?.name ? `Bienvenue sur ${business.name}` : 'Vue d\'ensemble de votre activité'}>
       <div className="mx-auto max-w-[1600px]">
         {message && (
           <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-bold text-red-700">

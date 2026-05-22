@@ -48,6 +48,11 @@ export default function DebtsPage() {
   const [saving, setSaving] = useState<string | null>(null)
   const [message, setMessage] = useState('')
 
+  function flash(msg: string) {
+    setMessage(msg)
+    setTimeout(() => setMessage(''), 6000)
+  }
+
   // Add new customer with debt
   const [newCustomer, setNewCustomer] = useState({ full_name: '', phone: '', debt_balance: '' })
   const [addingCustomer, setAddingCustomer] = useState(false)
@@ -143,7 +148,7 @@ export default function DebtsPage() {
     if (error) { setMessage(error.message); return }
 
     setNewCustomer({ full_name: '', phone: '', debt_balance: '' })
-    setMessage('Client débiteur ajouté.')
+    flash('Client débiteur ajouté.')
     await loadCustomers(businessId)
   }
 
@@ -164,7 +169,7 @@ export default function DebtsPage() {
     await supabase.from('customers').update({ debt_balance: 0 }).eq('id', customer.id)
 
     setSaving(null)
-    setMessage(`Paiement total de ${remaining.toLocaleString('fr-FR')} CFA enregistré.`)
+    flash(`Paiement total de ${remaining.toLocaleString('fr-FR')} CFA enregistré.`)
     await Promise.all([loadCustomers(businessId), loadPayments(businessId)])
   }
 
@@ -191,7 +196,7 @@ export default function DebtsPage() {
     setPartialOpen(null)
     setPartialAmount('')
     setPartialNote('')
-    setMessage(`Paiement de ${amt.toLocaleString('fr-FR')} CFA enregistré.`)
+    flash(`Paiement de ${amt.toLocaleString('fr-FR')} CFA enregistré.`)
     await Promise.all([loadCustomers(businessId), loadPayments(businessId)])
   }
 
@@ -213,7 +218,7 @@ export default function DebtsPage() {
     await supabase.from('customers').update({ debt_balance: 0 }).eq('id', customer.id)
 
     setSaving(null)
-    setMessage(`Dette de ${customer.full_name} effacée.`)
+    flash(`Dette de ${customer.full_name} effacée.`)
     await Promise.all([loadCustomers(businessId), loadPayments(businessId)])
   }
 

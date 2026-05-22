@@ -33,12 +33,22 @@ export default function POSPage() {
   const [checkoutLoading, setCheckoutLoading] = useState(false)
   const [message, setMessage] = useState('')
   const [lastReceipt, setLastReceipt] = useState('')
+
+  function flash(msg: string) {
+    setMessage(msg)
+    setTimeout(() => setMessage(''), 6000)
+  }
   const [lastSaleId, setLastSaleId] = useState<string | null>(null)
   const [newCustomer, setNewCustomer] = useState({ full_name: '', phone: '' })
 
   const filteredProducts = useMemo(() => {
     const q = search.toLowerCase().trim()
-    return products.filter((product) => !q || product.name.toLowerCase().includes(q))
+    return products.filter((product) =>
+      !q ||
+      product.name.toLowerCase().includes(q) ||
+      (product.barcode || '').toLowerCase().includes(q) ||
+      (product.category || '').toLowerCase().includes(q)
+    )
   }, [products, search])
 
   const total = cart.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 0)), 0)
@@ -112,7 +122,7 @@ export default function POSPage() {
     setCustomers([data, ...customers])
     setSelectedCustomerId(data.id)
     setNewCustomer({ full_name: '', phone: '' })
-    setMessage('Client ajouté avec succès.')
+    flash('Client ajouté avec succès.')
   }
 
   async function checkout() {
@@ -173,7 +183,7 @@ export default function POSPage() {
 
       setCart([])
       setLastSaleId(saleData.id)
-      setMessage('Vente enregistrée avec succès.')
+      flash('Vente enregistrée avec succès.')
     } catch (err: any) {
       setMessage(err?.message || 'Erreur lors du paiement')
     }
@@ -218,16 +228,35 @@ export default function POSPage() {
         </div>
 
         <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-          {filteredProducts.map((product) => (
-            <button key={product.id} onClick={() => addToCart(product)} className="rounded-3xl border border-slate-200 bg-white p-4 text-left shadow-sm">
-              <div className="flex h-36 items-center justify-center overflow-hidden rounded-2xl bg-slate-50">
-                {product.image ? <img src={product.image} alt={product.name} className="h-full w-full object-cover" /> : <ImageIcon className="text-slate-300" size={40} />}
-              </div>
+          {filteredProducts.map((product) => {
+            const outOfStock = Number(product.stock ?? 1) <= 0
+            const lowStock = !outOfStock && Number(product.stock ?? 1) <= 5
 
-              <h3 className="mt-4 text-lg font-black text-slate-950">{product.name}</h3>
-              <p className="mt-2 text-2xl font-black text-emerald-600">{Number(product.sell_price || 0).toLocaleString('fr-FR')} CFA</p>
-            </button>
-          ))}
+            return (
+              <button
+                key={product.id}
+                onClick={() => addToCart(product)}
+                disabled={outOfStock}
+                className={`relative rounded-3xl border bg-white p-4 text-left shadow-sm transition ${outOfStock ? 'cursor-not-allowed border-red-100 opacity-60' : 'border-slate-200 hover:border-emerald-300 hover:shadow-md'}`}
+              >
+                {outOfStock && (
+                  <span className="absolute right-3 top-3 z-10 rounded-full bg-red-600 px-2 py-0.5 text-[10px] font-black text-white">Rupture</span>
+                )}
+                {lowStock && !outOfStock && (
+                  <span className="absolute right-3 top-3 z-10 rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-black text-white">Stock faible</span>
+                )}
+                <div className="flex h-36 items-center justify-center overflow-hidden rounded-2xl bg-slate-50">
+                  {product.image ? <img src={product.image} alt={product.name} className="h-full w-full object-cover" /> : <ImageIcon className="text-slate-300" size={40} />}
+                </div>
+                <h3 className="mt-4 text-lg font-black text-slate-950">{product.name}</h3>
+                {product.category && <p className="mt-0.5 text-xs font-bold text-slate-400">{product.category}</p>}
+                <p className="mt-2 text-2xl font-black text-emerald-600">{Number(product.sell_price || 0).toLocaleString('fr-FR')} CFA</p>
+                {product.stock !== null && (
+                  <p className="mt-1 text-xs font-bold text-slate-400">Stock : {product.stock}</p>
+                )}
+              </button>
+            )
+          })}
         </div>
 
         {cart.length > 0 && (

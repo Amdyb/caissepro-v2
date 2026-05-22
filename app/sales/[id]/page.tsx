@@ -171,8 +171,12 @@ export default function ReceiptPage() {
   }
 
   function shareWhatsApp() {
+    const phone = sale?.customers?.phone
+      ? String(sale.customers.phone).replace(/\D/g, '')
+      : ''
     const encoded = encodeURIComponent(receiptText)
-    window.open(`https://wa.me/?text=${encoded}`, '_blank')
+    const url = phone ? `https://wa.me/${phone}?text=${encoded}` : `https://wa.me/?text=${encoded}`
+    window.open(url, '_blank')
   }
 
   if (loading) {
