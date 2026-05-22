@@ -159,40 +159,51 @@ export default function DebtsPage() {
     setSaving(customer.id)
     setMessage('')
 
-    await supabase.from('customer_payments').insert({
+    const { error: insertError } = await supabase.from('customer_payments').insert({
       business_id: businessId,
       customer_id: customer.id,
       amount: remaining,
       note: 'Paiement total'
     })
 
-    await supabase.from('customers').update({ debt_balance: 0 }).eq('id', customer.id)
+    if (insertError) { setSaving(null); flash(insertError.message); return }
+
+    const { error: updateError } = await supabase
+      .from('customers').update({ debt_balance: 0 }).eq('id', customer.id)
 
     setSaving(null)
+    if (updateError) { flash(updateError.message); return }
+
     flash(`Paiement total de ${remaining.toLocaleString('fr-FR')} CFA enregistré.`)
     await Promise.all([loadCustomers(businessId), loadPayments(businessId)])
   }
 
   async function payPartial(customer: Customer) {
     if (!businessId) return
-    const amt = Number(partialAmount || 0)
-    if (amt <= 0) { setMessage('Montant invalide.'); return }
+    const remaining = Number(customer.debt_balance || 0)
+    const raw = Number(partialAmount || 0)
+    if (raw <= 0) { flash('Le montant doit être supérieur à 0.'); return }
+
+    const amt = Math.min(raw, remaining)
+    const newBalance = remaining - amt
 
     setSaving(customer.id)
-    setMessage('')
 
-    const newBalance = Math.max(Number(customer.debt_balance || 0) - amt, 0)
-
-    await supabase.from('customer_payments').insert({
+    const { error: insertError } = await supabase.from('customer_payments').insert({
       business_id: businessId,
       customer_id: customer.id,
       amount: amt,
       note: partialNote || 'Paiement partiel'
     })
 
-    await supabase.from('customers').update({ debt_balance: newBalance }).eq('id', customer.id)
+    if (insertError) { setSaving(null); flash(insertError.message); return }
+
+    const { error: updateError } = await supabase
+      .from('customers').update({ debt_balance: newBalance }).eq('id', customer.id)
 
     setSaving(null)
+    if (updateError) { flash(updateError.message); return }
+
     setPartialOpen(null)
     setPartialAmount('')
     setPartialNote('')
@@ -206,18 +217,22 @@ export default function DebtsPage() {
     if (remaining <= 0) return
 
     setSaving('clear-' + customer.id)
-    setMessage('')
 
-    await supabase.from('customer_payments').insert({
+    const { error: insertError } = await supabase.from('customer_payments').insert({
       business_id: businessId,
       customer_id: customer.id,
       amount: remaining,
       note: 'Remise de dette'
     })
 
-    await supabase.from('customers').update({ debt_balance: 0 }).eq('id', customer.id)
+    if (insertError) { setSaving(null); flash(insertError.message); return }
+
+    const { error: updateError } = await supabase
+      .from('customers').update({ debt_balance: 0 }).eq('id', customer.id)
 
     setSaving(null)
+    if (updateError) { flash(updateError.message); return }
+
     flash(`Dette de ${customer.full_name} effacée.`)
     await Promise.all([loadCustomers(businessId), loadPayments(businessId)])
   }
