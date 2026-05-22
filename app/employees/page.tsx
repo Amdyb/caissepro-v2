@@ -286,14 +286,6 @@ export default function EmployeesPage() {
                       )}
                     </div>
 
-                    {!member.user_id && member.temp_password && (
-                      <button
-                        onClick={() => shareWhatsApp(member, member.temp_password || '')}
-                        className="inline-flex items-center gap-2 rounded-2xl bg-emerald-600 px-4 py-2 text-xs font-black text-white"
-                      >
-                        <MessageCircle size={14} /> Renvoyer WhatsApp
-                      </button>
-                    )}
                   </div>
                 </div>
               ))

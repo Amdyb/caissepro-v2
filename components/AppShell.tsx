@@ -20,6 +20,8 @@ import {
   ShoppingCart,
   Store,
   Trash2,
+  TrendingUp,
+  Truck,
   UserCog,
   Users,
   Wallet
@@ -32,17 +34,22 @@ type NavSection = { title: string; items: NavItem[] }
 
 const employeeNav: NavSection[] = [
   {
-    title: 'Tableau de bord',
+    title: 'Accueil',
     items: [
       { label: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard },
       { label: 'Clients', href: '/customers', icon: Users }
     ]
   },
   {
-    title: 'Caisse du jour',
+    title: 'Caisse',
     items: [
       { label: 'Vendre', href: '/pos', icon: ShoppingCart },
-      { label: 'Rapport du jour', href: '/reports', icon: ReceiptText },
+      { label: 'Rapports', href: '/reports', icon: TrendingUp }
+    ]
+  },
+  {
+    title: 'Boutique',
+    items: [
       { label: 'Ma Boutique en ligne', href: '/storefront', icon: Globe }
     ]
   }
@@ -50,7 +57,7 @@ const employeeNav: NavSection[] = [
 
 const adminNav: NavSection[] = [
   {
-    title: 'Tableau de bord',
+    title: 'Accueil',
     items: [
       { label: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard },
       { label: 'Produits', href: '/products', icon: Package },
@@ -59,23 +66,29 @@ const adminNav: NavSection[] = [
     ]
   },
   {
-    title: 'Caisse du jour',
+    title: 'Caisse',
     items: [
       { label: 'Vendre', href: '/pos', icon: ShoppingCart },
       { label: 'Historique des ventes', href: '/sales', icon: ReceiptText },
       { label: 'Remboursements', href: '/refunds', icon: RotateCcw },
       { label: 'Caisse du jour', href: '/register-shifts', icon: Wallet },
       { label: 'Client Doit', href: '/debts', icon: HandCoins },
-      { label: 'Ma Boutique en ligne', href: '/storefront', icon: Globe }
+      { label: 'Fournisseurs', href: '/suppliers', icon: Truck }
     ]
   },
   {
-    title: 'Profil',
+    title: 'Boutique & Rapports',
     items: [
-      { label: 'Paramètres', href: '/settings/profile', icon: Settings },
+      { label: 'Ma Boutique en ligne', href: '/storefront', icon: Globe },
+      { label: 'Rapports', href: '/reports', icon: TrendingUp }
+    ]
+  },
+  {
+    title: 'Paramètres',
+    items: [
+      { label: 'Paramètres boutique', href: '/settings', icon: Settings },
       { label: 'Aide', href: '/help', icon: HelpCircle },
-      { label: 'Reset Produits', href: '/reset-products', icon: Trash2 },
-      { label: 'Paramètres boutique', href: '/settings', icon: Settings }
+      { label: 'Reset Produits', href: '/reset-products', icon: Trash2 }
     ]
   }
 ]
