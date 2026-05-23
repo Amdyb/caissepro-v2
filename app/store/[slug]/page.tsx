@@ -16,6 +16,15 @@ import { useParams, useRouter } from 'next/navigation'
 
 const SUPER_ADMIN_EMAILS = ['infos@dakarvapes.com']
 
+function shuffleArray<T>(arr: T[]): T[] {
+  const a = [...arr]
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[a[i], a[j]] = [a[j], a[i]]
+  }
+  return a
+}
+
 function stockStatus(stock: number) {
   if (stock <= 0) return { label: 'Rupture', badge: 'bg-red-100 text-red-700' }
   if (stock <= 5) return { label: 'Stock faible', badge: 'bg-amber-100 text-amber-700' }
@@ -83,7 +92,7 @@ export default function StoreSlugPage() {
         .order('created_at', { ascending: false })
     ])
 
-    setProducts(productsResult.data || [])
+    setProducts(shuffleArray(productsResult.data || []))
     setMembers(membersResult.data || [])
     setSubscriptions(subscriptionsResult.data || [])
     setLoading(false)

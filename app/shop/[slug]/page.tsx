@@ -44,6 +44,15 @@ function formatCfa(value: number) {
   return `${Number(value || 0).toLocaleString('fr-FR')} CFA`
 }
 
+function shuffleArray<T>(arr: T[]): T[] {
+  const a = [...arr]
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[a[i], a[j]] = [a[j], a[i]]
+  }
+  return a
+}
+
 export default function PublicShopPage() {
   const params = useParams()
   const slug = Array.isArray(params?.slug) ? params.slug[0] : params?.slug
@@ -94,7 +103,7 @@ export default function PublicShopPage() {
           return true
         })
 
-        setProducts(visibleProducts as Product[])
+        setProducts(shuffleArray(visibleProducts) as Product[])
       } catch (err: any) {
         setError(err?.message || 'Erreur storefront')
       } finally {
