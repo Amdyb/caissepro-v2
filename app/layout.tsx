@@ -1,14 +1,17 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import DarkModeProvider from '@/components/DarkModeProvider'
 import InstallAppPrompt from '@/components/InstallAppPrompt'
 import NetworkStatusBanner from '@/components/NetworkStatusBanner'
 
+export const viewport: Viewport = {
+  themeColor: '#16a34a',
+}
+
 export const metadata: Metadata = {
   title: 'CaissePro',
   description: 'CaissePro by Amdy Labs — Développer le commerce en Afrique',
   manifest: '/manifest.json',
-  themeColor: '#16a34a',
   icons: {
     icon: '/icons/caissepro-icon.svg',
     shortcut: '/icons/caissepro-icon.svg',
