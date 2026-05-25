@@ -1,0 +1,127 @@
+'use client'
+
+import { supabase } from '@/lib/supabaseClient'
+import { CheckCircle2, X } from 'lucide-react'
+import { useState } from 'react'
+
+type Plan = { id: string; name: string; price: string; amount: number }
+
+type Props = {
+  plan: Plan
+  businessId: string | null
+  businessName: string
+  userEmail: string
+  onClose: () => void
+}
+
+export default function PaymentModal({ plan, businessId, businessName, userEmail, onClose }: Props) {
+  const [done, setDone] = useState(false)
+  const [loading, setLoading] = useState(false)
+
+  async function confirmPayment() {
+    setLoading(true)
+
+    if (businessId) {
+      try {
+        await supabase.from('upgrade_requests').insert({
+          business_id: businessId,
+          business_name: businessName || 'Inconnu',
+          user_email: userEmail,
+          plan: plan.name,
+          price: `${plan.price} XOF/mois`,
+          status: 'pending',
+          whatsapp_sent: true,
+          duration_months: 2,
+        })
+      } catch {
+        // non-blocking
+      }
+    }
+
+    const msg = encodeURIComponent(
+      `Nouveau paiement CaissePro: ${businessName || 'Inconnu'} - Plan ${plan.name} - ${plan.amount} XOF`
+    )
+    window.open(`https://wa.me/221586344237?text=${msg}`, '_blank')
+    setDone(true)
+    setLoading(false)
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-[300] flex items-end justify-center bg-slate-950/60 p-4 backdrop-blur-sm sm:items-center"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
+    >
+      <div className="w-full max-w-md overflow-hidden rounded-[2rem] bg-white shadow-2xl">
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-5">
+          <div>
+            <p className="text-xs font-black uppercase tracking-widest text-emerald-600">Paiement</p>
+            <h2 className="text-2xl font-black text-slate-950">{plan.name}</h2>
+          </div>
+          <button
+            onClick={onClose}
+            className="rounded-xl border border-slate-200 p-2 text-slate-400 transition hover:bg-slate-50"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        {!done ? (
+          <div className="p-6">
+            {/* Price + promo */}
+            <div className="mb-5 rounded-2xl bg-emerald-50 p-5 text-center">
+              <p className="text-5xl font-black text-slate-950">{plan.price} XOF</p>
+              <p className="mt-1 text-xs font-black text-slate-400">par mois</p>
+              <div className="mt-4 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-black text-white">
+                Offre spéciale : Payez {plan.price} XOF pour 1 mois et bénéficiez de 2 mois d'utilisation gratuite !
+              </div>
+            </div>
+
+            {/* Payment options */}
+            <p className="mb-3 text-center text-sm font-bold text-slate-500">
+              Envoyez le montant au numéro de votre choix
+            </p>
+            <div className="mb-5 grid grid-cols-2 gap-3">
+              <div className="rounded-2xl border-2 border-blue-200 bg-blue-50 p-4 text-center">
+                <p className="text-sm font-black text-blue-700">WAVE</p>
+                <p className="mt-2 text-base font-black tracking-wide text-slate-950">+221 78 458 11 11</p>
+              </div>
+              <div className="rounded-2xl border-2 border-orange-200 bg-orange-50 p-4 text-center">
+                <p className="text-sm font-black text-orange-700">ORANGE MONEY</p>
+                <p className="mt-2 text-base font-black tracking-wide text-slate-950">+221 78 962 11 11</p>
+              </div>
+            </div>
+
+            <p className="mb-5 text-center text-xs font-semibold text-slate-400">
+              Après le paiement, cliquez ci-dessous pour confirmer votre demande via WhatsApp.
+            </p>
+
+            <button
+              onClick={confirmPayment}
+              disabled={loading}
+              className="w-full rounded-2xl bg-emerald-600 py-4 font-black text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700 disabled:opacity-60"
+            >
+              {loading ? 'Envoi en cours...' : "J'ai effectué le paiement"}
+            </button>
+          </div>
+        ) : (
+          <div className="p-8 text-center">
+            <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100">
+              <CheckCircle2 className="text-emerald-600" size={32} />
+            </div>
+            <h3 className="text-xl font-black text-slate-950">Demande envoyée !</h3>
+            <p className="mt-3 text-sm font-semibold leading-7 text-slate-500">
+              Votre demande est en cours de traitement. Vous serez contacté sous 24h.
+            </p>
+            <button
+              onClick={onClose}
+              className="mt-6 w-full rounded-2xl bg-slate-950 py-4 font-black text-white transition hover:bg-slate-800"
+            >
+              Fermer
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}

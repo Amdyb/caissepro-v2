@@ -39,6 +39,7 @@ export default function DashboardPage() {
   const router = useRouter()
   const [products, setProducts] = useState<Product[]>([])
   const [plan, setPlan] = useState('free')
+  const [expiresAt, setExpiresAt] = useState<string | null>(null)
   const [businessType, setBusinessType] = useState('retail')
   const [business, setBusiness] = useState<BusinessInfo | null>(null)
   const [loading, setLoading] = useState(true)
@@ -122,7 +123,7 @@ export default function DashboardPage() {
 
         supabase
           .from('subscriptions')
-          .select('plan,status')
+          .select('plan,status,expires_at')
           .eq('business_id', businessId)
           .eq('status', 'active')
           .order('created_at', { ascending: false })
@@ -155,6 +156,7 @@ export default function DashboardPage() {
       setLowStockCount(lowStock.length)
 
       setPlan(subscriptionResult.data?.plan || 'free')
+      setExpiresAt(subscriptionResult.data?.expires_at || null)
       setProducts((productsResult.data || []) as Product[])
 
       setLoading(false)
@@ -240,6 +242,33 @@ export default function DashboardPage() {
             </div>
           </div>
         </section>
+
+        {/* Subscription status card */}
+        {(() => {
+          const isPaid = plan && plan !== 'free'
+          const days = expiresAt ? Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 86400000) : null
+          const color = !isPaid ? 'neutral' : days !== null && days > 30 ? 'green' : days !== null && days > 0 ? 'amber' : 'red'
+          const bg = { neutral: 'bg-slate-50 border-slate-200', green: 'bg-emerald-50 border-emerald-200', amber: 'bg-amber-50 border-amber-200', red: 'bg-red-50 border-red-200' }
+          const txt = { neutral: 'text-slate-600', green: 'text-emerald-700', amber: 'text-amber-700', red: 'text-red-700' }
+          const sub = { neutral: 'text-slate-400', green: 'text-emerald-500', amber: 'text-amber-500', red: 'text-red-500' }
+          return (
+            <div className={`mt-4 flex items-center justify-between rounded-[2rem] border p-4 shadow-sm ${bg[color]}`}>
+              <div className="flex items-center gap-3">
+                <CreditCard className={txt[color]} size={20} />
+                <div>
+                  <p className={`text-sm font-black uppercase tracking-wide ${txt[color]}`}>Plan {isPaid ? plan : 'Gratuit'}</p>
+                  {isPaid && days !== null && (
+                    <p className={`text-xs font-bold ${sub[color]}`}>{days > 0 ? `${days} jours restants` : 'Abonnement expiré'}</p>
+                  )}
+                  {!isPaid && <p className={`text-xs font-bold ${sub[color]}`}>Passez à un plan payant pour débloquer toutes les fonctionnalités</p>}
+                </div>
+              </div>
+              <Link href="/upgrade" className="rounded-2xl bg-emerald-600 px-4 py-2 text-xs font-black text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700">
+                {isPaid ? 'Renouveler' : 'Upgrader'}
+              </Link>
+            </div>
+          )
+        })()}
 
         <div id="tour-stats" className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <Link href="/sales" className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-xl dark:border-slate-700 dark:bg-slate-800">

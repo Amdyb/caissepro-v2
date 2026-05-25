@@ -161,6 +161,7 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
   const [businessName, setBusinessName] = useState('CaissePro')
   const [businessLogo, setBusinessLogo] = useState<string | null>(null)
   const [ready, setReady] = useState(false)
+  const [subscription, setSubscription] = useState<{ plan: string; expires_at: string | null } | null>(null)
   const [openSections, setOpenSections] = useState<Record<string, boolean>>(
     Object.fromEntries(NAV_SECTIONS.map((s) => [s.key, s.defaultOpen ?? false]))
   )
@@ -172,7 +173,7 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
 
       const { data: membership } = await supabase
         .from('business_members')
-        .select('businesses(name, logo_url)')
+        .select('business_id, businesses(name, logo_url)')
         .eq('user_id', userData.user.id)
         .limit(1)
         .maybeSingle()
@@ -181,6 +182,18 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
       if (member?.businesses) {
         setBusinessName(member.businesses.name || 'CaissePro')
         setBusinessLogo(member.businesses.logo_url || null)
+      }
+
+      if (member?.business_id) {
+        const { data: sub } = await supabase
+          .from('subscriptions')
+          .select('plan, expires_at')
+          .eq('business_id', member.business_id)
+          .eq('status', 'active')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+        if (sub) setSubscription({ plan: sub.plan, expires_at: sub.expires_at })
       }
 
       setReady(true)
@@ -218,6 +231,46 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
           <h1 className="truncate text-lg font-black text-slate-950 dark:text-white">{businessName}</h1>
           <p className="text-xs font-bold text-slate-400 dark:text-slate-500">Propulsé par CaissePro</p>
         </div>
+      </div>
+
+      {/* Subscription status */}
+      <div className="px-4 pt-3">
+        {(() => {
+          const planName = subscription?.plan
+          const exp = subscription?.expires_at
+          const days = exp ? Math.ceil((new Date(exp).getTime() - Date.now()) / 86400000) : null
+          const isActive = !!planName && planName !== 'free'
+          const color = !isActive ? 'neutral' : days !== null && days > 30 ? 'green' : days !== null && days > 0 ? 'amber' : 'red'
+          const bg: Record<string, string> = {
+            neutral: 'bg-slate-50 dark:bg-slate-700/50',
+            green: 'bg-emerald-50 dark:bg-emerald-900/30',
+            amber: 'bg-amber-50 dark:bg-amber-900/30',
+            red: 'bg-red-50 dark:bg-red-900/30',
+          }
+          const txt: Record<string, string> = {
+            neutral: 'text-slate-500 dark:text-slate-400',
+            green: 'text-emerald-700 dark:text-emerald-400',
+            amber: 'text-amber-700 dark:text-amber-400',
+            red: 'text-red-700 dark:text-red-400',
+          }
+          return (
+            <div className={`flex items-center justify-between rounded-2xl px-3 py-2.5 ${bg[color]}`}>
+              <div>
+                <p className={`text-xs font-black uppercase tracking-wide ${txt[color]}`}>
+                  Plan {planName || 'Gratuit'}
+                </p>
+                {isActive && days !== null && (
+                  <p className={`text-[10px] font-bold ${txt[color]}`}>
+                    {days > 0 ? `${days} jours restants` : 'Expiré'}
+                  </p>
+                )}
+              </div>
+              <Link href="/upgrade" className="rounded-xl bg-emerald-600 px-2.5 py-1.5 text-[10px] font-black text-white transition hover:bg-emerald-700">
+                Upgrader
+              </Link>
+            </div>
+          )
+        })()}
       </div>
 
       {/* VENDRE button */}
