@@ -41,6 +41,7 @@ export default function POSPage() {
     setTimeout(() => setMessage(''), 6000)
   }
   const [lastSaleId, setLastSaleId] = useState<string | null>(null)
+  const [confirmedTotal, setConfirmedTotal] = useState(0)
   const [newCustomer, setNewCustomer] = useState({ full_name: '', phone: '' })
 
   const filteredProducts = useMemo(() => {
@@ -74,7 +75,7 @@ export default function POSPage() {
       setBusinessId(member.business_id)
       setBusinessName(member?.businesses?.name || 'CaissePro')
 
-      const { data: productData } = await supabase.from('products').select('*').eq('business_id', member.business_id)
+      const { data: productData } = await supabase.from('products').select('*').eq('business_id', member.business_id).eq('is_active', true).is('archived', false).is('deleted_at', null)
       const { data: customerData } = await supabase.from('customers').select('id,full_name,phone').eq('business_id', member.business_id)
 
       setProducts((productData || []) as Product[])
@@ -184,6 +185,7 @@ export default function POSPage() {
 
       setLastReceipt(`🧾 ${businessName}%0A%0A${receiptLines}%0A%0ATotal: ${total.toLocaleString('fr-FR')} CFA%0AClient: ${customer?.full_name || 'Client inconnu'}`)
 
+      setConfirmedTotal(total)
       setCart([])
       setLastSaleId(saleData.id)
       flash('Vente enregistrée avec succès.')
@@ -291,7 +293,7 @@ export default function POSPage() {
         <POSCheckoutDrawer
           open={checkoutOpen}
           onClose={() => { setCheckoutOpen(false); setLastSaleId(null) }}
-          total={total}
+          total={lastSaleId ? confirmedTotal : total}
           customers={customers}
           selectedCustomerId={selectedCustomerId}
           setSelectedCustomerId={setSelectedCustomerId}
