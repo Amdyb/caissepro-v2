@@ -117,20 +117,28 @@ export default function ProfilePage() {
   return (
     <AppShell title="Profil" subtitle="Vos informations personnelles et sécurité du compte.">
       <div className="mx-auto max-w-lg space-y-5">
-        {message && <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-black text-emerald-700">{message}</div>}
-        {error && <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-black text-red-700">{error}</div>}
+        {message && (
+          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-black text-emerald-700 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400">
+            {message}
+          </div>
+        )}
+        {error && (
+          <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-black text-red-700 dark:border-red-800 dark:bg-red-900/30 dark:text-red-400">
+            {error}
+          </div>
+        )}
 
         {/* Avatar + name/email */}
-        <form onSubmit={saveProfile} className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="mb-6 text-xl font-black text-slate-950">Informations personnelles</h2>
+        <form onSubmit={saveProfile} className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+          <h2 className="mb-6 text-xl font-black text-slate-950 dark:text-white">Informations personnelles</h2>
 
           {/* Avatar */}
           <div className="mb-6 flex items-center gap-5">
             <div className="relative">
-              <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-[1.5rem] bg-slate-100">
+              <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-[1.5rem] bg-slate-100 dark:bg-slate-700">
                 {displayAvatar
                   ? <img src={displayAvatar} alt="Avatar" className="h-full w-full object-cover" />
-                  : <User size={32} className="text-slate-400" />
+                  : <User size={32} className="text-slate-400 dark:text-slate-500" />
                 }
               </div>
               <button
@@ -143,7 +151,7 @@ export default function ProfilePage() {
               <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
             </div>
             <div>
-              <p className="text-sm font-black text-slate-700">Photo de profil</p>
+              <p className="text-sm font-black text-slate-700 dark:text-slate-300">Photo de profil</p>
               <button type="button" onClick={() => fileRef.current?.click()} className="mt-1 text-xs font-bold text-emerald-600 hover:text-emerald-700">
                 Changer la photo
               </button>
@@ -152,27 +160,27 @@ export default function ProfilePage() {
 
           <div className="space-y-4">
             <div>
-              <label className="mb-2 flex items-center gap-2 text-sm font-black text-slate-700">
+              <label className="mb-2 flex items-center gap-2 text-sm font-black text-slate-700 dark:text-slate-300">
                 <User size={15} /> Nom complet
               </label>
               <input
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
-                className="w-full rounded-2xl border border-slate-300 px-4 py-3 font-bold outline-none focus:border-emerald-500"
+                className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 font-bold text-slate-950 outline-none focus:border-emerald-500 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder:text-slate-500"
                 placeholder="Votre nom"
               />
             </div>
 
             <div>
-              <label className="mb-2 flex items-center gap-2 text-sm font-black text-slate-700">
+              <label className="mb-2 flex items-center gap-2 text-sm font-black text-slate-700 dark:text-slate-300">
                 <Mail size={15} /> Adresse e-mail
               </label>
               <input
                 value={email}
                 disabled
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 font-bold text-slate-400 outline-none"
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 font-bold text-slate-400 outline-none dark:border-slate-700 dark:bg-slate-700/50 dark:text-slate-500"
               />
-              <p className="mt-1 text-xs font-bold text-slate-400">L'adresse e-mail ne peut pas être modifiée ici.</p>
+              <p className="mt-1 text-xs font-bold text-slate-400 dark:text-slate-500">{"L'adresse e-mail ne peut pas être modifiée ici."}</p>
             </div>
           </div>
 
@@ -186,49 +194,53 @@ export default function ProfilePage() {
         </form>
 
         {/* Password */}
-        <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-xl font-black text-slate-950">Mot de passe</h2>
-              <p className="mt-1 text-sm font-bold text-slate-400">Sécurisez votre compte avec un mot de passe fort.</p>
+              <h2 className="text-xl font-black text-slate-950 dark:text-white">Mot de passe</h2>
+              <p className="mt-1 text-sm font-bold text-slate-400 dark:text-slate-500">Sécurisez votre compte avec un mot de passe fort.</p>
             </div>
-            <KeyRound className="text-slate-300" size={28} />
+            <KeyRound className="text-slate-300 dark:text-slate-600" size={28} />
           </div>
 
           {!passwordMode ? (
             <button
               onClick={() => { setPasswordMode(true); setError(''); setMessage('') }}
-              className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 py-4 text-sm font-black text-slate-700 hover:bg-slate-50"
+              className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 py-4 text-sm font-black text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
             >
               <KeyRound size={16} /> Changer le mot de passe
             </button>
           ) : (
             <form onSubmit={changePassword} className="mt-5 space-y-4">
               <div>
-                <label className="mb-2 block text-sm font-black text-slate-700">Nouveau mot de passe</label>
+                <label className="mb-2 block text-sm font-black text-slate-700 dark:text-slate-300">Nouveau mot de passe</label>
                 <input
                   type="password"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   required
                   minLength={8}
-                  className="w-full rounded-2xl border border-slate-300 px-4 py-3 font-bold outline-none focus:border-emerald-500"
+                  className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 font-bold text-slate-950 outline-none focus:border-emerald-500 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
                   placeholder="Minimum 8 caractères"
                 />
               </div>
               <div>
-                <label className="mb-2 block text-sm font-black text-slate-700">Confirmer le mot de passe</label>
+                <label className="mb-2 block text-sm font-black text-slate-700 dark:text-slate-300">Confirmer le mot de passe</label>
                 <input
                   type="password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
-                  className="w-full rounded-2xl border border-slate-300 px-4 py-3 font-bold outline-none focus:border-emerald-500"
+                  className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 font-bold text-slate-950 outline-none focus:border-emerald-500 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
                   placeholder="Répétez le mot de passe"
                 />
               </div>
               <div className="flex gap-3">
-                <button type="button" onClick={() => { setPasswordMode(false); setNewPassword(''); setConfirmPassword(''); setError('') }} className="flex-1 rounded-2xl border border-slate-200 py-3 text-sm font-black text-slate-600">
+                <button
+                  type="button"
+                  onClick={() => { setPasswordMode(false); setNewPassword(''); setConfirmPassword(''); setError('') }}
+                  className="flex-1 rounded-2xl border border-slate-200 py-3 text-sm font-black text-slate-600 dark:border-slate-600 dark:text-slate-300"
+                >
                   Annuler
                 </button>
                 <button type="submit" disabled={passwordSaving} className="flex-1 rounded-2xl bg-emerald-600 py-3 text-sm font-black text-white disabled:opacity-60">

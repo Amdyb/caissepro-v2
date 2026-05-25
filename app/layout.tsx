@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import './globals.css'
+import DarkModeProvider from '@/components/DarkModeProvider'
 import InstallAppPrompt from '@/components/InstallAppPrompt'
 import NetworkStatusBanner from '@/components/NetworkStatusBanner'
 
@@ -26,7 +27,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="fr">
+    <html lang="fr" suppressHydrationWarning>
       <head>
         <link rel="manifest" href="/manifest.json" />
         <link rel="icon" href="/icons/caissepro-icon.svg" />
@@ -39,6 +40,7 @@ export default function RootLayout({
       </head>
 
       <body>
+        <DarkModeProvider />
         <NetworkStatusBanner />
         {children}
         <InstallAppPrompt />

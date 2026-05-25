@@ -142,22 +142,27 @@ export default function PaymentMethodsPage() {
   }
 
   const enabledCount = ALL_METHODS.filter((m) => methods[m.id]?.enabled).length
+  const isError = message.startsWith('Erreur')
 
   return (
     <AppShell title="Modes de paiement" subtitle="Activez les modes de paiement acceptés par votre boutique.">
       <div className="mx-auto max-w-2xl">
         {message && (
-          <div className={`mb-5 rounded-2xl border p-4 text-sm font-black ${message.startsWith('Erreur') ? 'border-red-200 bg-red-50 text-red-700' : 'border-emerald-200 bg-emerald-50 text-emerald-700'}`}>
+          <div className={`mb-5 rounded-2xl border p-4 text-sm font-black ${
+            isError
+              ? 'border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-900/30 dark:text-red-400'
+              : 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400'
+          }`}>
             {message}
           </div>
         )}
 
-        <div className="mb-5 flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+        <div className="mb-5 flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm dark:border-slate-700 dark:bg-slate-800">
           <div className="flex items-center gap-3">
             <CreditCard className="text-emerald-600" size={22} />
             <div>
-              <p className="font-black text-slate-950">{enabledCount} mode{enabledCount > 1 ? 's' : ''} activé{enabledCount > 1 ? 's' : ''}</p>
-              <p className="text-xs font-bold text-slate-400">sur {ALL_METHODS.length} disponibles</p>
+              <p className="font-black text-slate-950 dark:text-white">{enabledCount} mode{enabledCount > 1 ? 's' : ''} activé{enabledCount > 1 ? 's' : ''}</p>
+              <p className="text-xs font-bold text-slate-400 dark:text-slate-500">sur {ALL_METHODS.length} disponibles</p>
             </div>
           </div>
           <button
@@ -178,7 +183,9 @@ export default function PaymentMethodsPage() {
             return (
               <div
                 key={method.id}
-                className={`overflow-hidden rounded-[1.5rem] border bg-white shadow-sm transition ${isEnabled ? 'border-emerald-200' : 'border-slate-200'}`}
+                className={`overflow-hidden rounded-[1.5rem] border bg-white shadow-sm transition dark:bg-slate-800 ${
+                  isEnabled ? 'border-emerald-200 dark:border-emerald-800' : 'border-slate-200 dark:border-slate-700'
+                }`}
               >
                 <div className="flex items-center gap-4 p-5">
                   <div
@@ -188,28 +195,28 @@ export default function PaymentMethodsPage() {
                     {method.emoji}
                   </div>
                   <div className="flex-1">
-                    <p className="font-black text-slate-950">{method.label}</p>
-                    <p className="text-xs font-bold text-slate-400">{method.description}</p>
+                    <p className="font-black text-slate-950 dark:text-white">{method.label}</p>
+                    <p className="text-xs font-bold text-slate-400 dark:text-slate-500">{method.description}</p>
                   </div>
                   <button onClick={() => toggle(method.id)} className="shrink-0">
                     {isEnabled
                       ? <ToggleRight size={36} style={{ color: method.color }} />
-                      : <ToggleLeft size={36} className="text-slate-300" />
+                      : <ToggleLeft size={36} className="text-slate-300 dark:text-slate-600" />
                     }
                   </button>
                 </div>
 
                 {isEnabled && (
-                  <div className="border-t border-slate-100 bg-slate-50 px-5 py-4">
-                    <p className="mb-3 text-xs font-black uppercase tracking-wide text-slate-500">QR Code de paiement (optionnel)</p>
+                  <div className="border-t border-slate-100 bg-slate-50 px-5 py-4 dark:border-slate-700 dark:bg-slate-700/50">
+                    <p className="mb-3 text-xs font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">QR Code de paiement (optionnel)</p>
                     <div className="flex items-center gap-4">
                       <div
                         onClick={() => fileRefs.current[method.id]?.click()}
-                        className="flex h-20 w-20 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-2xl border-2 border-dashed border-slate-300 bg-white transition hover:border-slate-400"
+                        className="flex h-20 w-20 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-2xl border-2 border-dashed border-slate-300 bg-white transition hover:border-slate-400 dark:border-slate-600 dark:bg-slate-800"
                       >
                         {qrDisplay
                           ? <img src={qrDisplay} alt={`QR ${method.label}`} className="h-full w-full object-contain p-1" />
-                          : <Camera size={22} className="text-slate-400" />
+                          : <Camera size={22} className="text-slate-400 dark:text-slate-500" />
                         }
                       </div>
                       <div>
@@ -219,7 +226,7 @@ export default function PaymentMethodsPage() {
                         >
                           {qrDisplay ? 'Changer le QR code' : 'Ajouter un QR code'}
                         </button>
-                        <p className="mt-1 text-xs font-bold text-slate-400">
+                        <p className="mt-1 text-xs font-bold text-slate-400 dark:text-slate-500">
                           PNG ou JPG · Affiché lors du paiement au POS
                         </p>
                         {qrDisplay && (
