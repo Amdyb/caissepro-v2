@@ -116,7 +116,10 @@ export default function EmployeesPage() {
       business_id: businessId,
       email: cleanEmail,
       full_name: fullName || cleanEmail.split('@')[0],
-      role
+      role,
+      temp_password: tempPassword,
+      must_change_password: true,
+      is_active: true
     })
 
     setSaving(false)

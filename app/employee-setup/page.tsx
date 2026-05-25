@@ -27,27 +27,23 @@ export default function EmployeeSetupPage() {
     setMessage('')
 
     const cleanEmail = email.trim().toLowerCase()
+    const cleanTemp = tempPassword.trim()
 
     const { data: member, error } = await supabase
       .from('business_members')
-      .select('id, temp_password, user_id')
+      .select('id, user_id')
       .eq('email', cleanEmail)
+      .eq('temp_password', cleanTemp)
       .maybeSingle()
 
     if (error || !member) {
-      showError("Aucun employé trouvé avec cet email. Demandez à votre administrateur de vous ajouter.")
+      showError("Email ou mot de passe temporaire incorrect. Vérifiez vos identifiants.")
       setLoading(false)
       return
     }
 
     if (member.user_id) {
       showError("Ce compte est déjà activé. Connectez-vous normalement.")
-      setLoading(false)
-      return
-    }
-
-    if (!member.temp_password || member.temp_password !== tempPassword.trim()) {
-      showError("Mot de passe temporaire incorrect.")
       setLoading(false)
       return
     }
