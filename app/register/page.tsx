@@ -133,7 +133,7 @@ export default function RegisterPage() {
       if (!user) throw new Error('Compte créé mais connexion impossible.')
 
       await createBusinessAndMembership(user.id)
-      router.push('/onboarding')
+      router.push('/welcome')
     } catch (err: any) {
       setError(err.message || 'Erreur pendant la création du compte.')
     } finally {

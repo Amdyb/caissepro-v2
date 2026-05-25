@@ -39,9 +39,9 @@ export default function PaymentModal({ plan, businessId, businessName, userEmail
     }
 
     const msg = encodeURIComponent(
-      `Nouveau paiement CaissePro: ${businessName || 'Inconnu'} - Plan ${plan.name} - ${plan.amount} XOF`
+      `🛒 Nouveau paiement CaissePro\nBoutique: ${businessName || 'Inconnu'}\nPlan: ${plan.name}\nMontant: ${plan.amount} XOF\nEmail: ${userEmail}`
     )
-    window.open(`https://wa.me/221586344237?text=${msg}`, '_blank')
+    window.open(`https://wa.me/221784581111?text=${msg}`, '_blank')
     setDone(true)
     setLoading(false)
   }

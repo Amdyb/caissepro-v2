@@ -75,7 +75,8 @@ export default function DashboardPage() {
       })
 
       const member: any = sorted[0]
-      const businessData = member.businesses as BusinessInfo
+      // Supabase may return the joined row as an array or object depending on FK cardinality
+      const businessData = (Array.isArray(member.businesses) ? member.businesses[0] : member.businesses) as BusinessInfo
 
       if (!businessData?.onboarding_completed) {
         router.push('/onboarding')
@@ -114,7 +115,9 @@ export default function DashboardPage() {
         supabase
           .from('products')
           .select('id,name,stock')
-          .eq('business_id', businessId),
+          .eq('business_id', businessId)
+          .not('archived', 'is', true)
+          .not('is_active', 'is', false),
 
         supabase
           .from('customers')
@@ -147,7 +150,7 @@ export default function DashboardPage() {
       )
 
       const lowStock = (productsResult.data || []).filter(
-        (product: any) => Number(product.stock || 0) <= 5
+        (product: any) => product.stock !== null && Number(product.stock) <= 5
       )
 
       setTodayTotal(todayAmount)
