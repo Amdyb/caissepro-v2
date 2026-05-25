@@ -242,40 +242,40 @@ export default function DashboardPage() {
         </section>
 
         <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <Link href="/sales" className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-xl">
+          <Link href="/sales" className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-xl dark:border-slate-700 dark:bg-slate-800">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-black uppercase tracking-wide text-slate-500">Ventes aujourd’hui</p>
-                <p className="mt-2 text-3xl font-black text-slate-950">{cfa(todayTotal)}</p>
+                <p className="text-xs font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">Ventes aujourd’hui</p>
+                <p className="mt-2 text-3xl font-black text-slate-950 dark:text-white">{cfa(todayTotal)}</p>
               </div>
               <CalendarDays className="text-emerald-600" size={24} />
             </div>
           </Link>
 
-          <Link href="/sales" className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-xl">
+          <Link href="/sales" className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-xl dark:border-slate-700 dark:bg-slate-800">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-black uppercase tracking-wide text-slate-500">Performance semaine</p>
-                <p className="mt-2 text-3xl font-black text-slate-950">{cfa(weekTotal)}</p>
+                <p className="text-xs font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">Performance semaine</p>
+                <p className="mt-2 text-3xl font-black text-slate-950 dark:text-white">{cfa(weekTotal)}</p>
               </div>
               <Sparkles className="text-emerald-600" size={24} />
             </div>
           </Link>
 
-          <Link href="/products" className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-xl">
+          <Link href="/products" className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-xl dark:border-slate-700 dark:bg-slate-800">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-black uppercase tracking-wide text-slate-500">Stock critique</p>
+                <p className="text-xs font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">Stock critique</p>
                 <p className="mt-2 text-3xl font-black text-amber-600">{lowStockCount}</p>
               </div>
               <Bell className="text-amber-500" size={24} />
             </div>
           </Link>
 
-          <Link href="/debts" className="rounded-[2rem] border border-red-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-xl">
+          <Link href="/debts" className="rounded-[2rem] border border-red-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-xl dark:border-red-900 dark:bg-slate-800">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-black uppercase tracking-wide text-slate-500">Paiements à récupérer</p>
+                <p className="text-xs font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">Paiements à récupérer</p>
                 <p className="mt-2 text-3xl font-black text-red-600">{cfa(totalDebt)}</p>
               </div>
               <CreditCard className="text-red-500" size={24} />

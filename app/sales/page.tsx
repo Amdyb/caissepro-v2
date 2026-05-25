@@ -156,24 +156,24 @@ export default function SalesPage() {
 
         {/* KPI cards */}
         <div className="mb-8 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800">
             <ReceiptText className="text-emerald-600" />
-            <p className="mt-5 text-sm font-bold text-slate-500">Ventes</p>
-            <p className="mt-2 text-3xl font-black text-slate-950">{filteredSales.length}</p>
+            <p className="mt-5 text-sm font-bold text-slate-500 dark:text-slate-400">Ventes</p>
+            <p className="mt-2 text-3xl font-black text-slate-950 dark:text-white">{filteredSales.length}</p>
           </div>
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800">
             <Wallet className="text-emerald-600" />
-            <p className="mt-5 text-sm font-bold text-slate-500">Chiffre d'affaires</p>
-            <p className="mt-2 text-3xl font-black text-slate-950">{totalRevenue.toLocaleString('fr-FR')} CFA</p>
+            <p className="mt-5 text-sm font-bold text-slate-500 dark:text-slate-400">Chiffre d'affaires</p>
+            <p className="mt-2 text-3xl font-black text-slate-950 dark:text-white">{totalRevenue.toLocaleString('fr-FR')} CFA</p>
           </div>
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800">
             <CreditCard className="text-emerald-600" />
-            <p className="mt-5 text-sm font-bold text-slate-500">Payé</p>
+            <p className="mt-5 text-sm font-bold text-slate-500 dark:text-slate-400">Payé</p>
             <p className="mt-2 text-3xl font-black text-emerald-700">{totalPaid.toLocaleString('fr-FR')} CFA</p>
           </div>
-          <div className="rounded-3xl border border-red-200 bg-white p-6 shadow-sm">
+          <div className="rounded-3xl border border-red-200 bg-white p-6 shadow-sm dark:border-red-900 dark:bg-slate-800">
             <HandCoins className="text-red-600" />
-            <p className="mt-5 text-sm font-bold text-slate-500">Reste à payer</p>
+            <p className="mt-5 text-sm font-bold text-slate-500 dark:text-slate-400">Reste à payer</p>
             <p className="mt-2 text-3xl font-black text-red-700">{totalRemaining.toLocaleString('fr-FR')} CFA</p>
           </div>
         </div>
@@ -183,19 +183,19 @@ export default function SalesPage() {
           <div className="relative max-w-lg flex-1">
             <Search className="absolute left-4 top-3.5 text-slate-400" size={20} />
             <input
-              className="w-full rounded-2xl border border-slate-300 bg-white py-3 pl-12 pr-4 font-semibold outline-none transition focus:border-emerald-600"
+              className="w-full rounded-2xl border border-slate-300 bg-white py-3 pl-12 pr-4 font-semibold outline-none transition focus:border-emerald-600 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:placeholder:text-slate-500"
               placeholder="Rechercher par client, téléphone, paiement ou ID..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-white p-1 shadow-sm">
+          <div className="rounded-2xl border border-slate-200 bg-white p-1 shadow-sm dark:border-slate-700 dark:bg-slate-800">
             {(['today', 'week', 'month', 'all'] as const).map((p) => (
               <button
                 key={p}
                 onClick={() => setPeriod(p)}
-                className={`rounded-xl px-4 py-3 text-sm font-black ${period === p ? 'bg-emerald-600 text-white' : 'text-slate-600 hover:bg-slate-50'}`}
+                className={`rounded-xl px-4 py-3 text-sm font-black ${period === p ? 'bg-emerald-600 text-white' : 'text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700'}`}
               >
                 {p === 'today' ? 'Jour' : p === 'week' ? 'Semaine' : p === 'month' ? 'Mois' : 'Tout'}
               </button>

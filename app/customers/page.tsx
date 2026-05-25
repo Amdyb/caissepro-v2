@@ -122,37 +122,37 @@ export default function CustomersPage() {
         )}
 
         <div className="mb-8 grid gap-5 md:grid-cols-3">
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800">
             <Users className="text-emerald-600" />
-            <p className="mt-5 text-sm font-bold text-slate-500">Clients</p>
-            <p className="mt-2 text-3xl font-black text-slate-950">{customers.length}</p>
+            <p className="mt-5 text-sm font-bold text-slate-500 dark:text-slate-400">Clients</p>
+            <p className="mt-2 text-3xl font-black text-slate-950 dark:text-white">{customers.length}</p>
           </div>
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <p className="text-sm font-bold text-slate-500">Total depense</p>
-            <p className="mt-2 text-2xl font-black text-slate-950">{cfa(totalSpent)}</p>
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+            <p className="text-sm font-bold text-slate-500 dark:text-slate-400">Total depense</p>
+            <p className="mt-2 text-2xl font-black text-slate-950 dark:text-white">{cfa(totalSpent)}</p>
           </div>
-          <div className="rounded-3xl border border-red-200 bg-white p-6 shadow-sm">
-            <p className="text-sm font-bold text-slate-500">Total du (dettes)</p>
+          <div className="rounded-3xl border border-red-200 bg-white p-6 shadow-sm dark:border-red-900 dark:bg-slate-800">
+            <p className="text-sm font-bold text-slate-500 dark:text-slate-400">Total du (dettes)</p>
             <p className="mt-2 text-2xl font-black text-red-700">{cfa(totalDebt)}</p>
           </div>
         </div>
 
         <div className="grid gap-6 lg:grid-cols-[360px_1fr]">
-          <form onSubmit={addCustomer} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h3 className="mb-5 text-xl font-black text-slate-950">Ajouter client</h3>
+          <form onSubmit={addCustomer} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+            <h3 className="mb-5 text-xl font-black text-slate-950 dark:text-white">Ajouter client</h3>
             <div className="space-y-4">
               <input
                 required
                 placeholder="Nom complet"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm font-semibold outline-none focus:border-emerald-600"
+                className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm font-semibold outline-none focus:border-emerald-600 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder:text-slate-400"
               />
               <input
                 placeholder="Telephone"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm font-semibold outline-none focus:border-emerald-600"
+                className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm font-semibold outline-none focus:border-emerald-600 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder:text-slate-400"
               />
               <button
                 disabled={saving}
@@ -164,11 +164,11 @@ export default function CustomersPage() {
             </div>
           </form>
 
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800">
             <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div>
-                <h3 className="text-xl font-black text-slate-950">Base clients</h3>
-                <p className="text-sm font-semibold text-slate-500">{customers.length} client(s)</p>
+                <h3 className="text-xl font-black text-slate-950 dark:text-white">Base clients</h3>
+                <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">{customers.length} client(s)</p>
               </div>
               <div className="relative">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
@@ -176,24 +176,24 @@ export default function CustomersPage() {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Rechercher..."
-                  className="w-full rounded-2xl border border-slate-300 py-3 pl-11 pr-4 text-sm font-semibold outline-none md:w-80"
+                  className="w-full rounded-2xl border border-slate-300 py-3 pl-11 pr-4 text-sm font-semibold outline-none md:w-80 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder:text-slate-400"
                 />
               </div>
             </div>
 
             <div className="space-y-4">
               {filtered.length === 0 && (
-                <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-10 text-center">
+                <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-10 text-center dark:border-slate-600 dark:bg-slate-700/50">
                   <Users className="mx-auto text-slate-300" size={48} />
-                  <p className="mt-4 font-black text-slate-950">Aucun client</p>
+                  <p className="mt-4 font-black text-slate-950 dark:text-white">Aucun client</p>
                 </div>
               )}
               {filtered.map((customer, index) => (
-                <div key={customer.id} className="rounded-3xl border border-slate-200 p-5">
+                <div key={customer.id} className="rounded-3xl border border-slate-200 p-5 dark:border-slate-700">
                   <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
                     <div>
                       <div className="flex flex-wrap items-center gap-2">
-                        <h4 className="text-lg font-black text-slate-950">{customer.full_name}</h4>
+                        <h4 className="text-lg font-black text-slate-950 dark:text-white">{customer.full_name}</h4>
                         {index < 3 && (
                           <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-black text-amber-700">
                             Top client
@@ -201,7 +201,7 @@ export default function CustomersPage() {
                         )}
                       </div>
                       {customer.phone && (
-                        <p className="mt-1 flex items-center gap-2 text-sm font-semibold text-slate-500">
+                        <p className="mt-1 flex items-center gap-2 text-sm font-semibold text-slate-500 dark:text-slate-400">
                           <Phone size={14} />
                           {customer.phone}
                         </p>
@@ -210,14 +210,14 @@ export default function CustomersPage() {
 
                     <div className="flex flex-wrap items-center gap-3">
                       {Number(customer.debt_balance || 0) > 0 && (
-                        <div className="rounded-2xl bg-red-50 px-4 py-3 text-center">
-                          <p className="text-xs font-bold text-slate-500">Doit</p>
+                        <div className="rounded-2xl bg-red-50 px-4 py-3 text-center dark:bg-red-900/30">
+                          <p className="text-xs font-bold text-slate-500 dark:text-slate-400">Doit</p>
                           <p className="text-lg font-black text-red-700">{cfa(Number(customer.debt_balance || 0))}</p>
                         </div>
                       )}
-                      <div className="rounded-2xl bg-slate-50 px-4 py-3 text-center">
-                        <p className="text-xs font-bold text-slate-500">Depense</p>
-                        <p className="text-lg font-black text-slate-950">{cfa(Number(customer.total_spent || 0))}</p>
+                      <div className="rounded-2xl bg-slate-50 px-4 py-3 text-center dark:bg-slate-700">
+                        <p className="text-xs font-bold text-slate-500 dark:text-slate-400">Depense</p>
+                        <p className="text-lg font-black text-slate-950 dark:text-white">{cfa(Number(customer.total_spent || 0))}</p>
                       </div>
                       <Link
                         href={'/customers/' + customer.id}

@@ -225,10 +225,10 @@ export default function POSPage() {
           </div>
         )}
 
-        <div className="mb-5 flex gap-3 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="mb-5 flex gap-3 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800">
           <div className="relative flex-1">
             <Zap className="absolute left-4 top-3.5 text-emerald-600" size={20} />
-            <input ref={barcodeInputRef} className="w-full rounded-2xl border border-slate-300 py-3 pl-12 pr-4 font-black outline-none" placeholder="Rechercher produit..." value={search} onChange={(e) => setSearch(e.target.value)} />
+            <input ref={barcodeInputRef} className="w-full rounded-2xl border border-slate-300 bg-white py-3 pl-12 pr-4 font-black text-slate-950 outline-none dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder:text-slate-400" placeholder="Rechercher produit..." value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
         </div>
 
@@ -242,7 +242,7 @@ export default function POSPage() {
                 key={product.id}
                 onClick={() => addToCart(product)}
                 disabled={outOfStock}
-                className={`relative rounded-3xl border bg-white p-4 text-left shadow-sm transition ${outOfStock ? 'cursor-not-allowed border-red-100 opacity-60' : 'border-slate-200 hover:border-emerald-300 hover:shadow-md'}`}
+                className={`relative rounded-3xl border p-4 text-left shadow-sm transition dark:bg-slate-800 ${outOfStock ? 'cursor-not-allowed border-red-100 bg-white opacity-60 dark:border-red-900' : 'border-slate-200 bg-white hover:border-emerald-300 hover:shadow-md dark:border-slate-700 dark:hover:border-emerald-600'}`}
               >
                 {outOfStock && (
                   <span className="absolute right-3 top-3 z-10 rounded-full bg-red-600 px-2 py-0.5 text-[10px] font-black text-white">Rupture</span>
@@ -250,11 +250,11 @@ export default function POSPage() {
                 {lowStock && !outOfStock && (
                   <span className="absolute right-3 top-3 z-10 rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-black text-white">Stock faible</span>
                 )}
-                <div className="flex h-36 items-center justify-center overflow-hidden rounded-2xl bg-slate-50">
-                  {product.image ? <img src={product.image} alt={product.name} className="h-full w-full object-cover" /> : <ImageIcon className="text-slate-300" size={40} />}
+                <div className="flex h-36 items-center justify-center overflow-hidden rounded-2xl bg-slate-50 dark:bg-slate-700">
+                  {product.image ? <img src={product.image} alt={product.name} className="h-full w-full object-cover" /> : <ImageIcon className="text-slate-300 dark:text-slate-500" size={40} />}
                 </div>
-                <h3 className="mt-4 text-lg font-black text-slate-950">{product.name}</h3>
-                {product.category && <p className="mt-0.5 text-xs font-bold text-slate-400">{product.category}</p>}
+                <h3 className="mt-4 text-lg font-black text-slate-950 dark:text-white">{product.name}</h3>
+                {product.category && <p className="mt-0.5 text-xs font-bold text-slate-400 dark:text-slate-500">{product.category}</p>}
                 <p className="mt-2 text-2xl font-black text-emerald-600">{Number(product.sell_price || 0).toLocaleString('fr-FR')} CFA</p>
                 {product.stock !== null && (
                   <p className="mt-1 text-xs font-bold text-slate-400">Stock : {product.stock}</p>
@@ -265,16 +265,16 @@ export default function POSPage() {
         </div>
 
         {cart.length > 0 && (
-          <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-200 bg-white p-4">
+          <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
             <div className="mx-auto flex max-w-7xl items-center justify-between">
               <div className="flex items-center gap-3 overflow-x-auto">
-                <div className="flex items-center gap-2 rounded-2xl bg-slate-950 px-4 py-3 text-white">
+                <div className="flex items-center gap-2 rounded-2xl bg-slate-950 px-4 py-3 text-white dark:bg-slate-700">
                   <ShoppingCart size={18} />
                   <span className="font-black">{totalItems} article(s)</span>
                 </div>
 
                 {cart.map((item) => (
-                  <div key={item.product.id} className="flex items-center gap-2 rounded-2xl border border-slate-200 px-4 py-3">
+                  <div key={item.product.id} className="flex items-center gap-2 rounded-2xl border border-slate-200 px-4 py-3 dark:border-slate-600 dark:text-white">
                     <span className="font-black">{item.product.name}</span>
                     <button onClick={() => removeItem(item.product.id)}>
                       <Trash2 size={15} className="text-red-600" />

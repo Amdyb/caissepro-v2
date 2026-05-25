@@ -6,10 +6,31 @@
   color-scheme: light;
 }
 
+.dark {
+  color-scheme: dark;
+}
+
+/* Smooth dark mode transitions */
+html {
+  transition: background-color 0.35s ease, color 0.35s ease;
+}
+
 body {
   margin: 0;
   background: #f8fafc;
   color: #0f172a;
+  transition: background-color 0.35s ease, color 0.35s ease;
+}
+
+.dark body {
+  background: #0f172a;
+  color: #f8fafc;
+}
+
+/* Transition on key UI surfaces */
+aside, header, footer, nav, section,
+[class*="bg-white"], [class*="bg-slate"] {
+  transition: background-color 0.35s ease, border-color 0.35s ease, color 0.35s ease;
 }
 
 * {

@@ -142,7 +142,7 @@ export default function ProductsPage() {
         <div className="mb-5 grid grid-cols-2 gap-3">
           <button
             onClick={() => setShowImporter(!showImporter)}
-            className="flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-4 text-sm font-black text-slate-700 shadow-sm"
+            className="flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-4 text-sm font-black text-slate-700 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
           >
             <Upload size={18} />
             Importer
@@ -150,7 +150,7 @@ export default function ProductsPage() {
 
           <button
             onClick={downloadTemplate}
-            className="flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-4 text-sm font-black text-slate-700 shadow-sm"
+            className="flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-4 text-sm font-black text-slate-700 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
           >
             <FileSpreadsheet size={18} />
             Modèle
@@ -175,7 +175,7 @@ export default function ProductsPage() {
           <div className="relative w-full">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
             <input
-              className="w-full rounded-2xl border border-slate-200 bg-white py-4 pl-12 pr-4 text-sm font-semibold text-slate-800 shadow-sm outline-none"
+              className="w-full rounded-2xl border border-slate-200 bg-white py-4 pl-12 pr-4 text-sm font-semibold text-slate-800 shadow-sm outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:placeholder:text-slate-500"
               placeholder="Rechercher un produit..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -195,26 +195,26 @@ export default function ProductsPage() {
               const status = stockStatus(Number(product.stock || 0))
 
               return (
-                <div key={product.id} className="group overflow-hidden rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div key={product.id} className="group overflow-hidden rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
                   <div className="mb-4 flex items-center justify-between gap-3">
                     <span className={`rounded-full px-3 py-1.5 text-xs font-black ${status.badge}`}>
                       {status.label}
                     </span>
 
                     <div className="flex gap-2 opacity-100 transition sm:opacity-0 sm:group-hover:opacity-100">
-                      <Link href={`/products/${product.id}/edit`} className="rounded-full border border-slate-200 bg-white p-2 text-slate-500 transition hover:text-emerald-700">
+                      <Link href={`/products/${product.id}/edit`} className="rounded-full border border-slate-200 bg-white p-2 text-slate-500 transition hover:text-emerald-700 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-400">
                         <Edit size={15} />
                       </Link>
 
-                      <button onClick={() => deleteProduct(product.id)} className="rounded-full border border-slate-200 bg-white p-2 text-slate-500 transition hover:text-red-600">
+                      <button onClick={() => deleteProduct(product.id)} className="rounded-full border border-slate-200 bg-white p-2 text-slate-500 transition hover:text-red-600 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-400">
                         <Trash2 size={15} />
                       </button>
                     </div>
                   </div>
 
-                  <h3 className="text-base font-black text-slate-900">{product.name}</h3>
+                  <h3 className="text-base font-black text-slate-900 dark:text-white">{product.name}</h3>
                   <p className="mt-2 text-xl font-black text-emerald-600">{Number(product.sell_price || 0).toLocaleString('fr-FR')} CFA</p>
-                  <p className="mt-1 text-sm font-bold text-slate-500">Stock: {product.stock || 0}</p>
+                  <p className="mt-1 text-sm font-bold text-slate-500 dark:text-slate-400">Stock: {product.stock || 0}</p>
                 </div>
               )
             })}

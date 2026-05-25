@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import BrandingImageUploader from '@/components/BrandingImageUploader'
-import {
+import { getThemePreference, setThemePreference } from '@/components/DarkModeProvider'
+import { Clock, Moon, Sun,
   ArrowLeft,
   Building2,
   Palette,
@@ -58,6 +59,11 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
+  const [themePref, setThemePrefState] = useState<'auto' | 'light' | 'dark'>('auto')
+
+  useEffect(() => {
+    setThemePrefState((getThemePreference() as 'auto' | 'light' | 'dark') || 'auto')
+  }, [])
 
   const [form, setForm] = useState({
     name: '',
@@ -197,6 +203,35 @@ export default function SettingsPage() {
 
       <section className="mx-auto max-w-7xl px-6 py-10">
         {message && <div className="mb-6 rounded-2xl bg-green-50 p-4 text-sm font-bold text-green-700">{message}</div>}
+
+        {/* Theme selector */}
+        <div className="mb-8 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+          <h2 className="mb-5 text-xl font-black text-slate-950 dark:text-white">Thème de l'interface</h2>
+          <div className="grid grid-cols-3 gap-3">
+            {([
+              { key: 'auto', icon: Clock, label: 'Automatique', desc: 'Sombre 19h–6h, clair sinon' },
+              { key: 'light', icon: Sun, label: 'Clair', desc: 'Toujours en mode clair' },
+              { key: 'dark', icon: Moon, label: 'Sombre', desc: 'Toujours en mode sombre' },
+            ] as const).map(({ key, icon: Icon, label, desc }) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => { setThemePrefState(key); setThemePreference(key) }}
+                className={`flex flex-col items-center gap-3 rounded-2xl border p-4 text-center transition ${
+                  themePref === key
+                    ? 'border-emerald-400 bg-emerald-50 dark:border-emerald-600 dark:bg-emerald-900/30'
+                    : 'border-slate-200 bg-white hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-700 dark:hover:bg-slate-600'
+                }`}
+              >
+                <Icon size={22} className={themePref === key ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'} />
+                <div>
+                  <p className={`text-sm font-black ${themePref === key ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-700 dark:text-slate-300'}`}>{label}</p>
+                  <p className="mt-0.5 text-xs font-bold text-slate-400 dark:text-slate-500">{desc}</p>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
 
         <div className="grid gap-8 lg:grid-cols-[.9fr_1.1fr]">
           <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">

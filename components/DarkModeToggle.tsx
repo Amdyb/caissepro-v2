@@ -1,34 +1,46 @@
 'use client'
 
-import { Moon, Sun } from 'lucide-react'
+import { getThemePreference, setThemePreference } from '@/components/DarkModeProvider'
+import { Clock, Moon, Sun } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
+type ThemePref = 'auto' | 'light' | 'dark'
+
+const CYCLE: ThemePref[] = ['auto', 'light', 'dark']
+
+const ICONS: Record<ThemePref, typeof Sun> = { auto: Clock, light: Sun, dark: Moon }
+const LABELS: Record<ThemePref, string> = { auto: 'Auto', light: 'Clair', dark: 'Sombre' }
+
 export default function DarkModeToggle({ className = '' }: { className?: string }) {
-  const [dark, setDark] = useState(false)
+  const [pref, setPref] = useState<ThemePref>('auto')
 
   useEffect(() => {
-    setDark(document.documentElement.classList.contains('dark'))
+    setPref((getThemePreference() as ThemePref) || 'auto')
+
+    function onThemeChanged(e: Event) {
+      const detail = (e as CustomEvent).detail
+      if (detail?.preference) setPref(detail.preference)
+    }
+    window.addEventListener('theme-changed', onThemeChanged)
+    return () => window.removeEventListener('theme-changed', onThemeChanged)
   }, [])
 
-  function toggle() {
-    const next = !dark
-    setDark(next)
-    if (next) {
-      document.documentElement.classList.add('dark')
-      localStorage.setItem('caissepro_dark_mode', 'dark')
-    } else {
-      document.documentElement.classList.remove('dark')
-      localStorage.setItem('caissepro_dark_mode', 'light')
-    }
+  function cycle() {
+    const next = CYCLE[(CYCLE.indexOf(pref) + 1) % CYCLE.length]
+    setPref(next)
+    setThemePreference(next)
   }
+
+  const Icon = ICONS[pref]
 
   return (
     <button
-      onClick={toggle}
-      aria-label={dark ? 'Passer en mode clair' : 'Passer en mode sombre'}
-      className={`flex items-center justify-center rounded-xl border border-slate-200 bg-white p-2.5 text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 ${className}`}
+      onClick={cycle}
+      title={`Thème : ${LABELS[pref]} — cliquer pour changer`}
+      className={`flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-xs font-black text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 ${className}`}
     >
-      {dark ? <Sun size={18} /> : <Moon size={18} />}
+      <Icon size={15} />
+      <span className="hidden sm:inline">{LABELS[pref]}</span>
     </button>
   )
 }
