@@ -1,7 +1,9 @@
 'use client'
 
 import AppShell from '@/components/AppShell'
-import POSCheckoutDrawer from '@/components/POSCheckoutDrawer'
+import dynamic from 'next/dynamic'
+
+const POSCheckoutDrawer = dynamic(() => import('@/components/POSCheckoutDrawer'), { ssr: false })
 import { supabase } from '@/lib/supabaseClient'
 import { ImageIcon, ReceiptText, ShoppingCart, Trash2, Zap } from 'lucide-react'
 import Link from 'next/link'

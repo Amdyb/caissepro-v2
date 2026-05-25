@@ -1,6 +1,7 @@
 'use client'
 
 import { supabase } from '@/lib/supabaseClient'
+import Image from 'next/image'
 import { ChevronRight, MapPin, MessageCircle, Navigation, Phone, Search, Share2, ShoppingBag, Sparkles, Store, Verified, X } from 'lucide-react'
 import { useParams } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
@@ -196,10 +197,12 @@ export default function PublicShopPage() {
     <main className="min-h-screen bg-[#050505] text-white">
       {/* Hero */}
       <section className="relative overflow-hidden">
-        <img
+        <Image
           src={business.banner_url || 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?q=80&w=1800&auto=format&fit=crop'}
-          className="absolute inset-0 h-full w-full object-cover opacity-55"
+          fill
+          className="object-cover opacity-55"
           alt={business.name}
+          priority
         />
         <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/45 to-[#050505]" />
 
@@ -215,8 +218,8 @@ export default function PublicShopPage() {
 
           <div className="max-w-4xl">
             <div className="mb-8 flex flex-col gap-5 md:flex-row md:items-center">
-              <div className="h-28 w-28 overflow-hidden rounded-[2rem] border border-white/10 bg-white shadow-2xl">
-                <img src={business.logo_url || '/icons/caissepro-icon.svg'} className="h-full w-full object-cover" alt={business.name} />
+              <div className="relative h-28 w-28 overflow-hidden rounded-[2rem] border border-white/10 bg-white shadow-2xl">
+                <Image src={business.logo_url || '/icons/caissepro-icon.svg'} fill className="object-cover" alt={business.name} />
               </div>
 
               <div>
@@ -300,8 +303,8 @@ export default function PublicShopPage() {
 
             return (
               <div key={product.id} className="group overflow-hidden rounded-[2rem] border border-white/5 bg-[#0e0e0e] transition duration-300 hover:-translate-y-2 hover:border-white/10 hover:shadow-[0_20px_80px_rgba(0,0,0,0.45)]">
-                <div className="relative overflow-hidden">
-                  <img src={image} alt={product.name} className="h-[320px] w-full object-cover transition duration-500 group-hover:scale-105" />
+                <div className="relative h-[320px] overflow-hidden">
+                  <Image src={image} alt={product.name} fill className="object-cover transition duration-500 group-hover:scale-105" loading="lazy" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
                   <div className="absolute bottom-5 left-5 rounded-full bg-black/60 px-4 py-2 text-xs font-black uppercase tracking-wide backdrop-blur-xl">{product.category || 'Produit'}</div>
                 </div>
@@ -361,7 +364,7 @@ export default function PublicShopPage() {
             {/* Product image + info */}
             {selectedProductImage && (
               <div className="relative h-52 w-full overflow-hidden">
-                <img src={selectedProductImage} alt={selectedProduct.name} className="h-full w-full object-cover" />
+                <Image src={selectedProductImage} alt={selectedProduct.name} fill className="object-cover" loading="lazy" />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#0e0e0e] to-transparent" />
               </div>
             )}

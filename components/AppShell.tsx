@@ -33,9 +33,10 @@ import {
   Wallet,
   X,
 } from 'lucide-react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { ReactNode, useEffect, useState } from 'react'
+import { ReactNode, memo, useEffect, useState } from 'react'
 
 type AppShellProps = { children: ReactNode; title: string; subtitle?: string; action?: ReactNode }
 
@@ -150,7 +151,7 @@ const BOTTOM_NAV = [
   { label: 'Rapports', href: '/reports', icon: TrendingUp },
 ]
 
-export default function AppShell({ children, title, subtitle, action }: AppShellProps) {
+const AppShell = memo(function AppShell({ children, title, subtitle, action }: AppShellProps) {
   const pathname = usePathname()
   const router = useRouter()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -205,9 +206,9 @@ export default function AppShell({ children, title, subtitle, action }: AppShell
     <div className="flex h-full flex-col">
       {/* Business header */}
       <div className="flex items-center gap-3 border-b border-slate-100 p-5">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-emerald-600 text-white">
+        <div className="relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-emerald-600 text-white">
           {businessLogo
-            ? <img src={businessLogo} alt={businessName} className="h-full w-full bg-white object-contain p-1" />
+            ? <Image src={businessLogo} alt={businessName} fill className="bg-white object-contain p-1" />
             : <Store size={22} />}
         </div>
         <div className="min-w-0">
@@ -407,4 +408,6 @@ export default function AppShell({ children, title, subtitle, action }: AppShell
       </nav>
     </main>
   )
-}
+})
+
+export default AppShell
