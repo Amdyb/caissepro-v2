@@ -6,6 +6,7 @@ import dynamic from 'next/dynamic'
 const POSCheckoutDrawer = dynamic(() => import('@/components/POSCheckoutDrawer'), { ssr: false })
 import { supabase } from '@/lib/supabaseClient'
 import { ImageIcon, ReceiptText, ShoppingCart, Trash2, Zap } from 'lucide-react'
+import { playError, playSale } from '@/lib/sounds'
 import Link from 'next/link'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
@@ -189,7 +190,9 @@ export default function POSPage() {
       setCart([])
       setLastSaleId(saleData.id)
       flash('Vente enregistrée avec succès.')
+      playSale()
     } catch (err: any) {
+      playError()
       setMessage(err?.message || 'Erreur lors du paiement')
     }
 

@@ -1,6 +1,7 @@
 'use client'
 
 import AmdyLabsBrand from '@/components/AmdyLabsBrand'
+import TutorialTour from '@/components/TutorialTour'
 import DarkModeToggle from '@/components/DarkModeToggle'
 import LanguageSwitcher from '@/components/LanguageSwitcher'
 import { supabase } from '@/lib/supabaseClient'
@@ -50,7 +51,7 @@ type SectionConfig = {
   textColor: string
   headerColor: string
   defaultOpen?: boolean
-  items: { label: string; href: string; icon: any }[]
+  items: { label: string; href: string; icon: any; tourId?: string }[]
 }
 
 const NAV_SECTIONS: SectionConfig[] = [
@@ -64,7 +65,7 @@ const NAV_SECTIONS: SectionConfig[] = [
     defaultOpen: true,
     items: [
       { label: 'Vendre', href: '/pos', icon: ShoppingCart },
-      { label: 'Historique des ventes', href: '/sales', icon: ReceiptText },
+      { label: 'Historique des ventes', href: '/sales', icon: ReceiptText, tourId: 'tour-nav-sales' },
       { label: 'Remboursements', href: '/refunds', icon: RotateCcw },
       { label: 'Caisse du jour', href: '/register-shifts', icon: Wallet },
     ],
@@ -78,7 +79,7 @@ const NAV_SECTIONS: SectionConfig[] = [
     headerColor: 'text-violet-600 dark:text-violet-400',
     defaultOpen: false,
     items: [
-      { label: 'Produits', href: '/products', icon: Package },
+      { label: 'Produits', href: '/products', icon: Package, tourId: 'tour-nav-products' },
       { label: 'Clients', href: '/customers', icon: Users },
       { label: 'Employés', href: '/employees', icon: UserCog },
       { label: 'Fournisseurs', href: '/suppliers', icon: Truck },
@@ -94,7 +95,7 @@ const NAV_SECTIONS: SectionConfig[] = [
     headerColor: 'text-orange-600 dark:text-orange-400',
     defaultOpen: false,
     items: [
-      { label: 'Ma boutique en ligne', href: '/storefront', icon: Globe },
+      { label: 'Ma boutique en ligne', href: '/storefront', icon: Globe, tourId: 'tour-nav-storefront' },
       { label: 'Commandes clients', href: '/orders', icon: ShoppingBag },
       { label: 'QR Code boutique', href: '/storefront/qr', icon: QrCode },
       { label: 'Partager boutique', href: '/storefront/share', icon: Share2 },
@@ -283,6 +284,7 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
                       <Link
                         key={item.href}
                         href={item.href}
+                        id={item.tourId}
                         onClick={() => setMobileMenuOpen(false)}
                         className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold transition-colors ${
                           active
@@ -384,6 +386,7 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
       {/* Floating VENDRE button */}
       {pathname !== '/pos' && pathname !== '/checkout' && (
         <Link
+          id="tour-vendre-fab"
           href="/pos"
           aria-label="Vendre"
           className="fixed bottom-24 right-5 z-50 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-600 text-white shadow-2xl shadow-emerald-600/40 transition hover:scale-105 hover:bg-emerald-700 active:scale-95 lg:bottom-8 lg:right-8"
@@ -391,6 +394,8 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
           <Plus size={28} />
         </Link>
       )}
+
+      <TutorialTour />
 
       {/* Fixed bottom nav (mobile only) */}
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800 lg:hidden">

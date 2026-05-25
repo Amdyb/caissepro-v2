@@ -13,7 +13,9 @@ import { Clock, Moon, Sun,
   Phone,
   MapPin,
   Quote,
-  BriefcaseBusiness
+  BriefcaseBusiness,
+  Volume2,
+  VolumeX
 } from 'lucide-react'
 import { supabase } from '@/lib/supabaseClient'
 
@@ -60,10 +62,21 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
   const [themePref, setThemePrefState] = useState<'auto' | 'light' | 'dark'>('auto')
+  const [soundsEnabled, setSoundsEnabled] = useState(false)
 
   useEffect(() => {
     setThemePrefState((getThemePreference() as 'auto' | 'light' | 'dark') || 'auto')
+    setSoundsEnabled(localStorage.getItem('caissepro_sounds_enabled') === '1')
   }, [])
+
+  function toggleSounds(on: boolean) {
+    setSoundsEnabled(on)
+    if (on) {
+      localStorage.setItem('caissepro_sounds_enabled', '1')
+    } else {
+      localStorage.removeItem('caissepro_sounds_enabled')
+    }
+  }
 
   const [form, setForm] = useState({
     name: '',
@@ -230,6 +243,26 @@ export default function SettingsPage() {
                 </div>
               </button>
             ))}
+          </div>
+        </div>
+
+        {/* Sound toggle */}
+        <div className="mb-8 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-black text-slate-950 dark:text-white">Sons de l'interface</h2>
+              <p className="mt-1 text-sm font-semibold text-slate-500 dark:text-slate-400">Sons lors des ventes, confirmations et erreurs</p>
+            </div>
+            <button
+              onClick={() => toggleSounds(!soundsEnabled)}
+              className={`relative inline-flex h-8 w-14 shrink-0 items-center rounded-full transition-colors ${soundsEnabled ? 'bg-emerald-600' : 'bg-slate-200 dark:bg-slate-600'}`}
+            >
+              <span className={`inline-block h-6 w-6 rounded-full bg-white shadow transition-transform ${soundsEnabled ? 'translate-x-7' : 'translate-x-1'}`} />
+            </button>
+          </div>
+          <div className="mt-4 flex items-center gap-2 text-sm font-bold text-slate-500 dark:text-slate-400">
+            {soundsEnabled ? <Volume2 size={16} className="text-emerald-600" /> : <VolumeX size={16} />}
+            <span>{soundsEnabled ? 'Sons activés' : 'Sons désactivés'}</span>
           </div>
         </div>
 

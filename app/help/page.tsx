@@ -3,7 +3,7 @@
 import AppShell from '@/components/AppShell'
 import Link from 'next/link'
 import { useState } from 'react'
-import { ChevronDown, ChevronUp, HelpCircle, MessageCircle, Search } from 'lucide-react'
+import { ChevronDown, ChevronUp, HelpCircle, MessageCircle, PlayCircle, Search } from 'lucide-react'
 
 type FAQ = { question: string; answer: string }
 type Section = { title: string; emoji: string; items: FAQ[] }
@@ -242,8 +242,24 @@ export default function HelpPage() {
           )}
         </div>
 
+        {/* Restart tour */}
+        <div className="mt-10 rounded-[2rem] border border-emerald-200 bg-emerald-50 p-8 text-center dark:border-emerald-900 dark:bg-emerald-900/20">
+          <PlayCircle className="mx-auto mb-3 text-emerald-600" size={32} />
+          <h3 className="text-xl font-black text-slate-950 dark:text-white">Visite guidée</h3>
+          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Relancez la visite pour redécouvrir les fonctionnalités clés.</p>
+          <button
+            onClick={() => {
+              localStorage.removeItem('caissepro_tour_done')
+              window.dispatchEvent(new Event('restart-tour'))
+            }}
+            className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-emerald-600 px-6 py-3 text-sm font-black text-white transition hover:bg-emerald-700"
+          >
+            <PlayCircle size={16} /> Relancer la visite
+          </button>
+        </div>
+
         {/* Contact CTA */}
-        <div className="mt-10 rounded-[2rem] border border-slate-200 bg-white p-8 text-center shadow-sm">
+        <div className="mt-6 rounded-[2rem] border border-slate-200 bg-white p-8 text-center shadow-sm">
           <MessageCircle className="mx-auto mb-3 text-emerald-600" size={32} />
           <h3 className="text-xl font-black text-slate-950">Vous n'avez pas trouvé votre réponse ?</h3>
           <p className="mt-2 text-sm text-slate-500">Notre équipe est disponible pour vous aider.</p>
