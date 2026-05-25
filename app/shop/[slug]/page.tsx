@@ -13,6 +13,7 @@ type Business = {
   logo_url: string | null
   banner_url: string | null
   primary_color: string | null
+  secondary_color: string | null
   whatsapp_number: string | null
   phone?: string | null
   whatsapp?: string | null
@@ -116,6 +117,7 @@ export default function PublicShopPage() {
   }, [slug])
 
   const primary = business?.primary_color || '#16a34a'
+  const secondary = business?.secondary_color || '#0f172a'
   const phone = (business?.whatsapp || business?.whatsapp_number || business?.phone || '').replace(/\D/g, '')
 
   const categories = useMemo(() => Array.from(new Set(products.map((p) => p.category).filter(Boolean))) as string[], [products])
@@ -223,7 +225,7 @@ export default function PublicShopPage() {
               </div>
 
               <div>
-                <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-emerald-500/20 px-4 py-2 text-xs font-black text-emerald-300">
+                <div className="mb-3 inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-black" style={{ backgroundColor: primary + '33', color: primary }}>
                   <Verified size={14} /> Commerce vérifié
                 </div>
                 <h1 className="text-5xl font-black tracking-tight md:text-7xl">{business.name}</h1>
@@ -258,7 +260,8 @@ export default function PublicShopPage() {
                 href={mapsUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-5 inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-5 py-3 text-sm font-black text-emerald-300 hover:bg-emerald-500/20"
+                className="mt-5 inline-flex items-center gap-2 rounded-full border px-5 py-3 text-sm font-black"
+                style={{ borderColor: primary + '55', backgroundColor: primary + '1a', color: primary }}
               >
                 <Navigation size={16} /> Itinéraire Google Maps
               </a>
@@ -268,7 +271,7 @@ export default function PublicShopPage() {
       </section>
 
       {/* Category bar */}
-      <section className="sticky top-0 z-40 border-y border-white/5 bg-black/70 backdrop-blur-2xl">
+      <section className="sticky top-0 z-40 border-y border-white/5 backdrop-blur-2xl" style={{ backgroundColor: secondary + 'cc' }}>
         <div className="mx-auto flex max-w-7xl gap-3 overflow-x-auto px-5 py-4">
           <button onClick={() => setCategory('')} className="shrink-0 rounded-full px-5 py-3 text-sm font-black text-white" style={{ backgroundColor: !category ? primary : '#171717' }}>Tous</button>
           {categories.map((cat) => (
@@ -302,7 +305,7 @@ export default function PublicShopPage() {
             const image = product.image_url || product.image || 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=1200&auto=format&fit=crop'
 
             return (
-              <div key={product.id} className="group overflow-hidden rounded-[2rem] border border-white/5 bg-[#0e0e0e] transition duration-300 hover:-translate-y-2 hover:border-white/10 hover:shadow-[0_20px_80px_rgba(0,0,0,0.45)]">
+              <div key={product.id} className="group overflow-hidden rounded-[2rem] border bg-[#0e0e0e] transition duration-300 hover:-translate-y-2 hover:shadow-[0_20px_80px_rgba(0,0,0,0.45)]" style={{ borderColor: secondary + '55' }}>
                 <div className="relative h-[320px] overflow-hidden">
                   <Image src={image} alt={product.name} fill className="object-cover transition duration-500 group-hover:scale-105" loading="lazy" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
@@ -334,7 +337,7 @@ export default function PublicShopPage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-white/5 py-8 text-center">
+      <footer className="border-t py-8 text-center" style={{ borderTopColor: secondary + '44', backgroundColor: secondary + '22' }}>
         <p className="text-xs font-bold text-white/30">
           Boutique propulsée par{' '}
           <a href="https://caissepro.app" target="_blank" rel="noopener noreferrer" className="text-white/50 hover:text-white/80">CaissePro</a>
