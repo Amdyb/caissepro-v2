@@ -75,7 +75,7 @@ export default function POSPage() {
       setBusinessId(member.business_id)
       setBusinessName(member?.businesses?.name || 'CaissePro')
 
-      const { data: productData } = await supabase.from('products').select('*').eq('business_id', member.business_id).eq('is_active', true).is('archived', false).is('deleted_at', null)
+      const { data: productData } = await supabase.from('products').select('*').eq('business_id', member.business_id).not('is_active', 'is', false).not('archived', 'is', true).is('deleted_at', null)
       const { data: customerData } = await supabase.from('customers').select('id,full_name,phone').eq('business_id', member.business_id)
 
       setProducts((productData || []) as Product[])
