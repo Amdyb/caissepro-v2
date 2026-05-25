@@ -13,18 +13,17 @@ export default function LoginPage() {
   const [message, setMessage] = useState('')
 
   async function getNextRoute(userId: string, userEmail: string) {
-    // Primary lookup by user_id
+    // Primary lookup by user_id — fetch all so we can prioritize by role
     let { data: memberships } = await supabase
       .from('business_members')
-      .select('id, business_id, temp_password, businesses(id, onboarding_completed, name, business_type)')
+      .select('id, business_id, role, temp_password, businesses(id, onboarding_completed, name, business_type)')
       .eq('user_id', userId)
-      .limit(1)
 
     // Fallback: employee was added by email before they registered
     if (!memberships || memberships.length === 0) {
       const { data: byEmail } = await supabase
         .from('business_members')
-        .select('id, business_id, temp_password, businesses(id, onboarding_completed, name, business_type)')
+        .select('id, business_id, role, temp_password, businesses(id, onboarding_completed, name, business_type)')
         .eq('email', userEmail.toLowerCase())
         .is('user_id', null)
         .limit(1)
@@ -38,7 +37,17 @@ export default function LoginPage() {
       }
     }
 
-    const member: any = memberships?.[0]
+    if (!memberships || memberships.length === 0) {
+      return '/onboarding'
+    }
+
+    // Prioritize owner > admin over other roles
+    const sorted = (memberships as any[]).sort((a, b) => {
+      const p: Record<string, number> = { owner: 0, admin: 1 }
+      return (p[a.role] ?? 2) - (p[b.role] ?? 2)
+    })
+
+    const member: any = sorted[0]
     const business = member?.businesses
 
     if (!member?.business_id || !business?.id) {
@@ -50,19 +59,20 @@ export default function LoginPage() {
       return '/change-password'
     }
 
-    const hasUsableBusiness = Boolean(business.name && business.business_type)
-
-    if (hasUsableBusiness && !business.onboarding_completed) {
-      await supabase
-        .from('businesses')
-        .update({
-          onboarding_completed: true,
-          onboarding_completed_at: new Date().toISOString()
-        })
-        .eq('id', business.id)
+    if (business.onboarding_completed) {
+      return '/dashboard'
     }
 
-    return hasUsableBusiness ? '/dashboard' : '/onboarding'
+    // Legacy: auto-complete onboarding for businesses that already have name + type set
+    if (business.name && business.business_type) {
+      await supabase
+        .from('businesses')
+        .update({ onboarding_completed: true, onboarding_completed_at: new Date().toISOString() })
+        .eq('id', business.id)
+      return '/dashboard'
+    }
+
+    return '/onboarding'
   }
 
   async function handleLogin(e: React.FormEvent) {

@@ -42,11 +42,23 @@ export default function OnboardingPage() {
 
       const { data: memberships } = await supabase
         .from('business_members')
-        .select('business_id, businesses(*)')
+        .select('business_id, role, businesses(*)')
         .eq('user_id', userData.user.id)
-        .limit(1)
 
-      const member: any = memberships?.[0]
+      // Prioritize owner > admin over other roles
+      const sorted = (memberships || []).sort((a: any, b: any) => {
+        const p: Record<string, number> = { owner: 0, admin: 1 }
+        return (p[a.role] ?? 2) - (p[b.role] ?? 2)
+      })
+
+      const member: any = sorted[0]
+
+      // Already completed onboarding — skip to dashboard
+      if (member?.businesses?.onboarding_completed) {
+        router.push('/dashboard')
+        return
+      }
+
       if (member?.business_id) {
         setBusinessId(member.business_id)
         const business = member.businesses || {}

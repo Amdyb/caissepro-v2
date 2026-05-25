@@ -56,22 +56,31 @@ export default function DashboardPage() {
         return
       }
 
-      const { data: membership, error } = await supabase
+      const { data: memberships, error } = await supabase
         .from('business_members')
-        .select('business_id, businesses(*)')
+        .select('business_id, role, businesses(*)')
         .eq('user_id', userData.user.id)
-        .limit(1)
-        .maybeSingle()
 
-      if (error || !membership) {
-        setMessage('Aucune boutique trouvée pour ce compte.')
-        setLoading(false)
+      if (error || !memberships || memberships.length === 0) {
+        router.push('/onboarding')
         return
       }
 
-      const member: any = membership
-      const businessId = member.business_id
+      // Prioritize owner > admin over other roles
+      const sorted = (memberships as any[]).sort((a, b) => {
+        const p: Record<string, number> = { owner: 0, admin: 1 }
+        return (p[a.role] ?? 2) - (p[b.role] ?? 2)
+      })
+
+      const member: any = sorted[0]
       const businessData = member.businesses as BusinessInfo
+
+      if (!businessData?.onboarding_completed) {
+        router.push('/onboarding')
+        return
+      }
+
+      const businessId = member.business_id
 
       setBusinessType(businessData?.business_type || 'retail')
       setBusiness(businessData)
