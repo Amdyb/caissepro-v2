@@ -16,9 +16,9 @@ type Check = {
 }
 
 const CHECKS: Check[] = [
-  { id: 'auth', label: 'Authentification Supabase', detail: 'Vérifie que l'utilisateur courant est connecté et autorisé.' },
+  { id: 'auth', label: 'Authentification Supabase', detail: "Vérifie que l'utilisateur courant est connecté et autorisé." },
   { id: 'businesses', label: 'Lecture des boutiques', detail: 'Lit les 5 premières boutiques depuis la table businesses.' },
-  { id: 'sale_create', label: 'Création d'une vente test', detail: 'Insère une vente de test dans la table sales (montant 0).' },
+  { id: 'sale_create', label: "Création d'une vente test", detail: 'Insère une vente de test dans la table sales (montant 0).' },
   { id: 'sale_read', label: 'Relecture de la vente', detail: 'Relit la vente créée pour confirmer la persistance.' },
   { id: 'whatsapp', label: 'Lien WhatsApp', detail: 'Génère un lien wa.me avec un message encodé correctement.' },
 ]
@@ -106,7 +106,7 @@ export default function TestPage() {
     setCheck('sale_read', 'running')
     const sid = createdSaleId
     if (!sid) {
-      setCheck('sale_read', 'fail', 'Pas d'ID de vente à relire.')
+      setCheck('sale_read', 'fail', "Pas d'ID de vente à relire.")
     } else {
       const { data: saleRead, error: readError } = await supabase.from('sales').select('id,total,status').eq('id', sid).single()
       if (readError) {
