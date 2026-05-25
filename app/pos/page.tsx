@@ -166,7 +166,7 @@ export default function POSPage() {
         .insert(saleItems)
 
       if (itemError) {
-        console.error(itemError)
+        flash(`Erreur enregistrement lignes vente: ${itemError.message}`)
       }
 
       for (const item of cart) {

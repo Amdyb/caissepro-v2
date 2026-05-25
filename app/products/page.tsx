@@ -5,7 +5,7 @@ import AppShell from '@/components/AppShell'
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Download, Edit, FileSpreadsheet, PackagePlus, Plus, Search, Trash2, Upload } from 'lucide-react'
+import { Edit, FileSpreadsheet, PackagePlus, Plus, Search, Trash2, Upload } from 'lucide-react'
 import { supabase } from '@/lib/supabaseClient'
 
 type Product = {

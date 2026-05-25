@@ -94,8 +94,8 @@ export default function UpgradePage() {
         status: 'pending',
         whatsapp_sent: true
       })
-    } catch (error) {
-      console.log('upgrade request table may not exist yet')
+    } catch {
+      // upgrade_requests table may not exist yet — non-blocking
     }
 
     const text = encodeURIComponent(`Bonjour CaissePro, je souhaite activer CaissePro Premium.\n\nBoutique: ${business.name}\nEmail: ${userEmail}\nPlan choisi: ${plan.name}\nMontant: ${plan.price}\nRéférence: ${reference}\n\nJ’ai effectué le paiement. Merci de valider mon accès.`)
