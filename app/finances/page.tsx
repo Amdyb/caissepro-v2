@@ -2,7 +2,7 @@
 
 import AppShell from '@/components/AppShell'
 import { supabase } from '@/lib/supabaseClient'
-import { DollarSign, Package, Receipt, TrendingDown, TrendingUp, Wallet } from 'lucide-react'
+import { ArrowDown, ArrowUp, DollarSign, Package, Receipt, TrendingDown, TrendingUp, Wallet } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
@@ -144,48 +144,87 @@ export default function FinancesPage() {
         {/* KPI grid */}
         <div className="mb-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
           <div className="rounded-3xl border border-emerald-200 bg-white p-6 shadow-sm dark:border-emerald-900 dark:bg-slate-800">
-            <TrendingUp className="text-emerald-600" />
-            <p className="mt-4 text-sm font-bold text-slate-500 dark:text-slate-400">Revenus</p>
-            <p className="mt-1 text-2xl font-black text-emerald-700">{cfa(summary.totalRevenue)}</p>
+            <div className="flex items-center justify-between">
+              <TrendingUp className="text-emerald-600" />
+              <span className="flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-black text-emerald-700 dark:bg-emerald-900/40">
+                <ArrowUp size={11} /> Revenus
+              </span>
+            </div>
+            <p className="mt-4 text-sm font-bold text-slate-500 dark:text-slate-400">Chiffre d'affaires</p>
+            <p className="mt-1 text-3xl font-black text-emerald-700">{cfa(summary.totalRevenue)}</p>
+            <p className="mt-1 text-xs font-bold text-slate-400">Ventes encaissées sur la période</p>
           </div>
 
           <div className="rounded-3xl border border-red-200 bg-white p-6 shadow-sm dark:border-red-900 dark:bg-slate-800">
-            <TrendingDown className="text-red-500" />
+            <div className="flex items-center justify-between">
+              <TrendingDown className="text-red-500" />
+              <span className="flex items-center gap-1 rounded-full bg-red-50 px-2.5 py-1 text-xs font-black text-red-700 dark:bg-red-900/40">
+                <ArrowDown size={11} /> Charges
+              </span>
+            </div>
             <p className="mt-4 text-sm font-bold text-slate-500 dark:text-slate-400">Dépenses</p>
-            <p className="mt-1 text-2xl font-black text-red-700">{cfa(summary.totalExpenses)}</p>
+            <p className="mt-1 text-3xl font-black text-red-700">{cfa(summary.totalExpenses)}</p>
+            <p className="mt-1 text-xs font-bold text-slate-400">Transport, salaires, loyer...</p>
           </div>
 
           <div className={`rounded-3xl border p-6 shadow-sm dark:bg-slate-800 ${summary.netProfit >= 0 ? 'border-emerald-200 bg-white dark:border-emerald-900' : 'border-red-200 bg-white dark:border-red-900'}`}>
-            <Wallet className={summary.netProfit >= 0 ? 'text-emerald-600' : 'text-red-600'} />
+            <div className="flex items-center justify-between">
+              <Wallet className={summary.netProfit >= 0 ? 'text-emerald-600' : 'text-red-600'} />
+              <span className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-black ${summary.netProfit >= 0 ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/40' : 'bg-red-50 text-red-700 dark:bg-red-900/40'}`}>
+                {summary.netProfit >= 0 ? <ArrowUp size={11} /> : <ArrowDown size={11} />}
+                {summary.netProfit >= 0 ? 'Bénéfice' : 'Déficit'}
+              </span>
+            </div>
             <p className="mt-4 text-sm font-bold text-slate-500 dark:text-slate-400">Profit net</p>
-            <p className={`mt-1 text-2xl font-black ${summary.netProfit >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
+            <p className={`mt-1 text-3xl font-black ${summary.netProfit >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
               {summary.netProfit >= 0 ? '+' : ''}{cfa(summary.netProfit)}
             </p>
+            <p className="mt-1 text-xs font-bold text-slate-400">Revenus - Dépenses</p>
           </div>
 
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-            <Package className="text-violet-600" />
+          <div className="rounded-3xl border border-violet-200 bg-white p-6 shadow-sm dark:border-violet-900 dark:bg-slate-800">
+            <div className="flex items-center justify-between">
+              <Package className="text-violet-600" />
+              <span className="flex items-center gap-1 rounded-full bg-violet-50 px-2.5 py-1 text-xs font-black text-violet-700 dark:bg-violet-900/40">
+                Stock actuel
+              </span>
+            </div>
             <p className="mt-4 text-sm font-bold text-slate-500 dark:text-slate-400">Valeur du stock</p>
-            <p className="mt-1 text-2xl font-black text-slate-950 dark:text-white">{cfa(summary.stockValue)}</p>
-            <p className="mt-1 text-xs font-bold text-slate-400">Basé sur le prix d'achat</p>
+            <p className="mt-1 text-3xl font-black text-violet-700">{cfa(summary.stockValue)}</p>
+            <p className="mt-1 text-xs font-bold text-slate-400">Coût d'achat × quantité en stock</p>
           </div>
 
           <div className="rounded-3xl border border-amber-200 bg-white p-6 shadow-sm dark:border-amber-900 dark:bg-slate-800">
-            <Receipt className="text-amber-600" />
+            <div className="flex items-center justify-between">
+              <Receipt className="text-amber-600" />
+              {summary.totalDebt > 0 && (
+                <span className="flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-black text-amber-700 dark:bg-amber-900/40">
+                  <ArrowUp size={11} /> À récupérer
+                </span>
+              )}
+            </div>
             <p className="mt-4 text-sm font-bold text-slate-500 dark:text-slate-400">Créances clients</p>
-            <p className="mt-1 text-2xl font-black text-amber-700">{cfa(summary.totalDebt)}</p>
-            <p className="mt-1 text-xs font-bold text-slate-400">Montant à récupérer</p>
+            <p className="mt-1 text-3xl font-black text-amber-700">{cfa(summary.totalDebt)}</p>
+            <p className="mt-1 text-xs font-bold text-slate-400">Soldes impayés — tous clients</p>
           </div>
 
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-            <DollarSign className="text-teal-600" />
+          <div className="rounded-3xl border border-teal-200 bg-white p-6 shadow-sm dark:border-teal-900 dark:bg-slate-800">
+            <div className="flex items-center justify-between">
+              <DollarSign className="text-teal-600" />
+              {summary.totalRevenue > 0 && (
+                <span className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-black ${summary.netProfit >= 0 ? 'bg-teal-50 text-teal-700 dark:bg-teal-900/40' : 'bg-red-50 text-red-700'}`}>
+                  {summary.netProfit >= 0 ? <ArrowUp size={11} /> : <ArrowDown size={11} />}
+                  {summary.totalRevenue > 0 ? Math.round((summary.netProfit / summary.totalRevenue) * 100) + '%' : '—'}
+                </span>
+              )}
+            </div>
             <p className="mt-4 text-sm font-bold text-slate-500 dark:text-slate-400">Marge brute</p>
-            <p className="mt-1 text-2xl font-black text-teal-700">
+            <p className="mt-1 text-3xl font-black text-teal-700">
               {summary.totalRevenue > 0
                 ? Math.round((summary.netProfit / summary.totalRevenue) * 100) + '%'
                 : '—'}
             </p>
-            <p className="mt-1 text-xs font-bold text-slate-400">Profit / Revenus</p>
+            <p className="mt-1 text-xs font-bold text-slate-400">Profit net / Chiffre d'affaires</p>
           </div>
         </div>
       </div>

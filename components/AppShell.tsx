@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabaseClient'
 import {
   AlertTriangle,
   ChevronDown,
+  Plus,
   CreditCard,
   DollarSign,
   FileText,
@@ -379,6 +380,17 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
           </div>
         </footer>
       </section>
+
+      {/* Floating VENDRE button */}
+      {pathname !== '/pos' && pathname !== '/checkout' && (
+        <Link
+          href="/pos"
+          aria-label="Vendre"
+          className="fixed bottom-24 right-5 z-50 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-600 text-white shadow-2xl shadow-emerald-600/40 transition hover:scale-105 hover:bg-emerald-700 active:scale-95 lg:bottom-8 lg:right-8"
+        >
+          <Plus size={28} />
+        </Link>
+      )}
 
       {/* Fixed bottom nav (mobile only) */}
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800 lg:hidden">

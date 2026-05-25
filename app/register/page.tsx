@@ -5,10 +5,24 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 
+const BUSINESS_TYPES = [
+  { value: 'retail', label: 'Commerce & Boutique' },
+  { value: 'grocery', label: 'Épicerie & Alimentation' },
+  { value: 'restaurant', label: 'Restaurant & Fast Food' },
+  { value: 'beauty', label: 'Salon & Beauté' },
+  { value: 'fashion', label: 'Mode & Accessoires' },
+  { value: 'electronics', label: 'Électronique' },
+  { value: 'services', label: 'Services' },
+  { value: 'laundry', label: 'Blanchisserie & Pressing' },
+  { value: 'tontine', label: 'Tontine & Épargne' },
+]
+
 export default function RegisterPage() {
   const router = useRouter()
   const [fullName, setFullName] = useState('')
   const [businessName, setBusinessName] = useState('')
+  const [businessType, setBusinessType] = useState('retail')
+  const [phone, setPhone] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -31,7 +45,7 @@ export default function RegisterPage() {
         .limit(1)
 
       if (memberships && memberships.length > 0) {
-        router.replace('/upgrade')
+        router.replace('/dashboard')
         return
       }
 
@@ -51,7 +65,12 @@ export default function RegisterPage() {
 
     if (existingMembership) return
 
-    const safeSlug = businessName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || `shop-${Date.now()}`
+    const safeSlug = businessName
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '') || `shop-${Date.now()}`
 
     const { data: businessRows, error: businessError } = await supabase
       .from('businesses')
@@ -59,7 +78,9 @@ export default function RegisterPage() {
         name: businessName,
         slug: safeSlug,
         currency: 'CFA',
-        business_type: 'retail',
+        business_type: businessType,
+        business_phone: phone || null,
+        phone: phone || null,
         onboarding_completed: false
       })
       .select('id')
@@ -70,7 +91,14 @@ export default function RegisterPage() {
 
     const { error: memberError } = await supabase
       .from('business_members')
-      .insert({ business_id: business.id, user_id: userId, full_name: fullName, email, role: 'admin' })
+      .insert({
+        business_id: business.id,
+        user_id: userId,
+        full_name: fullName,
+        email,
+        role: 'owner',
+        is_active: true
+      })
 
     if (memberError) throw new Error(memberError.message)
   }
@@ -122,92 +150,119 @@ export default function RegisterPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-50 px-6 py-12">
-      <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-8 shadow-xl">
+    <main className="flex min-h-screen items-center justify-center bg-gradient-to-b from-emerald-50 to-white px-6 py-12">
+      <div className="w-full max-w-md">
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-600 text-2xl font-black text-white">C</div>
-          <h1 className="text-3xl font-black text-slate-950">Créer un compte</h1>
-          <p className="mt-2 text-slate-600">Lancez votre boutique CaissePro en 1 minute.</p>
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-600 text-2xl font-black text-white">C</div>
+          <h1 className="text-3xl font-black text-slate-950">Créer votre boutique</h1>
+          <p className="mt-2 font-semibold text-slate-500">Lancez votre commerce en 2 minutes.</p>
         </div>
 
-        {error && <div className="mb-4 rounded-2xl bg-red-50 p-3 text-sm font-semibold text-red-700">{error}</div>}
-        {message && <div className="mb-4 rounded-2xl bg-emerald-50 p-3 text-sm font-semibold text-emerald-700">{message}</div>}
+        <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-xl">
+          {error && <div className="mb-5 rounded-2xl bg-red-50 p-4 text-sm font-bold text-red-700">{error}</div>}
+          {message && <div className="mb-5 rounded-2xl bg-emerald-50 p-4 text-sm font-bold text-emerald-700">{message}</div>}
 
-        <form onSubmit={handleRegister} className="space-y-4">
-          <div>
-            <label className="text-sm font-bold text-slate-700">Nom complet</label>
-            <input
-              required
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              placeholder="Amadou Diallo"
-              className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-brand-600"
-            />
-          </div>
+          <form onSubmit={handleRegister} className="space-y-4">
+            <div>
+              <label className="text-sm font-black text-slate-700">Votre nom complet</label>
+              <input
+                required
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="Amadou Diallo"
+                className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 font-semibold outline-none focus:border-emerald-600"
+              />
+            </div>
 
-          <div>
-            <label className="text-sm font-bold text-slate-700">Nom du commerce</label>
-            <input
-              required
-              value={businessName}
-              onChange={(e) => setBusinessName(e.target.value)}
-              placeholder="Dakar Vapes"
-              className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-brand-600"
-            />
-          </div>
+            <div>
+              <label className="text-sm font-black text-slate-700">Nom du commerce</label>
+              <input
+                required
+                value={businessName}
+                onChange={(e) => setBusinessName(e.target.value)}
+                placeholder="Dakar Vapes"
+                className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 font-semibold outline-none focus:border-emerald-600"
+              />
+            </div>
 
-          <div>
-            <label className="text-sm font-bold text-slate-700">Email</label>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="votre@email.com"
-              className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-brand-600"
-            />
-          </div>
+            <div>
+              <label className="text-sm font-black text-slate-700">Type de commerce</label>
+              <select
+                value={businessType}
+                onChange={(e) => setBusinessType(e.target.value)}
+                className="mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 font-semibold outline-none focus:border-emerald-600"
+              >
+                {BUSINESS_TYPES.map((t) => (
+                  <option key={t.value} value={t.value}>{t.label}</option>
+                ))}
+              </select>
+            </div>
 
-          <div>
-            <label className="text-sm font-bold text-slate-700">Mot de passe</label>
-            <input
-              type="password"
-              required
-              minLength={6}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Minimum 6 caractères"
-              className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-brand-600"
-            />
-          </div>
+            <div>
+              <label className="text-sm font-black text-slate-700">Téléphone (optionnel)</label>
+              <input
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="+221 77 000 00 00"
+                className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 font-semibold outline-none focus:border-emerald-600"
+              />
+            </div>
 
-          <div>
-            <label className="text-sm font-bold text-slate-700">Confirmer le mot de passe</label>
-            <input
-              type="password"
-              required
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="••••••••"
-              className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-brand-600"
-            />
-          </div>
+            <div>
+              <label className="text-sm font-black text-slate-700">Email</label>
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="votre@email.com"
+                className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 font-semibold outline-none focus:border-emerald-600"
+              />
+            </div>
 
-          <button
-            disabled={loading}
-            className="w-full rounded-2xl bg-brand-600 py-4 font-black text-white hover:bg-brand-700 disabled:opacity-60"
-          >
-            {loading ? 'Création...' : 'Créer mon compte'}
-          </button>
-        </form>
+            <div>
+              <label className="text-sm font-black text-slate-700">Mot de passe</label>
+              <input
+                type="password"
+                required
+                minLength={6}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Minimum 6 caractères"
+                className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 font-semibold outline-none focus:border-emerald-600"
+              />
+            </div>
 
-        <p className="mt-6 text-center text-sm text-slate-600">
-          Déjà un compte ? <Link href="/login" className="font-black text-brand-700">Se connecter</Link>
-        </p>
-        <p className="mt-4 text-center text-xs text-slate-400">
-          En créant un compte, vous acceptez nos{' '}
-          <Link href="/legal" className="font-bold underline hover:text-slate-700">mentions légales</Link>.
-        </p>
+            <div>
+              <label className="text-sm font-black text-slate-700">Confirmer le mot de passe</label>
+              <input
+                type="password"
+                required
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="••••••••"
+                className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 font-semibold outline-none focus:border-emerald-600"
+              />
+            </div>
+
+            <button
+              disabled={loading}
+              className="w-full rounded-2xl bg-emerald-600 py-4 font-black text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 disabled:opacity-60"
+            >
+              {loading ? 'Création en cours...' : 'Créer mon commerce'}
+            </button>
+          </form>
+
+          <p className="mt-6 text-center text-sm font-semibold text-slate-500">
+            Déjà un compte ?{' '}
+            <Link href="/login" className="font-black text-emerald-700 hover:underline">Se connecter</Link>
+          </p>
+          <p className="mt-3 text-center text-xs text-slate-400">
+            En créant un compte, vous acceptez nos{' '}
+            <Link href="/legal" className="font-bold underline hover:text-slate-700">mentions légales</Link>.
+          </p>
+        </div>
       </div>
     </main>
   )
