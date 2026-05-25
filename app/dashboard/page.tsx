@@ -19,6 +19,7 @@ type BusinessInfo = {
   banner_url?: string | null
   logo_url?: string | null
   business_type?: string | null
+  onboarding_completed?: boolean | null
 }
 
 function cfa(value: number) {
