@@ -1,17 +1,14 @@
 'use client'
 
-import Link from 'next/link'
-import { ArrowLeft, FileText, Shield } from 'lucide-react'
+import AppShell from '@/components/AppShell'
+import { FileText, Shield } from 'lucide-react'
 
 const LAST_UPDATED = '22 mai 2026'
 
 export default function LegalPage() {
   return (
-    <main className="min-h-screen bg-slate-50 px-4 py-12">
+    <AppShell title="Mentions légales" subtitle="Conditions d'utilisation et politique de confidentialité.">
       <div className="mx-auto max-w-3xl">
-        <Link href="/" className="mb-8 inline-flex items-center gap-2 text-sm font-black text-slate-500 hover:text-slate-900">
-          <ArrowLeft size={16} /> Retour
-        </Link>
 
         {/* Header */}
         <div className="mb-10 rounded-[2rem] bg-slate-950 px-8 py-10 text-white">
@@ -192,6 +189,6 @@ export default function LegalPage() {
           © {new Date().getFullYear()} CaissePro · Tous droits réservés
         </p>
       </div>
-    </main>
+    </AppShell>
   )
 }

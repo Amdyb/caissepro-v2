@@ -1,8 +1,9 @@
 'use client'
 
+import AppShell from '@/components/AppShell'
 import Link from 'next/link'
 import { useState } from 'react'
-import { ArrowLeft, ChevronDown, ChevronUp, HelpCircle, MessageCircle, Search } from 'lucide-react'
+import { ChevronDown, ChevronUp, HelpCircle, MessageCircle, Search } from 'lucide-react'
 
 type FAQ = { question: string; answer: string }
 type Section = { title: string; emoji: string; items: FAQ[] }
@@ -190,11 +191,8 @@ export default function HelpPage() {
   })).filter((section) => section.items.length > 0)
 
   return (
-    <main className="min-h-screen bg-slate-50 px-4 py-12">
+    <AppShell title="Centre d'aide" subtitle="Tout ce qu'il faut savoir sur CaissePro.">
       <div className="mx-auto max-w-3xl">
-        <Link href="/dashboard" className="mb-8 inline-flex items-center gap-2 text-sm font-black text-slate-500 hover:text-slate-900">
-          <ArrowLeft size={16} /> Retour au tableau de bord
-        </Link>
 
         {/* Header */}
         <div className="mb-10 rounded-[2rem] bg-gradient-to-br from-emerald-600 to-emerald-700 px-8 py-10 text-white shadow-2xl shadow-emerald-600/20">
@@ -273,6 +271,6 @@ export default function HelpPage() {
           <Link href="/dashboard" className="hover:text-slate-700">Tableau de bord</Link>
         </div>
       </div>
-    </main>
+    </AppShell>
   )
 }
