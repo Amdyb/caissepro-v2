@@ -14,12 +14,13 @@ const PLANS = [
     amount: 5000,
     icon: Rocket,
     features: [
-      'Produits illimités',
-      'Reçus WhatsApp',
-      'Client Doit',
-      'Rapports avancés',
+      'POS complet',
+      'Ventes illimitées',
+      'Reçus WhatsApp automatiques',
+      '3 employés',
       'Boutique en ligne',
-      'Sans publicité',
+      'Rapports basiques',
+      'Mode hors ligne',
     ],
   },
   {
@@ -30,11 +31,13 @@ const PLANS = [
     icon: ShieldCheck,
     features: [
       'Tout Starter +',
-      'Multi-boutiques',
-      '5 employés',
-      'Analytics avancées',
-      'Tontine: 5 groupes / 100 membres',
-      'Support premium',
+      '10 employés',
+      'Rapports avancés',
+      'Gestion fournisseurs',
+      'Client Doit avancé',
+      'Notifications WhatsApp',
+      'QR Code boutique',
+      'Parrainage',
     ],
   },
   {
@@ -46,10 +49,12 @@ const PLANS = [
     features: [
       'Tout Business +',
       'Employés illimités',
-      'Multi-succursales',
-      'Domaine personnalisé',
-      'Tontine illimitée + export PDF',
-      'Support prioritaire 24/7',
+      'API WhatsApp Business',
+      'Multi-boutiques',
+      'Support prioritaire',
+      'Personnalisation complète',
+      'Capital global',
+      'Raccourcis personnalisés',
     ],
   },
 ]
@@ -158,6 +163,57 @@ export default function UpgradePage() {
               </div>
             )
           })}
+        </div>
+
+        {/* Comparison table */}
+        <div className="mt-12">
+          <h2 className="mb-6 text-center text-xl font-black text-slate-950 dark:text-white">Comparaison détaillée</h2>
+          <div className="overflow-x-auto rounded-[2rem] border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-slate-100 dark:border-slate-700">
+                  <th className="px-6 py-4 text-left font-black text-slate-500 dark:text-slate-400">Fonctionnalité</th>
+                  {['Starter', 'Business', 'Premium'].map((name) => (
+                    <th key={name} className="px-6 py-4 text-center font-black text-slate-950 dark:text-white">
+                      {name}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  { feature: 'Caisse POS',               starter: 'Complet',       business: 'Complet',      premium: 'Complet' },
+                  { feature: 'Ventes',                   starter: 'Illimitées',    business: 'Illimitées',   premium: 'Illimitées' },
+                  { feature: 'Employés',                 starter: '3',             business: '10',           premium: 'Illimités' },
+                  { feature: 'Reçus WhatsApp',           starter: 'Automatiques',  business: 'Automatiques', premium: 'API Business' },
+                  { feature: 'Boutique en ligne',        starter: '✓',             business: '✓',            premium: '✓' },
+                  { feature: 'Mode hors ligne',          starter: '✓',             business: '✓',            premium: '✓' },
+                  { feature: 'Rapports',                 starter: 'Basiques',      business: 'Avancés',      premium: 'Avancés' },
+                  { feature: 'Gestion fournisseurs',     starter: '—',             business: '✓',            premium: '✓' },
+                  { feature: 'Client Doit avancé',       starter: '—',             business: '✓',            premium: '✓' },
+                  { feature: 'QR Code boutique',         starter: '—',             business: '✓',            premium: '✓' },
+                  { feature: 'Parrainage',               starter: '—',             business: '✓',            premium: '✓' },
+                  { feature: 'Multi-boutiques',          starter: '—',             business: '—',            premium: '✓' },
+                  { feature: 'Raccourcis personnalisés', starter: '—',             business: '—',            premium: '✓' },
+                  { feature: 'Capital global',           starter: '—',             business: '—',            premium: '✓' },
+                  { feature: 'Support',                  starter: 'Standard',      business: 'Standard',     premium: 'Prioritaire' },
+                ].map(({ feature, starter, business, premium }, i) => (
+                  <tr key={feature} className={i % 2 === 0 ? 'bg-white dark:bg-slate-800' : 'bg-slate-50/60 dark:bg-slate-700/30'}>
+                    <td className="px-6 py-3.5 font-bold text-slate-700 dark:text-slate-300">{feature}</td>
+                    {[starter, business, premium].map((val, j) => (
+                      <td key={j} className={`px-6 py-3.5 text-center font-semibold ${
+                        val === '—' ? 'text-slate-300 dark:text-slate-600' :
+                        val === '✓' ? 'text-emerald-600' :
+                        'text-slate-700 dark:text-slate-300'
+                      }`}>
+                        {val}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </AppShell>
