@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabaseClient'
 import { ImageIcon, ReceiptText, ShoppingCart, Trash2, Zap } from 'lucide-react'
 import { playError, playSale } from '@/lib/sounds'
 import { savePendingSale } from '@/lib/offlineStore'
+import { formatPhone, sendReceipt } from '@/lib/whatsapp'
 import Link from 'next/link'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
@@ -27,6 +28,7 @@ export default function POSPage() {
   const barcodeInputRef = useRef<HTMLInputElement | null>(null)
   const [businessId, setBusinessId] = useState<string | null>(null)
   const [businessName, setBusinessName] = useState('CaissePro')
+  const [businessPhone, setBusinessPhone] = useState<string | null>(null)
   const [products, setProducts] = useState<Product[]>([])
   const [customers, setCustomers] = useState<any[]>([])
   const [cart, setCart] = useState<any[]>([])
@@ -66,7 +68,7 @@ export default function POSPage() {
 
       const { data: membership } = await supabase
         .from('business_members')
-        .select('business_id, businesses(name)')
+        .select('business_id, businesses(name, phone)')
         .eq('user_id', userData.user.id)
         .limit(1)
         .maybeSingle()
@@ -76,6 +78,7 @@ export default function POSPage() {
       const member: any = membership
       setBusinessId(member.business_id)
       setBusinessName(member?.businesses?.name || 'CaissePro')
+      setBusinessPhone(member?.businesses?.phone || null)
 
       const { data: productData } = await supabase.from('products').select('*').eq('business_id', member.business_id).not('is_active', 'is', false).not('archived', 'is', true).is('deleted_at', null)
       const { data: customerData } = await supabase.from('customers').select('id,full_name,phone').eq('business_id', member.business_id)
@@ -233,6 +236,35 @@ export default function POSPage() {
       setLastSaleId(saleData.id)
       flash('Vente enregistrée avec succès.')
       playSale()
+
+      // Auto-send WhatsApp receipt if customer has a phone
+      console.log('[POS] sale confirmed, customer phone:', customer?.phone, '| business phone:', businessPhone)
+      if (customer?.phone) {
+        const formattedPhone = formatPhone(customer.phone)
+        console.log('[POS] sending WhatsApp receipt to:', formattedPhone)
+        sendReceipt(
+          formattedPhone,
+          {
+            id: saleData.id,
+            total,
+            payment_method: paymentMethod,
+            items: saleItems.map((item) => ({
+              product_name: item.product_name || '',
+              quantity: item.quantity,
+              price: item.unit_price,
+              total: item.total,
+            })),
+            created_at: new Date().toISOString(),
+          },
+          { name: businessName, phone: businessPhone }
+        ).then(() => {
+          console.log('[POS] WhatsApp receipt sent successfully')
+        }).catch((err) => {
+          console.error('[POS] WhatsApp receipt error:', err)
+        })
+      } else {
+        console.log('[POS] no customer phone — skipping WhatsApp auto-send')
+      }
     } catch (err: any) {
       playError()
       setMessage(err?.message || 'Erreur lors du paiement')

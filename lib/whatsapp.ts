@@ -28,6 +28,14 @@ export interface OrderData {
   total: number
 }
 
+// Normalize any phone to +221XXXXXXXXX (Senegal default country code)
+export function formatPhone(raw: string): string {
+  const digits = String(raw).replace(/\D/g, '')
+  if (digits.startsWith('221')) return `+${digits}`
+  if (digits.length <= 9) return `+221${digits}`
+  return `+${digits}`
+}
+
 function cfa(amount: number): string {
   return `${amount.toLocaleString('fr-FR')} FCFA`
 }
@@ -44,20 +52,26 @@ function paymentLabel(method: string): string {
 }
 
 async function send(to: string, message: string): Promise<void> {
+  const phone = formatPhone(to)
+  console.log('[WhatsApp] send() called — to:', phone)
   try {
     const res = await fetch('/api/whatsapp/send', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ to, message }),
+      body: JSON.stringify({ to: phone, message }),
     })
     const data = await res.json()
+    console.log('[WhatsApp] send() response:', data)
     if (data.method === 'fallback' && data.url && typeof window !== 'undefined') {
+      console.log('[WhatsApp] opening wa.me fallback:', data.url)
       window.open(data.url, '_blank')
     }
-  } catch {
+  } catch (err) {
+    console.error('[WhatsApp] send() error:', err)
     if (typeof window !== 'undefined') {
-      const phone = String(to).replace(/\D/g, '')
-      window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank')
+      const fallbackUrl = `https://wa.me/${phone.replace('+', '')}?text=${encodeURIComponent(message)}`
+      console.log('[WhatsApp] catch fallback wa.me:', fallbackUrl)
+      window.open(fallbackUrl, '_blank')
     }
   }
 }

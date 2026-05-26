@@ -3,7 +3,7 @@
 import AppShell from '@/components/AppShell'
 import { savePendingSale } from '@/lib/offlineStore'
 import { supabase } from '@/lib/supabaseClient'
-import { sendReceipt } from '@/lib/whatsapp'
+import { formatPhone, sendReceipt } from '@/lib/whatsapp'
 import { CreditCard, MessageCircle, ReceiptText, ShoppingCart, UserPlus } from 'lucide-react'
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
@@ -270,10 +270,14 @@ export default function CheckoutPage() {
     setCompletedSaleId(saleData.id)
     setCheckoutLoading(false)
 
-    // Send WhatsApp receipt if customer has a phone number
-    if (selectedCustomer?.phone) {
+    // Auto-send WhatsApp receipt if customer has a phone number
+    const customerPhone = selectedCustomer?.phone
+    console.log('[Checkout] sale confirmed, customer phone:', customerPhone, '| business phone:', business?.phone)
+    if (customerPhone) {
+      const formattedPhone = formatPhone(customerPhone)
+      console.log('[Checkout] sending WhatsApp receipt to:', formattedPhone)
       sendReceipt(
-        selectedCustomer.phone,
+        formattedPhone,
         {
           id: saleData.id,
           total,
@@ -287,7 +291,13 @@ export default function CheckoutPage() {
           created_at: new Date().toISOString(),
         },
         { name: business?.name || 'CaissePro', phone: business?.phone }
-      ).catch(() => {})
+      ).then(() => {
+        console.log('[Checkout] WhatsApp receipt sent successfully')
+      }).catch((err) => {
+        console.error('[Checkout] WhatsApp receipt error:', err)
+      })
+    } else {
+      console.log('[Checkout] no customer phone — skipping WhatsApp auto-send')
     }
   }
 
