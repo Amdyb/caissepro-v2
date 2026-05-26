@@ -21,6 +21,7 @@ import {
   Receipt,
   ReceiptText,
   RotateCcw,
+  Scissors,
   Settings,
   Share2,
   ShoppingBag,
@@ -54,7 +55,39 @@ type SectionConfig = {
   items: { label: string; href: string; icon: any; tourId?: string }[]
 }
 
-const NAV_SECTIONS: SectionConfig[] = [
+const PROFILE_SECTION: SectionConfig = {
+  key: 'profil',
+  title: 'PROFIL & PARAMETRES',
+  borderColor: 'border-slate-400',
+  bgColor: 'bg-slate-100 dark:bg-slate-700',
+  textColor: 'text-slate-700 dark:text-slate-200',
+  headerColor: 'text-slate-500 dark:text-slate-400',
+  defaultOpen: false,
+  items: [
+    { label: 'Profil', href: '/profile', icon: User },
+    { label: 'Parametres', href: '/settings', icon: Settings },
+    { label: 'Modes de paiement', href: '/payment-methods', icon: CreditCard },
+    { label: 'Langue', href: '/language', icon: Globe },
+    { label: 'Mentions legales', href: '/legal', icon: FileText },
+    { label: 'Aide', href: '/help', icon: HelpCircle },
+  ],
+}
+
+const SECURITY_SECTION: SectionConfig = {
+  key: 'securite',
+  title: 'ZONE DE SECURITE',
+  borderColor: 'border-red-500',
+  bgColor: 'bg-red-50 dark:bg-red-900/30',
+  textColor: 'text-red-700 dark:text-red-400',
+  headerColor: 'text-red-600 dark:text-red-400',
+  defaultOpen: false,
+  items: [
+    { label: 'Reinitialiser produits', href: '/reset-products', icon: Trash2 },
+    { label: 'Supprimer boutique', href: '/delete-store', icon: AlertTriangle },
+  ],
+}
+
+const RETAIL_SECTIONS: SectionConfig[] = [
   {
     key: 'caisse',
     title: 'CAISSE',
@@ -81,9 +114,9 @@ const NAV_SECTIONS: SectionConfig[] = [
     items: [
       { label: 'Produits', href: '/products', icon: Package, tourId: 'tour-nav-products' },
       { label: 'Clients', href: '/customers', icon: Users },
-      { label: 'Employés', href: '/employees', icon: UserCog },
+      { label: 'Employes', href: '/employees', icon: UserCog },
       { label: 'Fournisseurs', href: '/suppliers', icon: Truck },
-      { label: 'Catégories', href: '/categories', icon: Tag },
+      { label: 'Categories', href: '/categories', icon: Tag },
     ],
   },
   {
@@ -111,41 +144,217 @@ const NAV_SECTIONS: SectionConfig[] = [
     defaultOpen: false,
     items: [
       { label: 'Rapports', href: '/reports', icon: TrendingUp },
-      { label: 'Dépenses', href: '/expenses', icon: Receipt },
+      { label: 'Depenses', href: '/expenses', icon: Receipt },
       { label: 'Finances', href: '/finances', icon: DollarSign },
     ],
   },
-  {
-    key: 'profil',
-    title: 'PROFIL & PARAMÈTRES',
-    borderColor: 'border-slate-400',
-    bgColor: 'bg-slate-100 dark:bg-slate-700',
-    textColor: 'text-slate-700 dark:text-slate-200',
-    headerColor: 'text-slate-500 dark:text-slate-400',
-    defaultOpen: false,
-    items: [
-      { label: 'Profil', href: '/profile', icon: User },
-      { label: 'Paramètres', href: '/settings', icon: Settings },
-      { label: 'Modes de paiement', href: '/payment-methods', icon: CreditCard },
-      { label: 'Langue', href: '/language', icon: Globe },
-      { label: 'Mentions légales', href: '/legal', icon: FileText },
-      { label: 'Aide', href: '/help', icon: HelpCircle },
-    ],
-  },
-  {
-    key: 'securite',
-    title: 'ZONE DE SÉCURITÉ',
-    borderColor: 'border-red-500',
-    bgColor: 'bg-red-50 dark:bg-red-900/30',
-    textColor: 'text-red-700 dark:text-red-400',
-    headerColor: 'text-red-600 dark:text-red-400',
-    defaultOpen: false,
-    items: [
-      { label: 'Réinitialiser produits', href: '/reset-products', icon: Trash2 },
-      { label: 'Supprimer boutique', href: '/delete-store', icon: AlertTriangle },
-    ],
-  },
 ]
+
+function getNavSections(businessType: string): SectionConfig[] {
+  let typeSections: SectionConfig[]
+
+  switch (businessType) {
+    case 'restaurant':
+      typeSections = [
+        {
+          key: 'restaurant',
+          title: 'RESTAURANT',
+          borderColor: 'border-orange-500',
+          bgColor: 'bg-orange-50 dark:bg-orange-900/30',
+          textColor: 'text-orange-700 dark:text-orange-400',
+          headerColor: 'text-orange-600 dark:text-orange-400',
+          defaultOpen: true,
+          items: [
+            { label: 'Caisse', href: '/pos', icon: ShoppingCart },
+            { label: 'Commandes', href: '/orders', icon: ShoppingBag },
+            { label: 'Produits/Menu', href: '/products', icon: Package },
+            { label: 'Clients', href: '/customers', icon: Users },
+            { label: 'Depenses', href: '/expenses', icon: Receipt },
+            { label: 'Rapports', href: '/reports', icon: TrendingUp },
+          ],
+        },
+      ]
+      break
+
+    case 'beauty':
+      typeSections = [
+        {
+          key: 'beauty',
+          title: 'SALON & BEAUTE',
+          borderColor: 'border-pink-500',
+          bgColor: 'bg-pink-50 dark:bg-pink-900/30',
+          textColor: 'text-pink-700 dark:text-pink-400',
+          headerColor: 'text-pink-600 dark:text-pink-400',
+          defaultOpen: true,
+          items: [
+            { label: 'Caisse', href: '/pos', icon: ShoppingCart },
+            { label: 'Services', href: '/products', icon: Scissors },
+            { label: 'Clients', href: '/customers', icon: Users },
+            { label: 'Employes', href: '/employees', icon: UserCog },
+            { label: 'Depenses', href: '/expenses', icon: Receipt },
+            { label: 'Rapports', href: '/reports', icon: TrendingUp },
+          ],
+        },
+      ]
+      break
+
+    case 'pharmacy':
+      typeSections = [
+        {
+          key: 'pharmacy',
+          title: 'PHARMACIE',
+          borderColor: 'border-blue-500',
+          bgColor: 'bg-blue-50 dark:bg-blue-900/30',
+          textColor: 'text-blue-700 dark:text-blue-400',
+          headerColor: 'text-blue-600 dark:text-blue-400',
+          defaultOpen: true,
+          items: [
+            { label: 'Caisse', href: '/pos', icon: ShoppingCart },
+            { label: 'Medicaments', href: '/products', icon: Package },
+            { label: 'Stock critique', href: '/products', icon: AlertTriangle },
+            { label: 'Fournisseurs', href: '/suppliers', icon: Truck },
+            { label: 'Depenses', href: '/expenses', icon: Receipt },
+            { label: 'Rapports', href: '/reports', icon: TrendingUp },
+          ],
+        },
+      ]
+      break
+
+    case 'garage':
+      typeSections = [
+        {
+          key: 'garage',
+          title: 'GARAGE & AUTO',
+          borderColor: 'border-slate-500',
+          bgColor: 'bg-slate-100 dark:bg-slate-700',
+          textColor: 'text-slate-700 dark:text-slate-300',
+          headerColor: 'text-slate-600 dark:text-slate-400',
+          defaultOpen: true,
+          items: [
+            { label: 'Caisse', href: '/pos', icon: ShoppingCart },
+            { label: 'Pieces detachees', href: '/products', icon: Package },
+            { label: 'Clients', href: '/customers', icon: Users },
+            { label: 'Fournisseurs', href: '/suppliers', icon: Truck },
+            { label: 'Depenses', href: '/expenses', icon: Receipt },
+            { label: 'Rapports', href: '/reports', icon: TrendingUp },
+          ],
+        },
+      ]
+      break
+
+    case 'btp':
+      typeSections = [
+        {
+          key: 'btp',
+          title: 'BTP & SERVICES',
+          borderColor: 'border-yellow-500',
+          bgColor: 'bg-yellow-50 dark:bg-yellow-900/30',
+          textColor: 'text-yellow-700 dark:text-yellow-400',
+          headerColor: 'text-yellow-600 dark:text-yellow-400',
+          defaultOpen: true,
+          items: [
+            { label: 'Caisse', href: '/pos', icon: ShoppingCart },
+            { label: 'Produits & Materiaux', href: '/products', icon: Package },
+            { label: 'Clients', href: '/customers', icon: Users },
+            { label: 'Fournisseurs', href: '/suppliers', icon: Truck },
+            { label: 'Depenses', href: '/expenses', icon: Receipt },
+            { label: 'Rapports', href: '/reports', icon: TrendingUp },
+          ],
+        },
+      ]
+      break
+
+    case 'tontine':
+      typeSections = [
+        {
+          key: 'tontine',
+          title: 'TONTINE',
+          borderColor: 'border-violet-500',
+          bgColor: 'bg-violet-50 dark:bg-violet-900/30',
+          textColor: 'text-violet-700 dark:text-violet-400',
+          headerColor: 'text-violet-600 dark:text-violet-400',
+          defaultOpen: true,
+          items: [
+            { label: 'Tontines', href: '/tontines', icon: Users },
+            { label: 'Membres', href: '/employees', icon: UserCog },
+            { label: 'Historique', href: '/activity', icon: ReceiptText },
+            { label: 'Depenses', href: '/expenses', icon: Receipt },
+            { label: 'Rapports', href: '/reports', icon: TrendingUp },
+          ],
+        },
+      ]
+      break
+
+    case 'rental':
+      typeSections = [
+        {
+          key: 'rental',
+          title: 'LOCATION & IMMOBILIER',
+          borderColor: 'border-emerald-500',
+          bgColor: 'bg-emerald-50 dark:bg-emerald-900/30',
+          textColor: 'text-emerald-700 dark:text-emerald-400',
+          headerColor: 'text-emerald-600 dark:text-emerald-400',
+          defaultOpen: true,
+          items: [
+            { label: 'Proprietes', href: '/real-estate', icon: Store },
+            { label: 'Locataires', href: '/customers', icon: Users },
+            { label: 'Depenses', href: '/expenses', icon: Receipt },
+            { label: 'Rapports', href: '/reports', icon: TrendingUp },
+          ],
+        },
+      ]
+      break
+
+    case 'wholesale':
+      typeSections = [
+        {
+          key: 'wholesale',
+          title: 'GROSSISTE',
+          borderColor: 'border-teal-500',
+          bgColor: 'bg-teal-50 dark:bg-teal-900/30',
+          textColor: 'text-teal-700 dark:text-teal-400',
+          headerColor: 'text-teal-600 dark:text-teal-400',
+          defaultOpen: true,
+          items: [
+            { label: 'Caisse', href: '/pos', icon: ShoppingCart },
+            { label: 'Stock', href: '/products', icon: Package },
+            { label: 'Commandes', href: '/orders', icon: ShoppingBag },
+            { label: 'Clients revendeurs', href: '/customers', icon: Users },
+            { label: 'Fournisseurs', href: '/suppliers', icon: Truck },
+            { label: 'Rapports', href: '/reports', icon: TrendingUp },
+          ],
+        },
+      ]
+      break
+
+    case 'laundry':
+      typeSections = [
+        {
+          key: 'laundry',
+          title: 'LAVERIE & PRESSING',
+          borderColor: 'border-cyan-500',
+          bgColor: 'bg-cyan-50 dark:bg-cyan-900/30',
+          textColor: 'text-cyan-700 dark:text-cyan-400',
+          headerColor: 'text-cyan-600 dark:text-cyan-400',
+          defaultOpen: true,
+          items: [
+            { label: 'Caisse', href: '/pos', icon: ShoppingCart },
+            { label: 'Tarifs', href: '/products', icon: Package },
+            { label: 'Clients', href: '/customers', icon: Users },
+            { label: 'Depenses', href: '/expenses', icon: Receipt },
+            { label: 'Rapports', href: '/reports', icon: TrendingUp },
+          ],
+        },
+      ]
+      break
+
+    default:
+      typeSections = RETAIL_SECTIONS
+      break
+  }
+
+  return [...typeSections, PROFILE_SECTION, SECURITY_SECTION]
+}
 
 const BOTTOM_NAV = [
   { label: 'Accueil', href: '/dashboard', icon: LayoutDashboard },
@@ -160,11 +369,10 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [businessName, setBusinessName] = useState('CaissePro')
   const [businessLogo, setBusinessLogo] = useState<string | null>(null)
+  const [businessType, setBusinessType] = useState('retail')
   const [ready, setReady] = useState(false)
   const [subscription, setSubscription] = useState<{ plan: string; expires_at: string | null } | null>(null)
-  const [openSections, setOpenSections] = useState<Record<string, boolean>>(
-    Object.fromEntries(NAV_SECTIONS.map((s) => [s.key, s.defaultOpen ?? false]))
-  )
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
     async function loadBranding() {
@@ -173,7 +381,7 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
 
       const { data: membership } = await supabase
         .from('business_members')
-        .select('business_id, businesses(name, logo_url)')
+        .select('business_id, businesses(name, logo_url, business_type)')
         .eq('user_id', userData.user.id)
         .limit(1)
         .maybeSingle()
@@ -182,6 +390,7 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
       if (member?.businesses) {
         setBusinessName(member.businesses.name || 'CaissePro')
         setBusinessLogo(member.businesses.logo_url || null)
+        setBusinessType(member.businesses.business_type || 'retail')
       }
 
       if (member?.business_id) {
@@ -218,6 +427,8 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
     )
   }
 
+  const navSections = getNavSections(businessType)
+
   const sidebarContent = (
     <div className="flex h-full flex-col">
       {/* Business header */}
@@ -229,7 +440,7 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
         </div>
         <div className="min-w-0">
           <h1 className="truncate text-lg font-black text-slate-950 dark:text-white">{businessName}</h1>
-          <p className="text-xs font-bold text-slate-400 dark:text-slate-500">Propulsé par CaissePro</p>
+          <p className="text-xs font-bold text-slate-400 dark:text-slate-500">Propulse par CaissePro</p>
         </div>
       </div>
 
@@ -261,7 +472,7 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
                 </p>
                 {isActive && days !== null && (
                   <p className={`text-[10px] font-bold ${txt[color]}`}>
-                    {days > 0 ? `${days} jours restants` : 'Expiré'}
+                    {days > 0 ? `${days} jours restants` : 'Expire'}
                   </p>
                 )}
               </div>
@@ -304,8 +515,8 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
 
       {/* Collapsible sections */}
       <nav className="flex-1 space-y-2 overflow-y-auto px-4 py-3">
-        {NAV_SECTIONS.map((section) => {
-          const isOpen = openSections[section.key]
+        {navSections.map((section) => {
+          const isOpen = openSections[section.key] ?? (section.defaultOpen ?? false)
           const itemHeight = 48
 
           return (
@@ -335,7 +546,7 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
 
                     return (
                       <Link
-                        key={item.href}
+                        key={`${section.key}-${item.href}-${item.label}`}
                         href={item.href}
                         id={item.tourId}
                         onClick={() => setMobileMenuOpen(false)}
@@ -363,7 +574,7 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
           onClick={logout}
           className="w-full rounded-2xl bg-slate-950 px-4 py-3 text-sm font-black text-white transition hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600"
         >
-          Déconnexion
+          Deconnexion
         </button>
       </div>
     </div>
@@ -428,7 +639,7 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
             <div className="flex gap-4 text-xs font-bold text-slate-400 dark:text-slate-500">
               <Link href="/help" className="hover:text-slate-700 dark:hover:text-slate-300">Aide</Link>
               <span>·</span>
-              <Link href="/legal" className="hover:text-slate-700 dark:hover:text-slate-300">Mentions légales</Link>
+              <Link href="/legal" className="hover:text-slate-700 dark:hover:text-slate-300">Mentions legales</Link>
               <span>·</span>
               <Link href="/feedback" className="hover:text-slate-700 dark:hover:text-slate-300">Feedback</Link>
             </div>

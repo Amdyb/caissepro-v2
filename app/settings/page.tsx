@@ -22,13 +22,14 @@ import { supabase } from '@/lib/supabaseClient'
 const businessTypes = [
   { value: 'retail', label: 'Commerce & Boutique' },
   { value: 'restaurant', label: 'Restaurant & Fast Food' },
-  { value: 'laundry', label: 'Blanchisserie & Pressing' },
   { value: 'beauty', label: 'Salon & Beauté' },
+  { value: 'pharmacy', label: 'Pharmacie' },
+  { value: 'garage', label: 'Garage & Auto' },
+  { value: 'btp', label: 'BTP & Services' },
   { value: 'tontine', label: 'Tontine & Épargne' },
-  { value: 'services', label: 'Services' },
-  { value: 'grocery', label: 'Épicerie & Alimentation' },
-  { value: 'electronics', label: 'Électronique' },
-  { value: 'fashion', label: 'Mode & Accessoires' }
+  { value: 'rental', label: 'Location & Immobilier' },
+  { value: 'wholesale', label: 'Grossiste' },
+  { value: 'laundry', label: 'Laverie & Pressing' },
 ]
 
 function slugify(value: string) {

@@ -1,11 +1,36 @@
 'use client'
 
 import AppShell from '@/components/AppShell'
-import FreePlanAd from '@/components/FreePlanAd'
 import { getBusinessTemplate } from '@/lib/businessTemplates'
 import { getDashboardCards } from '@/lib/dashboardCards'
 import { supabase } from '@/lib/supabaseClient'
-import { ArrowRight, Bell, CalendarDays, CreditCard, Sparkles, Store } from 'lucide-react'
+import {
+  ArrowRight,
+  Bell,
+  CalendarDays,
+  Check,
+  CreditCard,
+  DollarSign,
+  Globe,
+  Package,
+  Plus,
+  Receipt,
+  ReceiptText,
+  RotateCcw,
+  Settings,
+  ShoppingBag,
+  ShoppingCart,
+  Sparkles,
+  Store,
+  Tag,
+  TrendingUp,
+  Truck,
+  User,
+  UserCog,
+  Users,
+  Wallet,
+  X,
+} from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
@@ -20,7 +45,35 @@ type BusinessInfo = {
   logo_url?: string | null
   business_type?: string | null
   onboarding_completed?: boolean | null
+  slug?: string | null
 }
+
+type MenuItem = {
+  label: string
+  href: string
+  icon: any
+  breadcrumb: string
+}
+
+const ALL_MENU_ITEMS: MenuItem[] = [
+  { label: 'Vendre', href: '/pos', icon: ShoppingCart, breadcrumb: 'Caisse' },
+  { label: 'Historique des ventes', href: '/sales', icon: ReceiptText, breadcrumb: 'Caisse' },
+  { label: 'Remboursements', href: '/refunds', icon: RotateCcw, breadcrumb: 'Caisse' },
+  { label: 'Caisse du jour', href: '/register-shifts', icon: Wallet, breadcrumb: 'Caisse' },
+  { label: 'Produits', href: '/products', icon: Package, breadcrumb: 'Gestion' },
+  { label: 'Clients', href: '/customers', icon: Users, breadcrumb: 'Gestion' },
+  { label: 'Employes', href: '/employees', icon: UserCog, breadcrumb: 'Gestion' },
+  { label: 'Fournisseurs', href: '/suppliers', icon: Truck, breadcrumb: 'Gestion' },
+  { label: 'Categories', href: '/categories', icon: Tag, breadcrumb: 'Gestion' },
+  { label: 'Depenses', href: '/expenses', icon: Receipt, breadcrumb: 'Rapports' },
+  { label: 'Finances', href: '/finances', icon: DollarSign, breadcrumb: 'Rapports' },
+  { label: 'Rapports', href: '/reports', icon: TrendingUp, breadcrumb: 'Rapports' },
+  { label: 'Ma boutique en ligne', href: '/storefront', icon: Globe, breadcrumb: 'Boutique' },
+  { label: 'Commandes clients', href: '/orders', icon: ShoppingBag, breadcrumb: 'Boutique' },
+  { label: 'Modes de paiement', href: '/payment-methods', icon: CreditCard, breadcrumb: 'Parametres' },
+  { label: 'Parametres', href: '/settings', icon: Settings, breadcrumb: 'Parametres' },
+  { label: 'Profil', href: '/profile', icon: User, breadcrumb: 'Parametres' },
+]
 
 function cfa(value: number) {
   return `${value.toLocaleString('fr-FR')} CFA`
@@ -48,6 +101,14 @@ export default function DashboardPage() {
   const [weekTotal, setWeekTotal] = useState(0)
   const [totalDebt, setTotalDebt] = useState(0)
   const [lowStockCount, setLowStockCount] = useState(0)
+  const [userId, setUserId] = useState<string | null>(null)
+  const [referralCount, setReferralCount] = useState(0)
+  const [rewardCount, setRewardCount] = useState(0)
+  const [copyDone, setCopyDone] = useState(false)
+
+  // Raccourcis state
+  const [shortcutSearch, setShortcutSearch] = useState('')
+  const [pinnedSlugs, setPinnedSlugs] = useState<string[]>([])
 
   useEffect(() => {
     async function init() {
@@ -57,6 +118,8 @@ export default function DashboardPage() {
         router.push('/login')
         return
       }
+
+      setUserId(userData.user.id)
 
       const { data: memberships, error } = await supabase
         .from('business_members')
@@ -68,14 +131,12 @@ export default function DashboardPage() {
         return
       }
 
-      // Prioritize owner > admin over other roles
       const sorted = (memberships as any[]).sort((a, b) => {
         const p: Record<string, number> = { owner: 0, admin: 1 }
         return (p[a.role] ?? 2) - (p[b.role] ?? 2)
       })
 
       const member: any = sorted[0]
-      // Supabase may return the joined row as an array or object depending on FK cardinality
       const businessData = (Array.isArray(member.businesses) ? member.businesses[0] : member.businesses) as BusinessInfo
 
       if (!businessData?.onboarding_completed) {
@@ -98,7 +159,8 @@ export default function DashboardPage() {
         weekSalesResult,
         productsResult,
         debtsResult,
-        subscriptionResult
+        subscriptionResult,
+        referralsResult
       ] = await Promise.all([
         supabase
           .from('sales')
@@ -131,7 +193,12 @@ export default function DashboardPage() {
           .eq('status', 'active')
           .order('created_at', { ascending: false })
           .limit(1)
-          .maybeSingle()
+          .maybeSingle(),
+
+        supabase
+          .from('referrals')
+          .select('id,reward_granted')
+          .eq('referrer_business_id', businessId)
       ])
 
       const todayAmount = (todaySalesResult.data || []).reduce(
@@ -153,6 +220,10 @@ export default function DashboardPage() {
         (product: any) => product.stock !== null && Number(product.stock) <= 5
       )
 
+      const refs = referralsResult.data || []
+      setReferralCount(refs.length)
+      setRewardCount(refs.filter((r: any) => r.reward_granted).length)
+
       setTodayTotal(todayAmount)
       setWeekTotal(weekAmount)
       setTotalDebt(debtAmount)
@@ -167,6 +238,32 @@ export default function DashboardPage() {
 
     init()
   }, [router])
+
+  // Load pinned shortcuts from localStorage once userId is known
+  useEffect(() => {
+    if (!userId) return
+    try {
+      const stored = localStorage.getItem(`caissepro_shortcuts_${userId}`)
+      if (stored) setPinnedSlugs(JSON.parse(stored))
+    } catch {
+      // ignore
+    }
+  }, [userId])
+
+  function savePinned(slugs: string[]) {
+    if (!userId) return
+    setPinnedSlugs(slugs)
+    localStorage.setItem(`caissepro_shortcuts_${userId}`, JSON.stringify(slugs))
+  }
+
+  function pinItem(href: string) {
+    if (pinnedSlugs.includes(href)) return
+    savePinned([...pinnedSlugs, href])
+  }
+
+  function unpinItem(href: string) {
+    savePinned(pinnedSlugs.filter((s) => s !== href))
+  }
 
   const template = getBusinessTemplate(businessType)
   const cards = getDashboardCards(businessType)
@@ -186,8 +283,30 @@ export default function DashboardPage() {
         ? '/properties'
         : '/pos'
 
+  const referralUrl = `https://caissepro.app/register?ref=${business?.slug || ''}`
+
+  function handleCopy() {
+    navigator.clipboard.writeText(referralUrl)
+    setCopyDone(true)
+    setTimeout(() => setCopyDone(false), 2000)
+  }
+
+  function handleWhatsApp() {
+    const text = `Rejoignez CaissePro et gerez votre commerce facilement ! Utilisez mon lien : ${referralUrl}`
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank')
+  }
+
+  const filteredMenuItems = shortcutSearch.trim()
+    ? ALL_MENU_ITEMS.filter((item) =>
+        item.label.toLowerCase().includes(shortcutSearch.toLowerCase()) ||
+        item.breadcrumb.toLowerCase().includes(shortcutSearch.toLowerCase())
+      )
+    : []
+
+  const pinnedItems = ALL_MENU_ITEMS.filter((item) => pinnedSlugs.includes(item.href))
+
   return (
-    <AppShell title="Tableau de bord" subtitle={business?.name ? `Bienvenue sur ${business.name}` : 'Vue d\'ensemble de votre activité'}>
+    <AppShell title="Tableau de bord" subtitle={business?.name ? `Bienvenue sur ${business.name}` : "Vue d'ensemble de votre activite"}>
       <div className="mx-auto max-w-[1600px]">
         {message && (
           <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-bold text-red-700">
@@ -195,6 +314,7 @@ export default function DashboardPage() {
           </div>
         )}
 
+        {/* 1. Hero banner */}
         <section className="relative overflow-hidden rounded-[2.5rem] border border-slate-200 bg-slate-950 shadow-2xl">
           <div
             className="absolute inset-0 bg-cover bg-center opacity-40"
@@ -226,7 +346,7 @@ export default function DashboardPage() {
                   </h1>
 
                   <p className="mt-2 max-w-2xl text-xs font-semibold leading-relaxed text-white/70 md:text-base">
-                    {business?.slogan || 'Pilotez votre activité avec une vue claire sur vos ventes, votre stock et vos performances.'}
+                    {business?.slogan || 'Pilotez votre activite avec une vue claire sur vos ventes, votre stock et vos performances.'}
                   </p>
                 </div>
               </div>
@@ -246,7 +366,7 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        {/* Subscription status card */}
+        {/* 2. Subscription status card */}
         {(() => {
           const isPaid = plan && plan !== 'free'
           const days = expiresAt ? Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 86400000) : null
@@ -261,9 +381,9 @@ export default function DashboardPage() {
                 <div>
                   <p className={`text-sm font-black uppercase tracking-wide ${txt[color]}`}>Plan {isPaid ? plan : 'Gratuit'}</p>
                   {isPaid && days !== null && (
-                    <p className={`text-xs font-bold ${sub[color]}`}>{days > 0 ? `${days} jours restants` : 'Abonnement expiré'}</p>
+                    <p className={`text-xs font-bold ${sub[color]}`}>{days > 0 ? `${days} jours restants` : 'Abonnement expire'}</p>
                   )}
-                  {!isPaid && <p className={`text-xs font-bold ${sub[color]}`}>Passez à un plan payant pour débloquer toutes les fonctionnalités</p>}
+                  {!isPaid && <p className={`text-xs font-bold ${sub[color]}`}>Passez a un plan payant pour debloquer toutes les fonctionnalites</p>}
                 </div>
               </div>
               <Link href="/upgrade" className="rounded-2xl bg-emerald-600 px-4 py-2 text-xs font-black text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700">
@@ -273,11 +393,115 @@ export default function DashboardPage() {
           )
         })()}
 
+        {/* 3. Parrainage card */}
+        <div className="mt-4 rounded-[2rem] border border-violet-200 bg-violet-50 p-5 shadow-sm dark:border-violet-800 dark:bg-violet-900/20">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-black uppercase tracking-wide text-violet-700 dark:text-violet-400">Parrainage</p>
+              <p className="mt-0.5 text-xs font-bold text-violet-500 dark:text-violet-500">
+                {referralCount} filleul{referralCount !== 1 ? 's' : ''} &bull; {rewardCount} mois offert{rewardCount !== 1 ? 's' : ''}
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-3 flex items-center gap-2 rounded-2xl border border-violet-200 bg-white px-3 py-2.5 dark:border-violet-700 dark:bg-slate-800">
+            <span className="flex-1 truncate text-xs font-bold text-slate-600 dark:text-slate-300">{referralUrl}</span>
+            <button
+              onClick={handleCopy}
+              className="flex shrink-0 items-center gap-1.5 rounded-xl bg-violet-600 px-3 py-1.5 text-xs font-black text-white transition hover:bg-violet-700"
+            >
+              {copyDone ? <Check size={13} /> : null}
+              {copyDone ? 'Copie !' : 'Copier'}
+            </button>
+          </div>
+
+          <button
+            onClick={handleWhatsApp}
+            className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl bg-green-500 py-3 text-sm font-black text-white shadow-lg shadow-green-500/20 transition hover:bg-green-600"
+          >
+            Partager sur WhatsApp
+          </button>
+        </div>
+
+        {/* 4. Raccourcis section */}
+        <div className="mt-4 rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+          <p className="mb-3 text-sm font-black uppercase tracking-wide text-slate-700 dark:text-slate-200">Raccourcis</p>
+
+          <input
+            type="text"
+            placeholder="Rechercher une fonctionnalite..."
+            value={shortcutSearch}
+            onChange={(e) => setShortcutSearch(e.target.value)}
+            className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm font-semibold outline-none focus:border-emerald-600 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder-slate-400"
+          />
+
+          {filteredMenuItems.length > 0 && (
+            <ul className="mt-2 space-y-1">
+              {filteredMenuItems.map((item) => {
+                const Icon = item.icon
+                const isPinned = pinnedSlugs.includes(item.href)
+                return (
+                  <li
+                    key={item.href}
+                    className="flex items-center justify-between rounded-2xl border border-slate-100 bg-slate-50 px-4 py-2.5 dark:border-slate-700 dark:bg-slate-700"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Icon size={16} className="shrink-0 text-slate-500 dark:text-slate-400" />
+                      <div>
+                        <p className="text-sm font-bold text-slate-800 dark:text-white">{item.label}</p>
+                        <p className="text-[10px] font-semibold text-slate-400">{item.breadcrumb}</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => (isPinned ? unpinItem(item.href) : pinItem(item.href))}
+                      className={`rounded-xl p-1.5 transition ${isPinned ? 'bg-emerald-100 text-emerald-600 hover:bg-red-100 hover:text-red-600 dark:bg-emerald-900/40' : 'bg-slate-200 text-slate-500 hover:bg-emerald-100 hover:text-emerald-600 dark:bg-slate-600'}`}
+                    >
+                      {isPinned ? <Check size={14} /> : <Plus size={14} />}
+                    </button>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+
+          {pinnedItems.length > 0 && (
+            <div className="mt-4 grid grid-cols-3 gap-2 sm:grid-cols-4 xl:grid-cols-6">
+              {pinnedItems.map((item) => {
+                const Icon = item.icon
+                return (
+                  <div
+                    key={item.href}
+                    className="relative flex flex-col items-center gap-2 rounded-2xl border border-slate-100 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-700"
+                  >
+                    <button
+                      onClick={() => unpinItem(item.href)}
+                      className="absolute right-1.5 top-1.5 rounded-full bg-slate-200 p-0.5 text-slate-400 hover:bg-red-100 hover:text-red-600 dark:bg-slate-600"
+                    >
+                      <X size={10} />
+                    </button>
+                    <Link href={item.href} className="flex flex-col items-center gap-2 pt-1">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400">
+                        <Icon size={18} />
+                      </div>
+                      <span className="text-center text-[10px] font-bold leading-tight text-slate-700 dark:text-slate-200">{item.label}</span>
+                    </Link>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+
+          {pinnedItems.length === 0 && !shortcutSearch && (
+            <p className="mt-3 text-center text-xs font-semibold text-slate-400">Recherchez une fonctionnalite et epinglez-la ici pour y acceder rapidement.</p>
+          )}
+        </div>
+
+        {/* 5. Stats cards */}
         <div id="tour-stats" className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <Link href="/sales" className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-xl dark:border-slate-700 dark:bg-slate-800">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">Ventes aujourd’hui</p>
+                <p className="text-xs font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">Ventes aujourd'hui</p>
                 <p className="mt-2 text-3xl font-black text-slate-950 dark:text-white">{cfa(todayTotal)}</p>
               </div>
               <CalendarDays className="text-emerald-600" size={24} />
@@ -307,7 +531,7 @@ export default function DashboardPage() {
           <Link href="/debts" className="rounded-[2rem] border border-red-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-xl dark:border-red-900 dark:bg-slate-800">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">Paiements à récupérer</p>
+                <p className="text-xs font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">Paiements a recuperer</p>
                 <p className="mt-2 text-3xl font-black text-red-600">{cfa(totalDebt)}</p>
               </div>
               <CreditCard className="text-red-500" size={24} />

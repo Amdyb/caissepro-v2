@@ -1,8 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useEffect, useState, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 
 
@@ -18,8 +18,9 @@ const BUSINESS_TYPES = [
   { value: 'tontine', label: 'Tontine & Épargne' },
 ]
 
-export default function RegisterPage() {
+function RegisterForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [fullName, setFullName] = useState('')
   const [businessName, setBusinessName] = useState('')
   const [businessType, setBusinessType] = useState('retail')
@@ -70,7 +71,7 @@ export default function RegisterPage() {
     }
   }
 
-  async function createBusinessAndMembership(userId: string) {
+  async function createBusinessAndMembership(userId: string): Promise<string | null> {
     const { data: existingMembership } = await supabase
       .from('business_members')
       .select('business_id')
@@ -78,7 +79,7 @@ export default function RegisterPage() {
       .limit(1)
       .maybeSingle()
 
-    if (existingMembership) return
+    if (existingMembership) return null
 
     const safeSlug = businessName
       .toLowerCase()
@@ -102,7 +103,7 @@ export default function RegisterPage() {
       .limit(1)
 
     const business = businessRows?.[0]
-    if (businessError || !business) throw new Error(businessError?.message || 'Impossible de créer le commerce.')
+    if (businessError || !business) throw new Error(businessError?.message || 'Impossible de creer le commerce.')
 
     const { error: memberError } = await supabase
       .from('business_members')
@@ -117,6 +118,8 @@ export default function RegisterPage() {
       })
 
     if (memberError) throw new Error(memberError.message)
+
+    return business.id
   }
 
   async function handleRegister(e: React.FormEvent) {
@@ -146,9 +149,22 @@ export default function RegisterPage() {
         user = loginData.user
       }
 
-      if (!user) throw new Error('Compte créé mais connexion impossible.')
+      if (!user) throw new Error('Compte cree mais connexion impossible.')
 
-      await createBusinessAndMembership(user.id)
+      const newBusinessId = await createBusinessAndMembership(user.id)
+
+      const ref = searchParams.get('ref')
+      if (ref && newBusinessId) {
+        const { data: referrer } = await supabase.from('businesses').select('id').eq('slug', ref).maybeSingle()
+        if (referrer) {
+          await supabase.from('referrals').insert({
+            referrer_business_id: referrer.id,
+            referred_business_id: newBusinessId,
+            status: 'pending'
+          })
+        }
+      }
+
       router.push('/welcome')
     } catch (err: any) {
       setError(err.message || 'Erreur pendant la création du compte.')
@@ -302,5 +318,17 @@ export default function RegisterPage() {
         </div>
       </div>
     </main>
+  )
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={
+      <main className="flex min-h-screen items-center justify-center bg-slate-50">
+        <p className="font-bold text-slate-500">Chargement...</p>
+      </main>
+    }>
+      <RegisterForm />
+    </Suspense>
   )
 }
