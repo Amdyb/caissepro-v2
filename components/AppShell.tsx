@@ -57,6 +57,29 @@ type SectionConfig = {
   items: { label: string; href: string; icon: any; tourId?: string }[]
 }
 
+const STAFF_ROLES = ['sales', 'staff', 'employee', 'cashier']
+
+const STAFF_ALLOWED_PATHS = [
+  '/dashboard', '/pos', '/checkout', '/products',
+  '/register-shifts', '/expenses', '/profile', '/change-password', '/sales',
+]
+
+const STAFF_SECTION: SectionConfig = {
+  key: 'staff',
+  title: 'CAISSE',
+  borderColor: 'border-emerald-500',
+  bgColor: 'bg-emerald-50 dark:bg-emerald-900/30',
+  textColor: 'text-emerald-700 dark:text-emerald-400',
+  headerColor: 'text-emerald-600 dark:text-emerald-400',
+  defaultOpen: true,
+  items: [
+    { label: 'Vendre', href: '/pos', icon: ShoppingCart },
+    { label: 'Produits', href: '/products', icon: Package },
+    { label: 'Caisse du jour', href: '/register-shifts', icon: Wallet },
+    { label: 'Depenses', href: '/expenses', icon: Receipt },
+  ],
+}
+
 const PROFILE_SECTION: SectionConfig = {
   key: 'profil',
   title: 'PROFIL & PARAMETRES',
@@ -373,6 +396,7 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
   const [businessName, setBusinessName] = useState('CaissePro')
   const [businessLogo, setBusinessLogo] = useState<string | null>(null)
   const [businessType, setBusinessType] = useState('retail')
+  const [userRole, setUserRole] = useState('owner')
   const [ready, setReady] = useState(false)
   const [subscription, setSubscription] = useState<{ plan: string; expires_at: string | null } | null>(null)
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({})
@@ -384,7 +408,7 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
 
       const { data: membership } = await supabase
         .from('business_members')
-        .select('business_id, businesses(name, logo_url, business_type)')
+        .select('business_id, role, businesses(name, logo_url, business_type)')
         .eq('user_id', userData.user.id)
         .limit(1)
         .maybeSingle()
@@ -395,6 +419,7 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
         setBusinessLogo(member.businesses.logo_url || null)
         setBusinessType(member.businesses.business_type || 'retail')
       }
+      setUserRole(member?.role || 'owner')
 
       if (member?.business_id) {
         const { data: sub } = await supabase
@@ -417,6 +442,16 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
     }
   }, [])
 
+  // Block staff from restricted pages
+  useEffect(() => {
+    if (!ready) return
+    if (!STAFF_ROLES.includes(userRole)) return
+    const allowed = STAFF_ALLOWED_PATHS.some(
+      (p) => pathname === p || pathname.startsWith(p + '/')
+    )
+    if (!allowed) router.replace('/dashboard')
+  }, [ready, userRole, pathname, router])
+
   function toggleSection(key: string) {
     setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }))
   }
@@ -434,7 +469,8 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
     )
   }
 
-  const navSections = getNavSections(businessType)
+  const isStaff = STAFF_ROLES.includes(userRole)
+  const navSections = isStaff ? [STAFF_SECTION] : getNavSections(businessType)
 
   const sidebarContent = (
     <div className="flex h-full flex-col">

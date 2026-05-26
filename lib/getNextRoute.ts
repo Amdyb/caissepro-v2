@@ -37,6 +37,10 @@ export async function getNextRoute(userId: string, userEmail: string): Promise<s
 
   if (member.must_change_password) return '/change-password'
 
+  // Staff/sales employees never go through onboarding — send straight to dashboard
+  const STAFF_ROLES = ['sales', 'staff', 'employee', 'cashier']
+  if (STAFF_ROLES.includes(member.role)) return '/dashboard'
+
   if (business.onboarding_completed) return '/dashboard'
 
   if (business.name && business.business_type) {

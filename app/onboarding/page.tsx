@@ -61,6 +61,10 @@ export default function OnboardingPage() {
 
       const member: any = sorted[0]
 
+      // Staff/sales never go through onboarding
+      const STAFF_ROLES = ['sales', 'staff', 'employee', 'cashier']
+      if (member?.role && STAFF_ROLES.includes(member.role)) { router.push('/dashboard'); return }
+
       if (member?.businesses?.onboarding_completed) { router.push('/dashboard'); return }
 
       if (member?.business_id) {

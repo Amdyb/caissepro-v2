@@ -106,7 +106,7 @@ export default function EmployeeSetupPage() {
 
     await supabase
       .from('business_members')
-      .update({ user_id: user.id, temp_password: null })
+      .update({ user_id: user.id, temp_password: null, must_change_password: false })
       .eq('id', memberId)
 
     router.push('/dashboard')
