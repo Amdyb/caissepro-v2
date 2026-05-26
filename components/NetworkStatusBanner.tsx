@@ -65,9 +65,7 @@ export default function NetworkStatusBanner() {
     }
   }, [])
 
-  if (dismissed) return null
-
-  if (!online) {
+  if (!online && !dismissed) {
     return (
       <div className="fixed inset-x-0 top-0 z-[99999] bg-slate-900 px-4 py-3 text-white shadow-lg">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4">
@@ -92,6 +90,8 @@ export default function NetworkStatusBanner() {
       </div>
     )
   }
+
+  if (!online && dismissed) return null
 
   if (showRestored) {
     return (
