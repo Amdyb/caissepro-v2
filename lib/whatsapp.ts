@@ -45,7 +45,7 @@ function paymentLabel(method: string): string {
 
 async function send(to: string, message: string): Promise<void> {
   try {
-    const res = await fetch('/api/whatsapp', {
+    const res = await fetch('/api/whatsapp/send', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ to, message }),

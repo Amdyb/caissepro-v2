@@ -93,7 +93,7 @@ export default function WhatsAppSettingsPage() {
     setTesting(true)
     setTestResult(null)
     try {
-      const res = await fetch('/api/whatsapp', {
+      const res = await fetch('/api/whatsapp/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
