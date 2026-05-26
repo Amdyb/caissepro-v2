@@ -7,6 +7,7 @@ const POSCheckoutDrawer = dynamic(() => import('@/components/POSCheckoutDrawer')
 import { supabase } from '@/lib/supabaseClient'
 import { ImageIcon, ReceiptText, ShoppingCart, Trash2, Zap } from 'lucide-react'
 import { playError, playSale } from '@/lib/sounds'
+import { savePendingSale } from '@/lib/offlineStore'
 import Link from 'next/link'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
@@ -133,6 +134,47 @@ export default function POSPage() {
     if (!businessId || cart.length === 0) return
 
     setCheckoutLoading(true)
+
+    // Offline: save to IndexedDB and return early
+    if (!navigator.onLine) {
+      try {
+        const isCredit = paymentMethod === 'credit'
+        const stockUpdates = cart.map(item => ({
+          product_id: item.product.id,
+          new_stock: Math.max(0, Number(item.product.stock || 0) - Number(item.quantity || 0)),
+        }))
+        await savePendingSale({
+          localId: `local-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+          business_id: businessId,
+          total,
+          paid_amount: isCredit ? 0 : total,
+          remaining_amount: isCredit ? total : 0,
+          customer_id: selectedCustomerId || null,
+          payment_method: paymentMethod,
+          status: 'completed',
+          created_at: new Date().toISOString(),
+          items: cart.map(item => ({
+            product_id: item.product.id,
+            product_name: item.product.name,
+            product_image: item.product.image || null,
+            unit_price: item.price,
+            quantity: item.quantity,
+            price: item.price,
+            total: item.quantity * item.price,
+          })),
+          stock_updates: stockUpdates,
+        })
+        setCart([])
+        setConfirmedTotal(total)
+        playSale()
+        flash('Vente enregistrée localement — synchronisation automatique à la reconnexion.')
+      } catch {
+        playError()
+        setMessage('Erreur lors de la sauvegarde hors ligne.')
+      }
+      setCheckoutLoading(false)
+      return
+    }
 
     try {
       const isCredit = paymentMethod === 'credit'

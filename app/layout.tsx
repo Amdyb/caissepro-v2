@@ -3,6 +3,7 @@ import './globals.css'
 import DarkModeProvider from '@/components/DarkModeProvider'
 import InstallAppPrompt from '@/components/InstallAppPrompt'
 import NetworkStatusBanner from '@/components/NetworkStatusBanner'
+import ServiceWorkerRegister from '@/components/ServiceWorkerRegister'
 
 export const viewport: Viewport = {
   themeColor: '#16a34a',
@@ -45,6 +46,7 @@ export default function RootLayout({
       <body>
         <DarkModeProvider />
         <NetworkStatusBanner />
+        <ServiceWorkerRegister />
         {children}
         <InstallAppPrompt />
       </body>

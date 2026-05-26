@@ -9,6 +9,30 @@
   "theme_color": "#16a34a",
   "orientation": "portrait-primary",
   "categories": ["business", "finance"],
+  "prefer_related_applications": false,
+  "shortcuts": [
+    {
+      "name": "Caisse",
+      "short_name": "POS",
+      "description": "Ouvrir la caisse",
+      "url": "/pos",
+      "icons": [{ "src": "/caissepro-icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Produits",
+      "short_name": "Produits",
+      "description": "Gérer les produits",
+      "url": "/products",
+      "icons": [{ "src": "/caissepro-icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Ventes",
+      "short_name": "Ventes",
+      "description": "Voir les ventes",
+      "url": "/sales",
+      "icons": [{ "src": "/caissepro-icon-192.png", "sizes": "192x192" }]
+    }
+  ],
   "icons": [
     {
       "src": "/caissepro-icon-192.png",
