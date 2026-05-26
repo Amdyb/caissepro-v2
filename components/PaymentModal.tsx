@@ -83,20 +83,22 @@ export default function PaymentModal({ plan, businessId, businessName, userEmail
               <div className="rounded-2xl border-2 border-blue-200 bg-blue-50 p-4 text-center">
                 <p className="text-sm font-black text-blue-700">WAVE</p>
                 <img
-                  src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=+221784581111"
-                  alt="QR code Wave +221 78 458 11 11"
-                  className="mx-auto mt-3 h-24 w-24 rounded-lg"
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(`wave://pay?to=+221784581111&amount=${plan.amount}`)}`}
+                  alt="QR code Wave"
+                  className="mx-auto mt-3 h-36 w-36 rounded-lg"
                 />
-                <p className="mt-2 text-base font-black tracking-wide text-slate-950">+221 78 458 11 11</p>
+                <p className="mt-2 text-[10px] font-bold text-blue-600">Scanner avec Wave</p>
+                <p className="mt-1 text-sm font-black tracking-wide text-slate-950">+221 78 458 11 11</p>
               </div>
               <div className="rounded-2xl border-2 border-orange-200 bg-orange-50 p-4 text-center">
                 <p className="text-sm font-black text-orange-700">ORANGE MONEY</p>
                 <img
-                  src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=+221789621111"
-                  alt="QR code Orange Money +221 78 962 11 11"
-                  className="mx-auto mt-3 h-24 w-24 rounded-lg"
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(`orangemoney://pay?phone=+221789621111&amount=${plan.amount}`)}`}
+                  alt="QR code Orange Money"
+                  className="mx-auto mt-3 h-36 w-36 rounded-lg"
                 />
-                <p className="mt-2 text-base font-black tracking-wide text-slate-950">+221 78 962 11 11</p>
+                <p className="mt-2 text-[10px] font-bold text-orange-600">Scanner avec Orange Money</p>
+                <p className="mt-1 text-sm font-black tracking-wide text-slate-950">+221 78 962 11 11</p>
               </div>
             </div>
 

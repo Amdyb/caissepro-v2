@@ -187,6 +187,16 @@ export default function SettingsPage() {
     router.refresh()
   }
 
+  async function autoSaveBusinessType(newType: string) {
+    if (!business) return
+    setForm((prev) => ({ ...prev, business_type: newType }))
+    await supabase.from('businesses').update({ business_type: newType }).eq('id', business.id)
+    setMessage('Type de commerce mis a jour')
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('business-type-changed', { detail: { type: newType } }))
+    }
+  }
+
   async function logout() {
     await supabase.auth.signOut()
     router.push('/login')
@@ -276,7 +286,7 @@ export default function SettingsPage() {
 
               <div>
                 <label className="flex items-center gap-2 text-sm font-bold text-slate-700"><BriefcaseBusiness size={16} />Type de business</label>
-                <select className="mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 font-bold outline-none focus:border-green-600" value={form.business_type} onChange={(e) => setForm({ ...form, business_type: e.target.value })}>
+                <select className="mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 font-bold outline-none focus:border-green-600" value={form.business_type} onChange={(e) => autoSaveBusinessType(e.target.value)}>
                   {businessTypes.map((type) => <option key={type.value} value={type.value}>{type.label}</option>)}
                 </select>
               </div>
