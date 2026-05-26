@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
@@ -36,7 +37,7 @@ export default function LoginPage() {
     <main className="flex min-h-screen items-center justify-center bg-slate-50 px-6 py-12">
       <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-8 shadow-xl">
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-600 text-2xl font-black text-white">C</div>
+          <Image src="/caissepro-logo.png" alt="CaissePro" width={120} height={40} className="mx-auto mb-4 h-10 w-auto" priority />
           <h1 className="text-3xl font-black text-slate-950">Connexion</h1>
           <p className="mt-2 text-slate-600">Accédez à votre espace CaissePro.</p>
         </div>
