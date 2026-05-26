@@ -1,6 +1,7 @@
 'use client'
 
 import AppShell from '@/components/AppShell'
+import { savePendingSale } from '@/lib/offlineStore'
 import { supabase } from '@/lib/supabaseClient'
 import { sendReceipt } from '@/lib/whatsapp'
 import { CreditCard, MessageCircle, ReceiptText, ShoppingCart, UserPlus } from 'lucide-react'
@@ -183,6 +184,44 @@ export default function CheckoutPage() {
 
     if (!membership?.business_id) {
       setMessage('Aucune boutique trouvée.')
+      setCheckoutLoading(false)
+      return
+    }
+
+    // Offline fallback: save to IndexedDB and show confirmation
+    if (!navigator.onLine) {
+      const stockUpdates = cart
+        .filter((item) => item.product?.id)
+        .map((item) => ({
+          product_id: item.product.id,
+          new_stock: Math.max(0, Number(item.product.stock || 0) - Number(item.quantity || 0)),
+        }))
+
+      await savePendingSale({
+        localId: `offline-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        business_id: membership.business_id,
+        customer_id: selectedCustomerId || null,
+        payment_method: paymentMethod,
+        total,
+        paid_amount: paymentMethod === 'credit' ? 0 : total,
+        remaining_amount: paymentMethod === 'credit' ? total : 0,
+        status: 'completed',
+        created_at: new Date().toISOString(),
+        items: cart.map((item) => ({
+          product_id: item.product?.id || null,
+          product_name: item.product?.name || item.name || '',
+          product_image: item.product?.image || null,
+          unit_price: item.price,
+          quantity: item.quantity,
+          price: item.price,
+          total: item.quantity * item.price,
+        })),
+        stock_updates: stockUpdates,
+      })
+
+      localStorage.removeItem('caissepro-pos-cart')
+      setCart([])
+      setMessage('Vente sauvegardée hors ligne. Elle sera synchronisée à la reconnexion.')
       setCheckoutLoading(false)
       return
     }

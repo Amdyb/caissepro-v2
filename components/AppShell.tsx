@@ -4,6 +4,7 @@ import AmdyLabsBrand from '@/components/AmdyLabsBrand'
 import TutorialTour from '@/components/TutorialTour'
 import DarkModeToggle from '@/components/DarkModeToggle'
 import LanguageSwitcher from '@/components/LanguageSwitcher'
+import NetworkStatusBanner from '@/components/NetworkStatusBanner'
 import { supabase } from '@/lib/supabaseClient'
 import {
   AlertTriangle,
@@ -410,6 +411,10 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
       setReady(true)
     }
     loadBranding()
+
+    if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {})
+    }
   }, [])
 
   function toggleSection(key: string) {
@@ -584,6 +589,7 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-950 dark:bg-slate-900 dark:text-white">
+      <NetworkStatusBanner />
       {/* Mobile overlay */}
       {mobileMenuOpen && (
         <div
