@@ -2,6 +2,7 @@
 
 import AppShell from '@/components/AppShell'
 import { supabase } from '@/lib/supabaseClient'
+import { sendReceipt } from '@/lib/whatsapp'
 import { CreditCard, MessageCircle, ReceiptText, ShoppingCart, UserPlus } from 'lucide-react'
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
@@ -229,6 +230,26 @@ export default function CheckoutPage() {
     setCart([])
     setCompletedSaleId(saleData.id)
     setCheckoutLoading(false)
+
+    // Send WhatsApp receipt if customer has a phone number
+    if (selectedCustomer?.phone) {
+      sendReceipt(
+        selectedCustomer.phone,
+        {
+          id: saleData.id,
+          total,
+          payment_method: paymentMethod,
+          items: saleItems.map((i: any) => ({
+            product_name: i.product_name || '',
+            quantity: i.quantity,
+            price: i.unit_price,
+            total: i.total,
+          })),
+          created_at: new Date().toISOString(),
+        },
+        { name: business?.name || 'CaissePro', phone: business?.phone }
+      ).catch(() => {})
+    }
   }
 
   if (completedSaleId) {

@@ -1,6 +1,7 @@
 'use client'
 
 import { supabase } from '@/lib/supabaseClient'
+import { sendPaymentConfirmation } from '@/lib/whatsapp'
 import { CheckCircle2, X } from 'lucide-react'
 import { useState } from 'react'
 
@@ -38,10 +39,7 @@ export default function PaymentModal({ plan, businessId, businessName, userEmail
       }
     }
 
-    const msg = encodeURIComponent(
-      `🛒 Nouveau paiement CaissePro\nBoutique: ${businessName || 'Inconnu'}\nPlan: ${plan.name}\nMontant: ${plan.amount} XOF\nEmail: ${userEmail}`
-    )
-    window.open(`https://wa.me/221784581111?text=${msg}`, '_blank')
+    await sendPaymentConfirmation('221784581111', plan.name, plan.amount)
     setDone(true)
     setLoading(false)
   }
