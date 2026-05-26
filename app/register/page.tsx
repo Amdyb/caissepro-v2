@@ -97,7 +97,8 @@ export default function RegisterPage() {
         full_name: fullName,
         email,
         role: 'owner',
-        is_active: true
+        is_active: true,
+        must_change_password: false
       })
 
     if (memberError) throw new Error(memberError.message)
