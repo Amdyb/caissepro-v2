@@ -2,53 +2,52 @@ import Link from 'next/link'
 import {
   ArrowRight,
   CheckCircle2,
+  LayoutGrid,
   MessageCircle,
-  Package,
+  Moon,
   QrCode,
-  ReceiptText,
-  ShoppingCart,
   Sparkles,
   Star,
-  Store,
-  TrendingUp,
+  Users,
+  WifiOff,
   Zap,
 } from 'lucide-react'
 
 const FEATURES = [
   {
-    icon: ShoppingCart,
-    title: 'POS rapide',
-    desc: 'Encaissez en quelques secondes depuis votre téléphone. Wave, Orange Money, espèces et crédit client.',
-    color: 'bg-emerald-50 text-emerald-700',
-  },
-  {
     icon: MessageCircle,
-    title: 'Reçus WhatsApp',
-    desc: 'Envoyez le reçu de chaque vente directement sur WhatsApp. Vos clients gardent la trace.',
+    title: 'Reçus WhatsApp auto',
+    desc: 'Envoyez automatiquement le reçu de chaque vente sur WhatsApp. Vos clients gardent la trace sans effort.',
     color: 'bg-sky-50 text-sky-700',
   },
   {
-    icon: Store,
-    title: 'Boutique en ligne',
-    desc: 'Votre vitrine publique avec logo, bannière et lien partageable. Commandez via WhatsApp.',
+    icon: WifiOff,
+    title: 'Mode hors ligne',
+    desc: 'CaissePro fonctionne sans connexion internet. Vos ventes sont synchronisées dès que le réseau revient.',
+    color: 'bg-slate-100 text-slate-700',
+  },
+  {
+    icon: LayoutGrid,
+    title: '10+ types de commerces',
+    desc: 'Boutique, restaurant, salon, pharmacie, garage, BTP, tontine, location... CaissePro s\'adapte à votre activité.',
     color: 'bg-violet-50 text-violet-700',
   },
   {
-    icon: Package,
-    title: 'Gestion du stock',
-    desc: 'Stock mis à jour automatiquement après chaque vente. Alertes produits en rupture.',
+    icon: Users,
+    title: 'Programme de parrainage',
+    desc: 'Parrainez d\'autres commerçants et gagnez des récompenses. Votre réseau grandit, votre business aussi.',
     color: 'bg-amber-50 text-amber-700',
   },
   {
-    icon: TrendingUp,
-    title: 'Rapports & Finances',
-    desc: "Chiffre d'affaires, dépenses, bénéfice net et capital global. Tout en temps réel.",
-    color: 'bg-teal-50 text-teal-700',
+    icon: Moon,
+    title: 'Mode sombre',
+    desc: 'Interface adaptée pour travailler confortablement à toute heure, de jour comme de nuit.',
+    color: 'bg-indigo-50 text-indigo-700',
   },
   {
     icon: QrCode,
     title: 'QR Code boutique',
-    desc: 'Générez votre QR code et affichez-le en caisse. Vos clients scannent et commandent.',
+    desc: 'Générez votre QR code et affichez-le en caisse. Vos clients scannent et commandent instantanément.',
     color: 'bg-rose-50 text-rose-700',
   },
 ]
@@ -150,8 +149,13 @@ export default function LandingPage() {
       <section className="relative overflow-hidden bg-gradient-to-b from-emerald-50/60 to-white px-5 pb-24 pt-20">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-emerald-100/40 via-transparent to-transparent" />
         <div className="relative mx-auto max-w-4xl text-center">
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white px-4 py-2 text-sm font-black text-emerald-700 shadow-sm">
-            <Sparkles size={14} /> Pensé pour les commerces d'Afrique de l'Ouest
+          <div className="mb-6 flex flex-wrap items-center justify-center gap-3">
+            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white px-4 py-2 text-sm font-black text-emerald-700 shadow-sm">
+              <Sparkles size={14} /> Pensé pour les commerces d'Afrique de l'Ouest
+            </div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-600 shadow-sm">
+              <WifiOff size={14} /> Fonctionne sans internet
+            </div>
           </div>
 
           <h1 className="text-5xl font-black leading-[1.08] tracking-tight text-slate-950 md:text-7xl">
@@ -180,9 +184,9 @@ export default function LandingPage() {
 
           <div className="mt-14 grid grid-cols-3 gap-6 text-center">
             {[
-              ['500+', 'Commerces actifs'],
-              ['50 000+', 'Ventes enregistrées'],
-              ['5 pays', "Afrique de l'Ouest"],
+              ['10+', 'Types de commerces'],
+              ['WhatsApp', 'Reçus automatiques'],
+              ['Offline', 'Mode hors ligne'],
             ].map(([val, label]) => (
               <div key={label}>
                 <p className="text-3xl font-black text-emerald-600 md:text-4xl">{val}</p>
@@ -227,12 +231,19 @@ export default function LandingPage() {
             {PLANS.map((plan) => (
               <div
                 key={plan.name}
-                className={`flex flex-col rounded-[2rem] border p-7 ${
+                className={`relative flex flex-col rounded-[2rem] border p-7 ${
                   plan.featured
                     ? 'border-emerald-500 bg-emerald-600 shadow-2xl shadow-emerald-500/20'
                     : 'border-white/10 bg-white/5'
                 }`}
               >
+                {plan.price !== '0' && (
+                  <div className={`absolute right-4 top-4 rounded-full px-2.5 py-1 text-[10px] font-black ${
+                    plan.featured ? 'bg-white text-emerald-700' : 'bg-emerald-500 text-white'
+                  }`}>
+                    2 MOIS OFFERTS
+                  </div>
+                )}
                 <div>
                   <p className="text-xs font-black uppercase tracking-widest text-white/50">{plan.desc}</p>
                   <h3 className="mt-2 text-2xl font-black">{plan.name}</h3>

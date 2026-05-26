@@ -17,10 +17,11 @@ const PLANS = [
     highlighted: false,
     isPaid: false,
     features: [
-      '1 utilisateur',
-      '10 produits max',
-      'Caisse basique',
-      'Publicités affichées',
+      'POS de base',
+      '50 ventes/mois',
+      'Reçus WhatsApp (wa.me)',
+      '1 employé',
+      'Boutique en ligne basique',
     ],
   },
   {
@@ -33,11 +34,13 @@ const PLANS = [
     highlighted: true,
     isPaid: true,
     features: [
-      'Produits illimités',
-      'Reçus WhatsApp',
-      'Client Doit',
-      'Rapports avancés',
-      'Sans publicité',
+      'POS complet',
+      'Ventes illimitées',
+      'Reçus WhatsApp automatiques',
+      '3 employés',
+      'Boutique en ligne',
+      'Rapports basiques',
+      'Mode hors ligne',
     ],
   },
   {
@@ -51,10 +54,13 @@ const PLANS = [
     isPaid: true,
     features: [
       'Tout Starter +',
-      'Boutique en ligne',
-      '5 employés',
-      'Paiements mobiles',
-      'Tontine: 5 groupes / 100 membres',
+      '10 employés',
+      'Rapports avancés',
+      'Gestion fournisseurs',
+      'Client Doit avancé',
+      'Notifications WhatsApp',
+      'QR Code boutique',
+      'Parrainage',
     ],
   },
   {
@@ -68,11 +74,13 @@ const PLANS = [
     isPaid: true,
     features: [
       'Tout Business +',
-      'Multi-succursales',
-      'Domaine personnalisé',
       'Employés illimités',
-      'Tontine illimitée + export PDF',
+      'API WhatsApp Business',
+      'Multi-boutiques',
       'Support prioritaire',
+      'Personnalisation complète',
+      'Capital global',
+      'Raccourcis personnalisés',
     ],
   },
 ]
@@ -221,6 +229,57 @@ export default function PricingPage() {
           <p className="mt-2 text-sm font-semibold text-slate-500">
             Après paiement, envoyez votre reçu sur WhatsApp et votre compte sera activé rapidement.
           </p>
+        </div>
+
+        {/* Comparison table */}
+        <div className="mt-14">
+          <h2 className="mb-8 text-center text-2xl font-black text-slate-950">Comparaison détaillée</h2>
+          <div className="overflow-x-auto rounded-3xl border border-slate-200 bg-white shadow-sm">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-slate-100">
+                  <th className="px-6 py-4 text-left font-black text-slate-500">Fonctionnalité</th>
+                  {['Gratuit', 'Starter', 'Business', 'Premium'].map((name) => (
+                    <th key={name} className={`px-6 py-4 text-center font-black ${name === 'Starter' ? 'text-emerald-600' : 'text-slate-950'}`}>
+                      {name}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  { feature: 'Caisse POS',              free: 'Basique',     starter: 'Complet',      business: 'Complet',     premium: 'Complet' },
+                  { feature: 'Ventes',                  free: '50/mois',     starter: 'Illimitées',   business: 'Illimitées',  premium: 'Illimitées' },
+                  { feature: 'Employés',                free: '1',           starter: '3',            business: '10',          premium: 'Illimités' },
+                  { feature: 'Reçus WhatsApp',          free: 'wa.me',       starter: 'Automatiques', business: 'Automatiques',premium: 'API Business' },
+                  { feature: 'Boutique en ligne',       free: 'Basique',     starter: '✓',            business: '✓',           premium: '✓' },
+                  { feature: 'Mode hors ligne',         free: '—',           starter: '✓',            business: '✓',           premium: '✓' },
+                  { feature: 'Rapports',                free: '—',           starter: 'Basiques',     business: 'Avancés',     premium: 'Avancés' },
+                  { feature: 'Gestion fournisseurs',    free: '—',           starter: '—',            business: '✓',           premium: '✓' },
+                  { feature: 'Client Doit avancé',      free: '—',           starter: '—',            business: '✓',           premium: '✓' },
+                  { feature: 'QR Code boutique',        free: '—',           starter: '—',            business: '✓',           premium: '✓' },
+                  { feature: 'Parrainage',              free: '—',           starter: '—',            business: '✓',           premium: '✓' },
+                  { feature: 'Multi-boutiques',         free: '—',           starter: '—',            business: '—',           premium: '✓' },
+                  { feature: 'Raccourcis personnalisés',free: '—',           starter: '—',            business: '—',           premium: '✓' },
+                  { feature: 'Capital global',          free: '—',           starter: '—',            business: '—',           premium: '✓' },
+                  { feature: 'Support',                 free: '—',           starter: 'Standard',     business: 'Standard',    premium: 'Prioritaire' },
+                ].map(({ feature, free, starter, business, premium }, i) => (
+                  <tr key={feature} className={i % 2 === 0 ? 'bg-white' : 'bg-slate-50/60'}>
+                    <td className="px-6 py-3.5 font-bold text-slate-700">{feature}</td>
+                    {[free, starter, business, premium].map((val, j) => (
+                      <td key={j} className={`px-6 py-3.5 text-center font-semibold ${
+                        val === '—' ? 'text-slate-300' :
+                        val === '✓' ? 'text-emerald-600' :
+                        j === 1 ? 'font-black text-emerald-700' : 'text-slate-700'
+                      }`}>
+                        {val}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </section>
     </main>
