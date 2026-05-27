@@ -230,7 +230,7 @@ export default function LandingPage() {
                 Voyez CaissePro<br />en action
               </h2>
               <p className="mt-5 text-lg font-semibold text-white/80">
-                Explorez "Boutique Dakar Style" — une vraie boutique de mode africaine avec 8 produits, boutique en ligne publique et caisse POS operationnelle.
+                Voici a quoi ressemble votre boutique CaissePro. Explorez "Boutique Dakar Style" — mode africaine, boutique en ligne publique, caisse POS en direct.
               </p>
               <div className="mt-6 space-y-3">
                 {[
@@ -253,10 +253,10 @@ export default function LandingPage() {
                   <Store size={16} /> Voir la boutique
                 </Link>
                 <Link
-                  href="/demo"
+                  href="/pos"
                   className="inline-flex items-center gap-2 rounded-2xl border border-white/30 px-6 py-3.5 font-black text-white hover:bg-white/10"
                 >
-                  En savoir plus <ArrowRight size={16} />
+                  <Zap size={16} /> Essayer la caisse
                 </Link>
               </div>
             </div>

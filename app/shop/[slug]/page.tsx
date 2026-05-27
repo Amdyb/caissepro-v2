@@ -1,6 +1,6 @@
 'use client'
 
-import { supabase } from '@/lib/supabaseClient'
+import { supabasePublic as supabase } from '@/lib/supabasePublic'
 import { sendOrderNotification } from '@/lib/whatsapp'
 import Image from 'next/image'
 import { ChevronRight, MapPin, MessageCircle, Navigation, Phone, Search, Share2, ShoppingBag, Sparkles, Store, Verified, X } from 'lucide-react'
