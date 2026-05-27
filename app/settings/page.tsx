@@ -67,15 +67,15 @@ export default function SettingsPage() {
 
   useEffect(() => {
     setThemePrefState((getThemePreference() as 'auto' | 'light' | 'dark') || 'auto')
-    setSoundsEnabled(localStorage.getItem('caissepro-sounds-enabled') === '1')
+    setSoundsEnabled(localStorage.getItem('caissepro-sounds-enabled') !== '0')
   }, [])
 
   function toggleSounds(on: boolean) {
     setSoundsEnabled(on)
     if (on) {
-      localStorage.setItem('caissepro-sounds-enabled', '1')
-    } else {
       localStorage.removeItem('caissepro-sounds-enabled')
+    } else {
+      localStorage.setItem('caissepro-sounds-enabled', '0')
     }
   }
 

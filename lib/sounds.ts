@@ -17,9 +17,9 @@ export function resumeContext(): void {
 
 function isEnabled(): boolean {
   try {
-    return localStorage.getItem('caissepro-sounds-enabled') === '1'
+    return localStorage.getItem('caissepro-sounds-enabled') !== '0'
   } catch {
-    return false
+    return true
   }
 }
 
