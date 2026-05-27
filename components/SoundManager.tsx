@@ -5,7 +5,6 @@ import { useEffect } from 'react'
 
 export default function SoundManager() {
   useEffect(() => {
-    // Resume the shared AudioContext on first user gesture (browser autoplay policy)
     function initOnGesture() {
       resumeContext()
     }
@@ -13,19 +12,24 @@ export default function SoundManager() {
     window.addEventListener('touchstart', initOnGesture, { once: true })
     window.addEventListener('keydown', initOnGesture, { once: true })
 
-    const handlers: Array<[string, EventListener]> = [
-      ['play-sale', playSale as EventListener],
-      ['play-error', playError as EventListener],
-      ['play-click', playClick as EventListener],
-      ['play-success', playSuccess as EventListener],
-    ]
-    handlers.forEach(([event, fn]) => window.addEventListener(event, fn))
+    function onSale() { playSale() }
+    function onError() { playError() }
+    function onClick() { playClick() }
+    function onSuccess() { playSuccess() }
+
+    window.addEventListener('play-sale', onSale)
+    window.addEventListener('play-error', onError)
+    window.addEventListener('play-click', onClick)
+    window.addEventListener('play-success', onSuccess)
 
     return () => {
       window.removeEventListener('click', initOnGesture)
       window.removeEventListener('touchstart', initOnGesture)
       window.removeEventListener('keydown', initOnGesture)
-      handlers.forEach(([event, fn]) => window.removeEventListener(event, fn))
+      window.removeEventListener('play-sale', onSale)
+      window.removeEventListener('play-error', onError)
+      window.removeEventListener('play-click', onClick)
+      window.removeEventListener('play-success', onSuccess)
     }
   }, [])
 

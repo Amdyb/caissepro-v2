@@ -1,5 +1,5 @@
-// Single shared AudioContext — creating a new one per call exhausts browser limits
-// and all new contexts start suspended due to autoplay policy.
+// Single shared AudioContext - creating a new one per call exhausts browser limits.
+// All new contexts start suspended due to autoplay policy.
 let _ctx: AudioContext | null = null
 
 function getCtx(): AudioContext | null {
@@ -38,11 +38,12 @@ function play(fn: (ac: AudioContext) => void): void {
 export function playSale(): void {
   play((ac) => {
     const now = ac.currentTime
-    ;([
+    const notes: [number, number][] = [
       [1047, 0],
       [1319, 0.1],
       [1568, 0.2],
-    ] as [number, number][]).forEach(([freq, delay]) => {
+    ]
+    notes.forEach(([freq, delay]) => {
       const osc = ac.createOscillator()
       const gain = ac.createGain()
       osc.type = 'triangle'
@@ -96,12 +97,13 @@ export function playClick(): void {
 export function playSuccess(): void {
   play((ac) => {
     const now = ac.currentTime
-    ;([
+    const notes: [number, number][] = [
       [523, 0],
       [659, 0.12],
       [784, 0.24],
       [1047, 0.36],
-    ] as [number, number][]).forEach(([freq, delay]) => {
+    ]
+    notes.forEach(([freq, delay]) => {
       const osc = ac.createOscillator()
       const gain = ac.createGain()
       osc.type = 'sine'
