@@ -264,10 +264,10 @@ export default function LandingPage() {
             {/* Mini product grid */}
             <div className="grid grid-cols-2 gap-3">
               {[
-                { name: 'Boubou Homme Brode',    price: '25 000', img: 'https://images.unsplash.com/photo-1590735213920-68192a487bc2?w=400' },
-                { name: 'Robe Wax Femme',         price: '18 000', img: 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=400' },
-                { name: 'Bazin Riche Homme',      price: '35 000', img: 'https://images.unsplash.com/photo-1617137968427-85924c800a22?w=400' },
-                { name: 'Sandales Cuir Artisan.', price: '12 000', img: 'https://images.unsplash.com/photo-1603487742131-4160ec999306?w=400' },
+                { name: 'Boubou Brode Homme',  price: '25 000', img: 'https://images.unsplash.com/photo-1696962678565-bee84e6b9cb6?w=400&q=80' },
+                { name: 'Robe Wax Femme',       price: '18 000', img: 'https://images.unsplash.com/photo-1681545290284-679e6291c440?w=400&q=80' },
+                { name: 'Tissu Bazin Riche',    price: '35 000', img: 'https://images.unsplash.com/photo-1552710307-537199cd41c0?w=400&q=80' },
+                { name: 'Sandales Cuir Teinte', price: '12 000', img: 'https://images.unsplash.com/photo-1645944235766-54aade0e09bf?w=400&q=80' },
               ].map((p) => (
                 <div key={p.name} className="overflow-hidden rounded-2xl bg-white/10 backdrop-blur-sm">
                   <div className="aspect-square overflow-hidden">

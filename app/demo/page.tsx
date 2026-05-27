@@ -11,14 +11,14 @@ import {
 } from 'lucide-react'
 
 const DEMO_PRODUCTS = [
-  { name: 'Boubou Homme Brode',       price: '25 000', image: 'https://images.unsplash.com/photo-1590735213920-68192a487bc2?w=400' },
-  { name: 'Robe Wax Femme',            price: '18 000', image: 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=400' },
-  { name: 'Bazin Riche Homme',         price: '35 000', image: 'https://images.unsplash.com/photo-1617137968427-85924c800a22?w=400' },
-  { name: 'Sandales Cuir Artisanales', price: '12 000', image: 'https://images.unsplash.com/photo-1603487742131-4160ec999306?w=400' },
-  { name: 'Sac Tisse Africain',        price: '8 000',  image: 'https://images.unsplash.com/photo-1590739225287-bd31519780c6?w=400' },
-  { name: 'Parfum Oud Prestige',       price: '15 000', image: 'https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=400' },
-  { name: 'Collier Perles Africaines', price: '6 000',  image: 'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=400' },
-  { name: 'Chapelet Artisanal',        price: '3 500',  image: 'https://images.unsplash.com/photo-1609743522653-52354461eb27?w=400' },
+  { name: 'Boubou Brode Homme',    price: '25 000', image: 'https://images.unsplash.com/photo-1696962678565-bee84e6b9cb6?w=400&q=80' },
+  { name: 'Robe Wax Femme',         price: '18 000', image: 'https://images.unsplash.com/photo-1681545290284-679e6291c440?w=400&q=80' },
+  { name: 'Tissu Bazin Riche',      price: '35 000', image: 'https://images.unsplash.com/photo-1552710307-537199cd41c0?w=400&q=80' },
+  { name: 'Sandales Cuir Teinte',   price: '12 000', image: 'https://images.unsplash.com/photo-1645944235766-54aade0e09bf?w=400&q=80' },
+  { name: 'Sac Raphia Tresse',      price: '8 500',  image: 'https://images.unsplash.com/photo-1688241319063-8668606f2fd1?w=400&q=80' },
+  { name: 'Parfum Oud Thiouraye',   price: '15 000', image: 'https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?w=400&q=80' },
+  { name: 'Collier Wax Perles',     price: '6 500',  image: 'https://images.unsplash.com/photo-1757140448494-ad45016d456a?w=400&q=80' },
+  { name: 'Caftan Femme Brode',     price: '22 000', image: 'https://images.unsplash.com/photo-1757140447782-8503452b2204?w=400&q=80' },
 ]
 
 const STATS = [
