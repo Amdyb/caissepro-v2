@@ -1,6 +1,7 @@
 'use client'
 
 import { supabase } from '@/lib/supabaseClient'
+import { sendOrderNotification } from '@/lib/whatsapp'
 import Image from 'next/image'
 import { ChevronRight, MapPin, MessageCircle, Navigation, Phone, Search, Share2, ShoppingBag, Sparkles, Store, Verified, X } from 'lucide-react'
 import { useParams } from 'next/navigation'
@@ -145,6 +146,19 @@ export default function PublicShopPage() {
       ? `https://wa.me/${phone}?text=${encodeURIComponent(text)}`
       : `https://wa.me/?text=${encodeURIComponent(text)}`
     window.open(url, '_blank')
+
+    // Notify merchant via Twilio when an online order is placed
+    const merchantPhone = business?.whatsapp || business?.whatsapp_number || business?.phone
+    if (merchantPhone) {
+      sendOrderNotification(merchantPhone, {
+        id: Date.now().toString(),
+        customer_name: 'Client en ligne',
+        product_name: selectedProduct.name,
+        quantity: 1,
+        total: price,
+      }).catch(() => {})
+    }
+
     setSelectedProduct(null)
   }
 
