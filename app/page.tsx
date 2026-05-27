@@ -5,9 +5,11 @@ import {
   LayoutGrid,
   MessageCircle,
   Moon,
+  Play,
   QrCode,
   Sparkles,
   Star,
+  Store,
   Users,
   WifiOff,
   Zap,
@@ -175,10 +177,10 @@ export default function LandingPage() {
               Essayer gratuitement <ArrowRight size={20} />
             </Link>
             <Link
-              href="/login"
+              href="/demo"
               className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-8 py-4 text-lg font-black text-slate-700 hover:bg-slate-50"
             >
-              Se connecter
+              <Play size={18} className="text-emerald-600" /> Voir la demo
             </Link>
           </div>
 
@@ -215,6 +217,71 @@ export default function LandingPage() {
               <p className="mt-3 text-sm font-semibold leading-relaxed text-slate-500">{desc}</p>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* Demo showcase */}
+      <section className="bg-emerald-600 px-5 py-20 text-white">
+        <div className="mx-auto max-w-6xl">
+          <div className="grid items-center gap-12 lg:grid-cols-2">
+            <div>
+              <p className="text-sm font-black uppercase tracking-widest text-emerald-200">BOUTIQUE DEMO</p>
+              <h2 className="mt-3 text-4xl font-black leading-tight md:text-5xl">
+                Voyez CaissePro<br />en action
+              </h2>
+              <p className="mt-5 text-lg font-semibold text-white/80">
+                Explorez "Boutique Dakar Style" — une vraie boutique de mode africaine avec 8 produits, boutique en ligne publique et caisse POS operationnelle.
+              </p>
+              <div className="mt-6 space-y-3">
+                {[
+                  '8 produits avec photos reelles',
+                  'Boutique en ligne navigable',
+                  'Commandes WhatsApp activees',
+                  'Paiement Wave & Orange Money',
+                ].map((f) => (
+                  <div key={f} className="flex items-center gap-3 text-sm font-bold text-white/90">
+                    <CheckCircle2 size={16} className="shrink-0 text-emerald-200" />
+                    {f}
+                  </div>
+                ))}
+              </div>
+              <div className="mt-8 flex flex-wrap gap-4">
+                <Link
+                  href="/shop/demo"
+                  className="inline-flex items-center gap-2 rounded-2xl bg-white px-6 py-3.5 font-black text-emerald-700 shadow-xl hover:bg-emerald-50"
+                >
+                  <Store size={16} /> Voir la boutique
+                </Link>
+                <Link
+                  href="/demo"
+                  className="inline-flex items-center gap-2 rounded-2xl border border-white/30 px-6 py-3.5 font-black text-white hover:bg-white/10"
+                >
+                  En savoir plus <ArrowRight size={16} />
+                </Link>
+              </div>
+            </div>
+
+            {/* Mini product grid */}
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { name: 'Boubou Homme Brode',    price: '25 000', img: 'https://images.unsplash.com/photo-1590735213920-68192a487bc2?w=400' },
+                { name: 'Robe Wax Femme',         price: '18 000', img: 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=400' },
+                { name: 'Bazin Riche Homme',      price: '35 000', img: 'https://images.unsplash.com/photo-1617137968427-85924c800a22?w=400' },
+                { name: 'Sandales Cuir Artisan.', price: '12 000', img: 'https://images.unsplash.com/photo-1603487742131-4160ec999306?w=400' },
+              ].map((p) => (
+                <div key={p.name} className="overflow-hidden rounded-2xl bg-white/10 backdrop-blur-sm">
+                  <div className="aspect-square overflow-hidden">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={p.img} alt={p.name} className="h-full w-full object-cover" />
+                  </div>
+                  <div className="p-3">
+                    <p className="text-xs font-black text-white leading-tight">{p.name}</p>
+                    <p className="mt-0.5 text-xs font-bold text-emerald-200">{p.price} CFA</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 
