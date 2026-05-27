@@ -1,81 +1,117 @@
-function ctx(): AudioContext | null {
+// Single shared AudioContext — creating a new one per call exhausts browser limits
+// and all new contexts start suspended due to autoplay policy.
+let _ctx: AudioContext | null = null
+
+function getCtx(): AudioContext | null {
   if (typeof window === 'undefined') return null
-  return new (window.AudioContext || (window as any).webkitAudioContext)()
+  if (!_ctx) {
+    _ctx = new (window.AudioContext || (window as any).webkitAudioContext)()
+  }
+  return _ctx
 }
 
-function enabled(): boolean {
-  return typeof localStorage !== 'undefined' && localStorage.getItem('caissepro_sounds_enabled') === '1'
+export function resumeContext(): void {
+  const ac = getCtx()
+  if (ac && ac.state === 'suspended') ac.resume().catch(() => {})
 }
 
-export function playSale() {
-  if (!enabled()) return
-  const ac = ctx()
+function isEnabled(): boolean {
+  try {
+    return localStorage.getItem('caissepro-sounds-enabled') === '1'
+  } catch {
+    return false
+  }
+}
+
+function play(fn: (ac: AudioContext) => void): void {
+  if (!isEnabled()) return
+  const ac = getCtx()
   if (!ac) return
-  const now = ac.currentTime
-  const freqs = [1047, 1319, 1568]
-  freqs.forEach((freq, i) => {
-    const osc = ac.createOscillator()
-    const gain = ac.createGain()
-    osc.type = 'triangle'
-    osc.frequency.value = freq
-    gain.gain.setValueAtTime(0.25, now + i * 0.1)
-    gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.1 + 0.25)
-    osc.connect(gain)
-    gain.connect(ac.destination)
-    osc.start(now + i * 0.1)
-    osc.stop(now + i * 0.1 + 0.25)
+  if (ac.state === 'suspended') {
+    ac.resume().then(() => fn(ac)).catch(() => {})
+    return
+  }
+  fn(ac)
+}
+
+// Cash register cha-ching: ascending C6 -> E6 -> G6
+export function playSale(): void {
+  play((ac) => {
+    const now = ac.currentTime
+    ;([
+      [1047, 0],
+      [1319, 0.1],
+      [1568, 0.2],
+    ] as [number, number][]).forEach(([freq, delay]) => {
+      const osc = ac.createOscillator()
+      const gain = ac.createGain()
+      osc.type = 'triangle'
+      osc.frequency.value = freq
+      gain.gain.setValueAtTime(0.28, now + delay)
+      gain.gain.exponentialRampToValueAtTime(0.001, now + delay + 0.28)
+      osc.connect(gain)
+      gain.connect(ac.destination)
+      osc.start(now + delay)
+      osc.stop(now + delay + 0.28)
+    })
   })
 }
 
-export function playClick() {
-  if (!enabled()) return
-  const ac = ctx()
-  if (!ac) return
-  const osc = ac.createOscillator()
-  const gain = ac.createGain()
-  osc.type = 'square'
-  osc.frequency.value = 1000
-  gain.gain.setValueAtTime(0.15, ac.currentTime)
-  gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.025)
-  osc.connect(gain)
-  gain.connect(ac.destination)
-  osc.start()
-  osc.stop(ac.currentTime + 0.025)
+// Descending sawtooth buzz
+export function playError(): void {
+  play((ac) => {
+    const now = ac.currentTime
+    const osc = ac.createOscillator()
+    const gain = ac.createGain()
+    osc.type = 'sawtooth'
+    osc.frequency.setValueAtTime(220, now)
+    osc.frequency.exponentialRampToValueAtTime(80, now + 0.3)
+    gain.gain.setValueAtTime(0.3, now)
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3)
+    osc.connect(gain)
+    gain.connect(ac.destination)
+    osc.start(now)
+    osc.stop(now + 0.3)
+  })
 }
 
-export function playSuccess() {
-  if (!enabled()) return
-  const ac = ctx()
-  if (!ac) return
-  const now = ac.currentTime
-  const freqs = [523, 659, 784]
-  freqs.forEach((freq, i) => {
+// Short sine tap
+export function playClick(): void {
+  play((ac) => {
+    const now = ac.currentTime
     const osc = ac.createOscillator()
     const gain = ac.createGain()
     osc.type = 'sine'
-    osc.frequency.value = freq
-    gain.gain.setValueAtTime(0.2, now + i * 0.12)
-    gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.12 + 0.3)
+    osc.frequency.value = 1200
+    gain.gain.setValueAtTime(0.12, now)
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.03)
     osc.connect(gain)
     gain.connect(ac.destination)
-    osc.start(now + i * 0.12)
-    osc.stop(now + i * 0.12 + 0.3)
+    osc.start(now)
+    osc.stop(now + 0.03)
   })
 }
 
-export function playError() {
-  if (!enabled()) return
-  const ac = ctx()
-  if (!ac) return
-  const osc = ac.createOscillator()
-  const gain = ac.createGain()
-  osc.type = 'sawtooth'
-  osc.frequency.setValueAtTime(220, ac.currentTime)
-  osc.frequency.exponentialRampToValueAtTime(80, ac.currentTime + 0.3)
-  gain.gain.setValueAtTime(0.3, ac.currentTime)
-  gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.3)
-  osc.connect(gain)
-  gain.connect(ac.destination)
-  osc.start()
-  osc.stop(ac.currentTime + 0.3)
+// Ascending chime: C5 -> E5 -> G5 -> C6
+export function playSuccess(): void {
+  play((ac) => {
+    const now = ac.currentTime
+    ;([
+      [523, 0],
+      [659, 0.12],
+      [784, 0.24],
+      [1047, 0.36],
+    ] as [number, number][]).forEach(([freq, delay]) => {
+      const osc = ac.createOscillator()
+      const gain = ac.createGain()
+      osc.type = 'sine'
+      osc.frequency.value = freq
+      gain.gain.setValueAtTime(0.2, now + delay)
+      gain.gain.exponentialRampToValueAtTime(0.001, now + delay + 0.28)
+      osc.connect(gain)
+      gain.connect(ac.destination)
+      osc.start(now + delay)
+      osc.stop(now + delay + 0.28)
+    })
+  })
 }

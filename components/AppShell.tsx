@@ -5,6 +5,7 @@ import TutorialTour from '@/components/TutorialTour'
 import DarkModeToggle from '@/components/DarkModeToggle'
 import LanguageSwitcher from '@/components/LanguageSwitcher'
 import NetworkStatusBanner from '@/components/NetworkStatusBanner'
+import SoundManager from '@/components/SoundManager'
 import { supabase } from '@/lib/supabaseClient'
 import {
   AlertTriangle,
@@ -719,6 +720,7 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
   return (
     <main className="min-h-screen bg-slate-50 text-slate-950 dark:bg-slate-900 dark:text-white">
       <NetworkStatusBanner />
+      <SoundManager />
       {/* Mobile overlay */}
       {mobileMenuOpen && (
         <div

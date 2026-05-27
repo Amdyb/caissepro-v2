@@ -242,6 +242,7 @@ export default function CheckoutPage() {
 
     if (saleError || !saleData) {
       setMessage(saleError?.message || 'Erreur lors de la vente.')
+      window.dispatchEvent(new Event('play-error'))
       setCheckoutLoading(false)
       return
     }
@@ -268,6 +269,7 @@ export default function CheckoutPage() {
     localStorage.removeItem('caissepro-pos-cart')
     setCart([])
     setCompletedSaleId(saleData.id)
+    window.dispatchEvent(new Event('play-sale'))
     setCheckoutLoading(false)
 
     // Auto-send WhatsApp receipt if customer has a phone number

@@ -6,7 +6,7 @@ import dynamic from 'next/dynamic'
 const POSCheckoutDrawer = dynamic(() => import('@/components/POSCheckoutDrawer'), { ssr: false })
 import { supabase } from '@/lib/supabaseClient'
 import { ImageIcon, ReceiptText, ShoppingCart, Trash2, Zap } from 'lucide-react'
-import { playError, playSale } from '@/lib/sounds'
+function dispatch(event: string) { window.dispatchEvent(new Event(event)) }
 import { savePendingSale } from '@/lib/offlineStore'
 import { formatPhone, sendReceipt } from '@/lib/whatsapp'
 import Link from 'next/link'
@@ -169,10 +169,10 @@ export default function POSPage() {
         })
         setCart([])
         setConfirmedTotal(total)
-        playSale()
+        dispatch('play-sale')
         flash('Vente enregistrée localement — synchronisation automatique à la reconnexion.')
       } catch {
-        playError()
+        dispatch('play-error')
         setMessage('Erreur lors de la sauvegarde hors ligne.')
       }
       setCheckoutLoading(false)
@@ -235,7 +235,7 @@ export default function POSPage() {
       setCart([])
       setLastSaleId(saleData.id)
       flash('Vente enregistrée avec succès.')
-      playSale()
+      dispatch('play-sale')
 
       // Auto-send WhatsApp receipt if customer has a phone
       console.log('[POS] sale confirmed, customer phone:', customer?.phone, '| business phone:', businessPhone)
@@ -266,7 +266,7 @@ export default function POSPage() {
         console.log('[POS] no customer phone — skipping WhatsApp auto-send')
       }
     } catch (err: any) {
-      playError()
+      dispatch('play-error')
       setMessage(err?.message || 'Erreur lors du paiement')
     }
 
