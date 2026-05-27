@@ -192,11 +192,15 @@ export default function SettingsPage() {
   async function autoSaveBusinessType(newType: string) {
     if (!business) return
     setForm((prev) => ({ ...prev, business_type: newType }))
-    await supabase.from('businesses').update({ business_type: newType }).eq('id', business.id)
-    setMessage('Type de commerce mis a jour')
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('business-type-changed', { detail: { type: newType } }))
+    const { error } = await supabase.from('businesses').update({ business_type: newType }).eq('id', business.id)
+    if (error) {
+      setMessage(error.message)
+      window.dispatchEvent(new Event('play-error'))
+      return
     }
+    setMessage('Type de commerce mis à jour')
+    window.dispatchEvent(new Event('play-success'))
+    window.dispatchEvent(new CustomEvent('business-type-changed', { detail: { businessType: newType } }))
   }
 
   async function logout() {

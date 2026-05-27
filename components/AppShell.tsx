@@ -523,7 +523,7 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
   useEffect(() => {
     function onBusinessTypeChanged(e: Event) {
       const detail = (e as CustomEvent).detail
-      if (detail?.type) setBusinessType(detail.type)
+      if (detail?.businessType) setBusinessType(detail.businessType)
     }
     window.addEventListener('business-type-changed', onBusinessTypeChanged)
     return () => window.removeEventListener('business-type-changed', onBusinessTypeChanged)

@@ -30,6 +30,7 @@ function RegisterForm() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [loading, setLoading] = useState(false)
+  const [googleLoading, setGoogleLoading] = useState(false)
   const [checking, setChecking] = useState(true)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
@@ -109,6 +110,19 @@ function RegisterForm() {
     return business.id
   }
 
+  async function handleGoogleRegister() {
+    setGoogleLoading(true)
+    setError('')
+    const { error: oauthError } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin + '/dashboard' },
+    })
+    if (oauthError) {
+      setError(oauthError.message)
+      setGoogleLoading(false)
+    }
+  }
+
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault()
     setError('')
@@ -180,6 +194,22 @@ function RegisterForm() {
         <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-xl">
           {error && <div className="mb-5 rounded-2xl bg-red-50 p-4 text-sm font-bold text-red-700">{error}</div>}
           {message && <div className="mb-5 rounded-2xl bg-emerald-50 p-4 text-sm font-bold text-emerald-700">{message}</div>}
+
+          <button
+            type="button"
+            onClick={handleGoogleRegister}
+            disabled={googleLoading}
+            className="mb-4 flex w-full items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 font-bold text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-60"
+          >
+            <img src="https://www.google.com/favicon.ico" alt="Google" className="h-5 w-5" />
+            {googleLoading ? 'Redirection...' : 'Continuer avec Google'}
+          </button>
+
+          <div className="relative mb-4 flex items-center gap-3">
+            <div className="flex-1 border-t border-slate-200" />
+            <span className="text-xs font-bold text-slate-400">OU</span>
+            <div className="flex-1 border-t border-slate-200" />
+          </div>
 
           <form onSubmit={handleRegister} className="space-y-4">
             <div>
