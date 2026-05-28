@@ -307,65 +307,65 @@ export default function DashboardPage() {
 
   return (
     <AppShell title="Tableau de bord" subtitle={business?.name ? `Bienvenue sur ${business.name}` : "Vue d'ensemble de votre activite"}>
+      {message && (
+        <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-bold text-red-700">
+          {message}
+        </div>
+      )}
+
+      {/* 1. Hero banner - flush edge to edge */}
+      <section className="-mx-5 -mt-8 relative overflow-hidden bg-slate-950">
+        <div
+          className="absolute inset-0 bg-cover bg-center opacity-40"
+          style={{
+            backgroundImage: `url(${business?.banner_url || 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?q=80&w=1600&auto=format&fit=crop'})`
+          }}
+        />
+
+        <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/55 to-black/20" />
+
+        <div className="relative flex flex-col gap-5 px-5 py-8 md:px-8 xl:flex-row xl:items-end xl:justify-between">
+          <div className="max-w-3xl">
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-4 py-2 text-[11px] font-black uppercase tracking-[0.25em] text-white backdrop-blur-xl">
+              <Sparkles size={13} /> Dashboard Premium
+            </div>
+
+            <div className="flex items-center gap-4">
+              <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full border border-white/10 bg-white shadow-2xl">
+                {business?.logo_url ? (
+                  <img src={business.logo_url} alt="Logo" className="h-full w-full object-cover" />
+                ) : (
+                  <Store size={34} className="text-slate-400" />
+                )}
+              </div>
+
+              <div>
+                <h1 className="text-3xl font-black tracking-tight text-white md:text-4xl">
+                  {business?.name || template.dashboardTitle}
+                </h1>
+
+                <p className="mt-2 max-w-2xl text-xs font-semibold leading-relaxed text-white/70 md:text-base">
+                  {business?.slogan || 'Pilotez votre activite avec une vue claire sur vos ventes, votre stock et vos performances.'}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-3">
+            <div className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-white backdrop-blur-xl">
+              <p className="text-[10px] font-black uppercase tracking-wide text-white/60">Plan actuel</p>
+              <p className="mt-1 text-base font-black uppercase">{plan}</p>
+            </div>
+
+            <Link href={actionHref} className="inline-flex items-center gap-2 rounded-2xl bg-emerald-500 px-5 py-3 text-sm font-black text-white shadow-xl shadow-emerald-500/20 transition hover:bg-emerald-600">
+              Action rapide
+              <ArrowRight size={17} />
+            </Link>
+          </div>
+        </div>
+      </section>
+
       <div className="mx-auto max-w-[1600px]">
-        {message && (
-          <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-bold text-red-700">
-            {message}
-          </div>
-        )}
-
-        {/* 1. Hero banner */}
-        <section className="relative overflow-hidden rounded-[2.5rem] border border-slate-200 bg-slate-950 shadow-2xl">
-          <div
-            className="absolute inset-0 bg-cover bg-center opacity-40"
-            style={{
-              backgroundImage: `url(${business?.banner_url || 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?q=80&w=1600&auto=format&fit=crop'})`
-            }}
-          />
-
-          <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/55 to-black/20" />
-
-          <div className="relative flex flex-col gap-5 p-5 md:p-8 xl:flex-row xl:items-end xl:justify-between">
-            <div className="max-w-3xl">
-              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-4 py-2 text-[11px] font-black uppercase tracking-[0.25em] text-white backdrop-blur-xl">
-                <Sparkles size={13} /> Dashboard Premium
-              </div>
-
-              <div className="flex items-center gap-4">
-                <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-[1.6rem] border border-white/10 bg-white shadow-2xl">
-                  {business?.logo_url ? (
-                    <img src={business.logo_url} alt="Logo" className="h-full w-full object-cover" />
-                  ) : (
-                    <Store size={34} className="text-slate-400" />
-                  )}
-                </div>
-
-                <div>
-                  <h1 className="text-3xl font-black tracking-tight text-white md:text-5xl">
-                    {business?.name || template.dashboardTitle}
-                  </h1>
-
-                  <p className="mt-2 max-w-2xl text-xs font-semibold leading-relaxed text-white/70 md:text-base">
-                    {business?.slogan || 'Pilotez votre activite avec une vue claire sur vos ventes, votre stock et vos performances.'}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex flex-wrap gap-3">
-              <div className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-white backdrop-blur-xl">
-                <p className="text-[10px] font-black uppercase tracking-wide text-white/60">Plan actuel</p>
-                <p className="mt-1 text-base font-black uppercase">{plan}</p>
-              </div>
-
-              <Link href={actionHref} className="inline-flex items-center gap-2 rounded-2xl bg-emerald-500 px-5 py-3 text-sm font-black text-white shadow-xl shadow-emerald-500/20 transition hover:bg-emerald-600">
-                Action rapide
-                <ArrowRight size={17} />
-              </Link>
-            </div>
-          </div>
-        </section>
-
         {/* 2. Subscription status card */}
         {(() => {
           const isPaid = plan && plan !== 'free'

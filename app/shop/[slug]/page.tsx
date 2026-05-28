@@ -242,7 +242,7 @@ export default function PublicShopPage() {
                 <div className="mb-3 inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-black" style={{ backgroundColor: primary + '33', color: primary }}>
                   <Verified size={14} /> Commerce vérifié
                 </div>
-                <h1 className="text-4xl font-black tracking-tight md:text-5xl">{business.name}</h1>
+                <h1 className="text-4xl font-black tracking-tight">{business.name}</h1>
                 <p className="mt-4 max-w-2xl text-lg font-medium leading-relaxed text-white/85 md:text-xl">
                   {business.slogan || 'Une expérience shopping premium et moderne'}
                 </p>
