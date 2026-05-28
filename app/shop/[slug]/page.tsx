@@ -222,7 +222,7 @@ export default function PublicShopPage() {
         />
         <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/45 to-[#050505]" />
 
-        <div className="relative mx-auto max-w-7xl px-5 pb-20 pt-10 md:pb-28 md:pt-20">
+        <div className="relative pb-10 pt-5 md:pb-14 md:pt-10">
           <div className="mb-8 flex items-center justify-between">
             <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-4 py-2 text-xs font-black uppercase tracking-[0.3em] backdrop-blur-xl">
               <Sparkles size={14} /> Premium Store
@@ -234,7 +234,7 @@ export default function PublicShopPage() {
 
           <div className="max-w-4xl">
             <div className="mb-8 flex flex-col gap-5 md:flex-row md:items-center">
-              <div className="relative h-28 w-28 overflow-hidden rounded-[2rem] border border-white/10 bg-white shadow-2xl">
+              <div className="relative h-28 w-28 overflow-hidden rounded-full border border-white/10 bg-white shadow-2xl">
                 <Image src={business.logo_url || '/icons/caissepro-icon.svg'} fill className="object-cover" alt={business.name} />
               </div>
 
@@ -242,7 +242,7 @@ export default function PublicShopPage() {
                 <div className="mb-3 inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-black" style={{ backgroundColor: primary + '33', color: primary }}>
                   <Verified size={14} /> Commerce vérifié
                 </div>
-                <h1 className="text-5xl font-black tracking-tight md:text-7xl">{business.name}</h1>
+                <h1 className="text-4xl font-black tracking-tight md:text-5xl">{business.name}</h1>
                 <p className="mt-4 max-w-2xl text-lg font-medium leading-relaxed text-white/85 md:text-xl">
                   {business.slogan || 'Une expérience shopping premium et moderne'}
                 </p>

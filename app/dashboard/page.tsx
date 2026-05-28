@@ -293,7 +293,7 @@ export default function DashboardPage() {
 
   function handleWhatsApp() {
     const text = `Rejoignez CaissePro et gerez votre commerce facilement ! Utilisez mon lien : ${referralUrl}`
-    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank')
+    window.open(`whatsapp://send?text=${encodeURIComponent(text)}`, '_blank')
   }
 
   const filteredMenuItems = shortcutSearch.trim()
@@ -404,23 +404,21 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <div className="mt-3 flex items-center gap-2 rounded-2xl border border-violet-200 bg-white px-3 py-2.5 dark:border-violet-700 dark:bg-slate-800">
-            <span className="flex-1 truncate text-xs font-bold text-slate-600 dark:text-slate-300">{referralUrl}</span>
+          <div className="mt-3 flex flex-row gap-3">
+            <button
+              onClick={handleWhatsApp}
+              className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-green-500 py-3 text-sm font-black text-white shadow-lg shadow-green-500/20 transition hover:bg-green-600"
+            >
+              Partager sur WhatsApp
+            </button>
             <button
               onClick={handleCopy}
-              className="flex shrink-0 items-center gap-1.5 rounded-xl bg-violet-600 px-3 py-1.5 text-xs font-black text-white transition hover:bg-violet-700"
+              className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-violet-300 bg-transparent py-3 text-sm font-black text-violet-700 transition hover:bg-violet-100 dark:border-violet-600 dark:text-violet-400 dark:hover:bg-violet-900/20"
             >
-              {copyDone ? <Check size={13} /> : null}
-              {copyDone ? 'Copie !' : 'Copier'}
+              {copyDone ? <Check size={14} /> : null}
+              {copyDone ? 'Lien copié !' : 'Copier le lien'}
             </button>
           </div>
-
-          <button
-            onClick={handleWhatsApp}
-            className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl bg-green-500 py-3 text-sm font-black text-white shadow-lg shadow-green-500/20 transition hover:bg-green-600"
-          >
-            Partager sur WhatsApp
-          </button>
         </div>
 
         {/* 4. Raccourcis section */}
@@ -492,7 +490,7 @@ export default function DashboardPage() {
           )}
 
           {pinnedItems.length === 0 && !shortcutSearch && (
-            <p className="mt-3 text-center text-xs font-semibold text-slate-400">Recherchez une fonctionnalite et epinglez-la ici pour y acceder rapidement.</p>
+            <p className="mt-3 text-center text-xs font-semibold text-slate-400">Ajoute la liste de tes outils favoris.</p>
           )}
         </div>
 
