@@ -40,6 +40,7 @@ const nextConfig = {
 module.exports = withSentryConfig(nextConfig, {
   org: 'amdy-labs',
   project: 'javascript-nextjs',
+  authToken: process.env.SENTRY_AUTH_TOKEN,
 
   silent: !process.env.CI,
   widenClientFileUpload: true,
