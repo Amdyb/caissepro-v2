@@ -315,12 +315,14 @@ export default function DashboardPage() {
 
       {/* 1. Hero banner - flush edge to edge */}
       <section className="-mx-5 -mt-8 relative overflow-hidden bg-slate-950">
-        <div
-          className="absolute inset-0 bg-cover bg-center opacity-40"
-          style={{
-            backgroundImage: `url(${business?.banner_url || 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?q=80&w=1600&auto=format&fit=crop'})`
-          }}
-        />
+        {business?.banner_url ? (
+          <div
+            className="absolute inset-0 bg-cover bg-center opacity-50"
+            style={{ backgroundImage: `url(${business.banner_url})` }}
+          />
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-br from-slate-800 via-slate-900 to-black" />
+        )}
 
         <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/55 to-black/20" />
 

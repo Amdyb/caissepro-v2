@@ -4,15 +4,23 @@ let _ctx: AudioContext | null = null
 
 function getCtx(): AudioContext | null {
   if (typeof window === 'undefined') return null
-  if (!_ctx) {
-    _ctx = new (window.AudioContext || (window as any).webkitAudioContext)()
+  try {
+    if (!_ctx || _ctx.state === 'closed') {
+      _ctx = new (window.AudioContext || (window as any).webkitAudioContext)()
+    }
+    return _ctx
+  } catch {
+    return null
   }
-  return _ctx
 }
 
 export function resumeContext(): void {
-  const ac = getCtx()
-  if (ac && ac.state === 'suspended') ac.resume().catch(() => {})
+  try {
+    const ac = getCtx()
+    if (ac && ac.state === 'suspended') ac.resume().catch(() => {})
+  } catch {
+    // ignore
+  }
 }
 
 function isEnabled(): boolean {
@@ -27,11 +35,15 @@ function play(fn: (ac: AudioContext) => void): void {
   if (!isEnabled()) return
   const ac = getCtx()
   if (!ac) return
-  if (ac.state === 'suspended') {
-    ac.resume().then(() => fn(ac)).catch(() => {})
-    return
+  try {
+    if (ac.state === 'suspended') {
+      ac.resume().then(() => { try { fn(ac) } catch {} }).catch(() => {})
+      return
+    }
+    fn(ac)
+  } catch {
+    // ignore audio errors
   }
-  fn(ac)
 }
 
 // Cash register cha-ching: ascending C6 -> E6 -> G6

@@ -1,7 +1,6 @@
 'use client'
 
 import AppShell from '@/components/AppShell'
-import BusinessImageUploader from '@/components/BusinessImageUploader'
 import { supabase } from '@/lib/supabaseClient'
 import { Copy, Download, ExternalLink, MessageCircle, Printer, QrCode, Save } from 'lucide-react'
 import Link from 'next/link'
@@ -72,6 +71,15 @@ export default function StorefrontSettingsPage() {
     if (error) { setMessage(error.message); return }
     setForm({ ...form, slug: cleanSlug })
     setMessage('Boutique en ligne mise à jour.')
+  }
+
+  async function uploadImageFile(file: File, folder: 'logos' | 'banners'): Promise<string | null> {
+    const ext = file.name.split('.').pop() || 'jpg'
+    const path = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+    const { error } = await supabase.storage.from('business-assets').upload(path, file, { upsert: false })
+    if (error) { setMessage(error.message); return null }
+    const { data } = supabase.storage.from('business-assets').getPublicUrl(path)
+    return data.publicUrl
   }
 
   async function copyShopLink() { await navigator.clipboard.writeText(shopUrl); setMessage('Lien boutique copié.') }
@@ -190,7 +198,26 @@ export default function StorefrontSettingsPage() {
           <div><label className="mb-2 block text-sm font-black text-slate-700">Adresse</label><input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-semibold outline-none focus:border-emerald-500" placeholder="Dakar, Sénégal" /></div>
           <div><label className="mb-2 block text-sm font-black text-slate-700">Couleur principale</label><input type="color" value={form.primary_color} onChange={(e) => setForm({ ...form, primary_color: e.target.value })} className="h-14 w-24 rounded-2xl border border-slate-200 bg-white p-2" /></div>
           <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-black text-slate-700"><input type="checkbox" checked={form.online_store_enabled} onChange={(e) => setForm({ ...form, online_store_enabled: e.target.checked })} />Publier ma boutique en ligne</label>
-          <div className="grid gap-5 md:grid-cols-2"><BusinessImageUploader label="Logo" value={form.logo_url} folder="logos" previewClassName="h-40" onChange={(url) => setForm({ ...form, logo_url: url })} /><BusinessImageUploader label="Bannière" value={form.banner_url} folder="banners" previewClassName="h-40" onChange={(url) => setForm({ ...form, banner_url: url })} /></div>
+          <div className="flex flex-row gap-3">
+            <label className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-4 text-sm font-black text-white transition hover:bg-emerald-700">
+              🖼️ Ajoute ton Logo
+              <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                const file = e.target.files?.[0]
+                if (!file) return
+                const url = await uploadImageFile(file, 'logos')
+                if (url) setForm(f => ({ ...f, logo_url: url }))
+              }} />
+            </label>
+            <label className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-4 text-sm font-black text-white transition hover:bg-emerald-700">
+              🏞️ Ajoute ta Bannière
+              <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                const file = e.target.files?.[0]
+                if (!file) return
+                const url = await uploadImageFile(file, 'banners')
+                if (url) setForm(f => ({ ...f, banner_url: url }))
+              }} />
+            </label>
+          </div>
           <button disabled={saving} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-8 py-5 text-lg font-black text-white shadow-xl shadow-emerald-600/20 disabled:opacity-50"><Save size={20}/>{saving ? 'Sauvegarde...' : 'Sauvegarder la boutique'}</button>
         </div></form>
       </div>

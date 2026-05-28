@@ -213,13 +213,17 @@ export default function PublicShopPage() {
     <main className="min-h-screen bg-[#050505] text-white">
       {/* Hero */}
       <section className="relative overflow-hidden">
-        <Image
-          src={business.banner_url || 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?q=80&w=1800&auto=format&fit=crop'}
-          fill
-          className="object-cover opacity-55"
-          alt={business.name}
-          priority
-        />
+        {business.banner_url ? (
+          <Image
+            src={business.banner_url}
+            fill
+            className="object-cover opacity-55"
+            alt={business.name}
+            priority
+          />
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-b from-slate-800 via-slate-900 to-[#050505]" />
+        )}
         <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/45 to-[#050505]" />
 
         <div className="relative pb-10 pt-5 md:pb-14 md:pt-10">
@@ -242,7 +246,7 @@ export default function PublicShopPage() {
                 <div className="mb-3 inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-black" style={{ backgroundColor: primary + '33', color: primary }}>
                   <Verified size={14} /> Commerce vérifié
                 </div>
-                <h1 className="text-4xl font-black tracking-tight">{business.name}</h1>
+                <h1 className="text-3xl font-black tracking-tight md:text-4xl">{business.name}</h1>
                 <p className="mt-4 max-w-2xl text-lg font-medium leading-relaxed text-white/85 md:text-xl">
                   {business.slogan || 'Une expérience shopping premium et moderne'}
                 </p>
