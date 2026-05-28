@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { resend } from '@/lib/email';
+import { getResend } from '@/lib/email';
 import WelcomeEmail from '@/lib/emails/welcome';
 import ResetPasswordEmail from '@/lib/emails/reset-password';
 import SaleNotificationEmail from '@/lib/emails/sale-notification';
@@ -57,6 +57,13 @@ export async function POST(request: NextRequest) {
   const config = emailConfigs[type];
   if (!config) {
     return NextResponse.json({ error: `Unknown email type: ${type}` }, { status: 400 });
+  }
+
+  let resend;
+  try {
+    resend = getResend();
+  } catch {
+    return NextResponse.json({ error: 'Email service not configured' }, { status: 503 });
   }
 
   const { data: result, error } = await resend.emails.send({
