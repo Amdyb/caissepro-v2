@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next'
+import { GoogleAnalytics } from '@next/third-parties/google'
 import './globals.css'
 import DarkModeProvider from '@/components/DarkModeProvider'
 import InstallAppPrompt from '@/components/InstallAppPrompt'
@@ -50,6 +51,7 @@ export default function RootLayout({
         {children}
         <InstallAppPrompt />
       </body>
+      <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID!} />
     </html>
   )
 }
