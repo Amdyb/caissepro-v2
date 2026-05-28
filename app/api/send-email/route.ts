@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import React from 'react';
+import { render } from '@react-email/components';
 import { getResend } from '@/lib/email';
 import WelcomeEmail from '@/lib/emails/welcome';
 import ResetPasswordEmail from '@/lib/emails/reset-password';
@@ -29,24 +30,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields: type, to, data' }, { status: 400 });
     }
 
-    const emailConfigs: Record<EmailType, { subject: string; react: React.ReactElement }> = {
+    const emailConfigs: Record<EmailType, { subject: string; element: React.ReactElement }> = {
       welcome: {
         subject: `Bienvenue sur CaissePro — ${data.shopName ?? 'votre boutique'} est prête !`,
-        react: React.createElement(WelcomeEmail, {
+        element: React.createElement(WelcomeEmail, {
           shopName: data.shopName as string,
           ownerName: data.ownerName as string | undefined,
         }),
       },
       'reset-password': {
         subject: `Votre code de réinitialisation CaissePro : ${data.otp}`,
-        react: React.createElement(ResetPasswordEmail, {
+        element: React.createElement(ResetPasswordEmail, {
           otp: data.otp as string,
           ownerName: data.ownerName as string | undefined,
         }),
       },
       'sale-notification': {
         subject: `Nouvelle vente : ${data.amount} XOF — ${data.productName}`,
-        react: React.createElement(SaleNotificationEmail, {
+        element: React.createElement(SaleNotificationEmail, {
           amount: data.amount as number,
           productName: data.productName as string,
           customerName: data.customerName as string,
@@ -68,11 +69,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Email service not configured' }, { status: 503 });
     }
 
+    const html = await render(config.element);
+
     const { data: result, error } = await resend.emails.send({
       from: 'CaissePro <noreply@caissepro.app>',
       to,
       subject: config.subject,
-      react: config.react,
+      html,
     });
 
     if (error) {
