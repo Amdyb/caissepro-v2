@@ -32,21 +32,21 @@ export async function POST(request: NextRequest) {
     const emailConfigs: Record<EmailType, { subject: string; react: React.ReactElement }> = {
       welcome: {
         subject: `Bienvenue sur CaissePro — ${data.shopName ?? 'votre boutique'} est prête !`,
-        react: WelcomeEmail({
+        react: React.createElement(WelcomeEmail, {
           shopName: data.shopName as string,
           ownerName: data.ownerName as string | undefined,
         }),
       },
       'reset-password': {
         subject: `Votre code de réinitialisation CaissePro : ${data.otp}`,
-        react: ResetPasswordEmail({
+        react: React.createElement(ResetPasswordEmail, {
           otp: data.otp as string,
           ownerName: data.ownerName as string | undefined,
         }),
       },
       'sale-notification': {
         subject: `Nouvelle vente : ${data.amount} XOF — ${data.productName}`,
-        react: SaleNotificationEmail({
+        react: React.createElement(SaleNotificationEmail, {
           amount: data.amount as number,
           productName: data.productName as string,
           customerName: data.customerName as string,
