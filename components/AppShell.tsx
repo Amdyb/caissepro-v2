@@ -67,10 +67,20 @@ type SectionConfig = {
 const PLAN_LEVELS: Record<string, number> = { free: 0, starter: 1, business: 2, premium: 3 }
 
 const STAFF_ROLES = ['sales', 'staff', 'employee', 'cashier']
+const MANAGER_ROLES = ['manager']
 
 const STAFF_ALLOWED_PATHS = [
   '/pos', '/checkout', '/products',
   '/register-shifts', '/profile', '/change-password',
+]
+
+const MANAGER_ALLOWED_PATHS = [
+  '/dashboard', '/pos', '/checkout',
+  '/products', '/sales', '/refunds', '/register-shifts',
+  '/customers', '/expenses', '/reports', '/finances',
+  '/orders', '/debts', '/payment-links', '/purchases',
+  '/stock-movements', '/activity',
+  '/profile', '/change-password', '/help', '/feedback', '/legal',
 ]
 
 const STAFF_SECTION: SectionConfig = {
@@ -107,6 +117,72 @@ const STAFF_BOTTOM_NAV = [
   { label: 'Caisse', href: '/register-shifts', icon: Wallet },
   { label: 'Profil', href: '/profile', icon: User },
 ]
+
+const MANAGER_BOTTOM_NAV = [
+  { label: 'Accueil', href: '/dashboard', icon: LayoutDashboard },
+  { label: 'Vendre', href: '/pos', icon: ShoppingCart },
+  { label: 'Produits', href: '/products', icon: Package },
+  { label: 'Rapports', href: '/reports', icon: TrendingUp },
+]
+
+const MANAGER_CAISSE_SECTION: SectionConfig = {
+  key: 'manager-caisse',
+  title: 'CAISSE',
+  borderColor: 'border-emerald-500',
+  bgColor: 'bg-emerald-50 dark:bg-emerald-900/30',
+  textColor: 'text-emerald-700 dark:text-emerald-400',
+  headerColor: 'text-emerald-600 dark:text-emerald-400',
+  defaultOpen: true,
+  items: [
+    { label: 'Vendre', href: '/pos', icon: ShoppingCart },
+    { label: 'Historique des ventes', href: '/sales', icon: ReceiptText },
+    { label: 'Remboursements', href: '/refunds', icon: RotateCcw },
+    { label: 'Caisse du jour', href: '/register-shifts', icon: Wallet },
+  ],
+}
+
+const MANAGER_GESTION_SECTION: SectionConfig = {
+  key: 'manager-gestion',
+  title: 'GESTION',
+  borderColor: 'border-violet-500',
+  bgColor: 'bg-violet-50 dark:bg-violet-900/30',
+  textColor: 'text-violet-700 dark:text-violet-400',
+  headerColor: 'text-violet-600 dark:text-violet-400',
+  defaultOpen: false,
+  items: [
+    { label: 'Produits', href: '/products', icon: Package },
+    { label: 'Clients', href: '/customers', icon: Users },
+    { label: 'Depenses', href: '/expenses', icon: Receipt },
+  ],
+}
+
+const MANAGER_RAPPORTS_SECTION: SectionConfig = {
+  key: 'manager-rapports',
+  title: 'RAPPORTS',
+  borderColor: 'border-teal-500',
+  bgColor: 'bg-teal-50 dark:bg-teal-900/30',
+  textColor: 'text-teal-700 dark:text-teal-400',
+  headerColor: 'text-teal-600 dark:text-teal-400',
+  defaultOpen: false,
+  items: [
+    { label: 'Rapports', href: '/reports', icon: TrendingUp },
+    { label: 'Finances', href: '/finances', icon: DollarSign },
+  ],
+}
+
+const MANAGER_PROFILE_SECTION: SectionConfig = {
+  key: 'manager-profil',
+  title: 'MON COMPTE',
+  borderColor: 'border-slate-300',
+  bgColor: 'bg-slate-100 dark:bg-slate-700',
+  textColor: 'text-slate-700 dark:text-slate-200',
+  headerColor: 'text-slate-500 dark:text-slate-400',
+  defaultOpen: false,
+  items: [
+    { label: 'Mon profil', href: '/profile', icon: User },
+    { label: 'Aide', href: '/help', icon: HelpCircle },
+  ],
+}
 
 const ROLE_LABELS: Record<string, string> = {
   sales: 'Vendeur',
@@ -561,11 +637,17 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
   // Block staff from restricted pages
   useEffect(() => {
     if (!ready) return
-    if (!STAFF_ROLES.includes(userRole)) return
-    const allowed = STAFF_ALLOWED_PATHS.some(
-      (p) => pathname === p || pathname.startsWith(p + '/')
-    )
-    if (!allowed) router.replace('/pos')
+    if (STAFF_ROLES.includes(userRole)) {
+      const allowed = STAFF_ALLOWED_PATHS.some(
+        (p) => pathname === p || pathname.startsWith(p + '/')
+      )
+      if (!allowed) router.replace('/pos')
+    } else if (MANAGER_ROLES.includes(userRole)) {
+      const allowed = MANAGER_ALLOWED_PATHS.some(
+        (p) => pathname === p || pathname.startsWith(p + '/')
+      )
+      if (!allowed) router.replace('/dashboard')
+    }
   }, [ready, userRole, pathname, router])
 
   function toggleSection(key: string) {
@@ -586,7 +668,13 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
   }
 
   const isStaff = STAFF_ROLES.includes(userRole)
-  const navSections = isStaff ? [STAFF_SECTION, STAFF_PROFILE_SECTION] : getNavSections(businessType)
+  const isManager = MANAGER_ROLES.includes(userRole)
+  const isEmployee = isStaff || isManager
+  const navSections = isStaff
+    ? [STAFF_SECTION, STAFF_PROFILE_SECTION]
+    : isManager
+    ? [MANAGER_CAISSE_SECTION, MANAGER_GESTION_SECTION, MANAGER_RAPPORTS_SECTION, MANAGER_PROFILE_SECTION]
+    : getNavSections(businessType)
   const currentPlanLevel = PLAN_LEVELS[subscription?.plan || 'free'] ?? 0
 
   const sidebarContent = (
@@ -600,10 +688,14 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
         </div>
         <div className="min-w-0">
           <h1 className="truncate text-base font-black text-slate-950 dark:text-white">{businessName}</h1>
-          {isStaff ? (
+          {isEmployee ? (
             <>
               <p className="truncate text-sm font-bold text-slate-600 dark:text-slate-300">{userName}</p>
-              <span className="mt-0.5 inline-block rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-black text-slate-500 dark:bg-slate-700 dark:text-slate-400">
+              <span className={`mt-0.5 inline-block rounded-full px-2 py-0.5 text-[10px] font-black ${
+                isManager
+                  ? 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-400'
+                  : 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400'
+              }`}>
                 {ROLE_LABELS[userRole] || userRole}
               </span>
             </>
@@ -613,8 +705,8 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
         </div>
       </div>
 
-      {/* Subscription status — hidden for employees */}
-      {!isStaff && <div className="px-4 pt-3">
+      {/* Subscription status — hidden for employees and managers */}
+      {!isEmployee && <div className="px-4 pt-3">
         {(() => {
           const planName = subscription?.plan
           const exp = subscription?.expires_at
@@ -665,7 +757,7 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
         </Link>
       </div>
 
-      {/* ACCUEIL — hidden for employees */}
+      {/* ACCUEIL — hidden for staff, shown for managers and owners */}
       {!isStaff && (
         <div className="px-4 pt-3">
           <p className="mb-1 px-3 text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">ACCUEIL</p>
@@ -843,7 +935,7 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
       {/* Fixed bottom nav (mobile only) */}
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800 lg:hidden">
         <div className="grid grid-cols-5">
-          {(isStaff ? STAFF_BOTTOM_NAV : BOTTOM_NAV).map((item) => {
+          {(isStaff ? STAFF_BOTTOM_NAV : isManager ? MANAGER_BOTTOM_NAV : BOTTOM_NAV).map((item) => {
             const Icon = item.icon
             const active = pathname === item.href
             return (
