@@ -81,6 +81,7 @@ const MANAGER_ALLOWED_PATHS = [
   '/orders', '/debts', '/payment-links', '/purchases',
   '/stock-movements', '/activity',
   '/settings', '/payment-methods', '/employees', '/staff',
+  '/storefront', '/orders', '/categories',
   '/profile', '/change-password', '/help', '/feedback', '/legal',
 ]
 
@@ -155,6 +156,21 @@ const MANAGER_GESTION_SECTION: SectionConfig = {
     { label: 'Clients', href: '/customers', icon: Users },
     { label: 'Employes', href: '/employees', icon: UserCog },
     { label: 'Depenses', href: '/expenses', icon: Receipt },
+  ],
+}
+
+const MANAGER_BOUTIQUE_SECTION: SectionConfig = {
+  key: 'manager-boutique',
+  title: 'BOUTIQUE EN LIGNE',
+  borderColor: 'border-orange-500',
+  bgColor: 'bg-orange-50 dark:bg-orange-900/30',
+  textColor: 'text-orange-700 dark:text-orange-400',
+  headerColor: 'text-orange-600 dark:text-orange-400',
+  defaultOpen: false,
+  items: [
+    { label: 'Ma boutique', href: '/storefront', icon: Globe },
+    { label: 'Commandes en ligne', href: '/orders', icon: ShoppingBag },
+    { label: 'QR Code boutique', href: '/storefront/qr', icon: QrCode },
   ],
 }
 
@@ -679,7 +695,7 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
   const navSections = isStaff
     ? [STAFF_SECTION, STAFF_PROFILE_SECTION]
     : isManager
-    ? [MANAGER_CAISSE_SECTION, MANAGER_GESTION_SECTION, MANAGER_RAPPORTS_SECTION, MANAGER_PROFILE_SECTION]
+    ? [MANAGER_CAISSE_SECTION, MANAGER_GESTION_SECTION, MANAGER_BOUTIQUE_SECTION, MANAGER_RAPPORTS_SECTION, MANAGER_PROFILE_SECTION]
     : getNavSections(businessType)
   const currentPlanLevel = PLAN_LEVELS[subscription?.plan || 'free'] ?? 0
 
