@@ -67,7 +67,7 @@ type SectionConfig = {
 const PLAN_LEVELS: Record<string, number> = { free: 0, starter: 1, business: 2, premium: 3 }
 
 const STAFF_ROLES = ['sales', 'staff', 'employee', 'cashier']
-const MANAGER_ROLES = ['manager']
+const MANAGER_ROLES = ['manager', 'admin']
 
 const STAFF_ALLOWED_PATHS = [
   '/pos', '/checkout', '/products',
@@ -190,6 +190,7 @@ const ROLE_LABELS: Record<string, string> = {
   staff: 'Employé',
   employee: 'Employé',
   manager: 'Manager',
+  admin: 'Admin',
 }
 
 const PROFILE_SECTION: SectionConfig = {
