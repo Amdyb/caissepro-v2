@@ -11,11 +11,11 @@ export default function ShopNotFound() {
         <div>
           <h1 className="text-3xl font-black tracking-tight">Boutique introuvable</h1>
           <p className="mt-3 text-sm font-semibold text-white/50">
-            Cette boutique n&apos;existe pas ou le lien est incorrect.
+            Cette boutique n&apos;existe pas ou n&apos;est plus disponible.
           </p>
         </div>
         <Link
-          href="/"
+          href="https://caissepro.app"
           className="rounded-2xl bg-emerald-600 px-6 py-3 text-sm font-black text-white transition hover:bg-emerald-700"
         >
           Retour à l&apos;accueil
