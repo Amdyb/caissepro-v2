@@ -1,7 +1,7 @@
 'use client'
 
 import { ChangeEvent, useState } from 'react'
-import { ImagePlus, Loader2, UploadCloud } from 'lucide-react'
+import { ImagePlus, Loader2 } from 'lucide-react'
 import { supabase } from '@/lib/supabaseClient'
 
 type Props = {
@@ -76,7 +76,7 @@ export default function ProductImageUploader({
           </div>
         )}
 
-        <label className="mt-5 flex cursor-pointer items-center justify-center gap-2 rounded-2xl bg-brand-600 px-5 py-4 text-sm font-black text-white hover:bg-brand-700">
+        <label className="mt-5 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-green-600 px-5 py-4 text-sm font-black text-white hover:bg-green-700">
           {uploading ? (
             <>
               <Loader2 className="animate-spin" size={18} />
@@ -84,8 +84,7 @@ export default function ProductImageUploader({
             </>
           ) : (
             <>
-              <UploadCloud size={18} />
-              Choisir une image
+              🖼️ Ajoute l&apos;image du produit
             </>
           )}
 

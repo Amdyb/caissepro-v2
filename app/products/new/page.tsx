@@ -1,7 +1,6 @@
 'use client'
 
 import AppShell from '@/components/AppShell'
-import BrandingImageUploader from '@/components/BrandingImageUploader'
 import { supabase } from '@/lib/supabaseClient'
 import { ArrowLeft, PackagePlus, Save } from 'lucide-react'
 import Link from 'next/link'
@@ -86,6 +85,17 @@ export default function NewProductPage() {
     router.push('/products')
   }
 
+  async function handleProductImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const ext = file.name.split('.').pop() || 'jpg'
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${ext}`
+    const { error } = await supabase.storage.from('product-images').upload(fileName, file)
+    if (error) { setMessage(error.message); return }
+    const { data } = supabase.storage.from('product-images').getPublicUrl(fileName)
+    setForm(f => ({ ...f, image: data.publicUrl }))
+  }
+
   return (
     <AppShell title="Ajouter produit" subtitle="Ajoutez un nouveau produit à votre boutique.">
       <div className="mx-auto max-w-3xl">
@@ -123,18 +133,23 @@ export default function NewProductPage() {
 
             <div className="grid gap-5 md:grid-cols-2">
               <input type="number" placeholder="Stock" value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} className="rounded-2xl border border-slate-300 px-5 py-4 font-bold outline-none" />
-              <input placeholder="URL de l'image" value={form.image} onChange={(e) => setForm({ ...form, image: e.target.value })} className="rounded-2xl border border-slate-300 px-5 py-4 font-bold outline-none" />
             </div>
 
-            {businessId && (
-              <BrandingImageUploader
-                businessId={businessId}
-                label="Image produit"
-                value={form.image}
-                folder="banners"
-                onUploaded={(url) => setForm({ ...form, image: url })}
-              />
-            )}
+            <div>
+              {form.image && (
+                <div className="mb-3 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
+                  <img src={form.image} alt="Produit" className="h-28 w-full object-contain bg-white" />
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={() => (document.getElementById('product-image-upload') as HTMLInputElement)?.click()}
+                className="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-xl"
+              >
+                🖼️ Ajoute l&apos;image du produit
+              </button>
+              <input id="product-image-upload" type="file" accept="image/*" className="hidden" onChange={handleProductImageUpload} />
+            </div>
 
             <button disabled={saving} className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 py-5 text-lg font-black text-white shadow-2xl shadow-emerald-200 disabled:opacity-50">
               <Save size={20} />
