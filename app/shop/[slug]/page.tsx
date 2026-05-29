@@ -3,7 +3,7 @@
 import { supabasePublic as supabase } from '@/lib/supabasePublic'
 import { sendOrderNotification } from '@/lib/whatsapp'
 import Image from 'next/image'
-import { ChevronRight, MapPin, MessageCircle, Navigation, Phone, Search, Share2, ShoppingBag, Sparkles, Store, Verified, X } from 'lucide-react'
+import { ChevronRight, MapPin, MessageCircle, Navigation, Phone, Search, Share2, ShoppingBag, Store, Verified, X } from 'lucide-react'
 import { useParams } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 
@@ -228,8 +228,8 @@ export default function PublicShopPage() {
 
         <div className="relative pb-10 pt-5 md:pb-14 md:pt-10">
           <div className="mb-8 flex items-center justify-between">
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-4 py-2 text-xs font-black uppercase tracking-[0.3em] backdrop-blur-xl">
-              <Sparkles size={14} /> Premium Store
+            <div className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-black/40 px-3 py-1.5 backdrop-blur-xl">
+              <Image src="/amdy-labs-logo.png" alt="Amdy Labs" width={80} height={24} className="object-contain opacity-90" />
             </div>
             <button onClick={shareShop} className="rounded-full border border-white/10 bg-white/10 p-4 backdrop-blur-xl">
               <Share2 size={18} />
