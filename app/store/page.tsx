@@ -117,7 +117,7 @@ export default function StorePage() {
       subtitle="Créez une vitrine publique avec logo, bannière et lien partageable."
       action={
         <div className="hidden gap-3 md:flex">
-          <Link href="/pricing" className="inline-flex items-center gap-2 rounded-2xl bg-amber-500 px-5 py-3 text-sm font-black text-white hover:bg-amber-600">
+          <Link href="/upgrade" className="inline-flex items-center gap-2 rounded-2xl bg-amber-500 px-5 py-3 text-sm font-black text-white hover:bg-amber-600">
             <Crown size={18} />
             Upgrade
           </Link>
@@ -139,7 +139,7 @@ export default function StorePage() {
                 <h3 className="mt-1 text-2xl font-black text-slate-950">La boutique en ligne est disponible avec Business ou Premium.</h3>
                 <p className="mt-2 text-sm font-semibold text-slate-600">Vous pouvez préparer le logo, la bannière, les couleurs et le lien. Pour publier et partager la boutique, passez à Business.</p>
               </div>
-              <Link href="/pricing" className="inline-flex items-center justify-center gap-2 rounded-2xl bg-amber-500 px-6 py-4 text-sm font-black text-white hover:bg-amber-600">
+              <Link href="/upgrade" className="inline-flex items-center justify-center gap-2 rounded-2xl bg-amber-500 px-6 py-4 text-sm font-black text-white hover:bg-amber-600">
                 <Crown size={18} />
                 Voir les plans
               </Link>

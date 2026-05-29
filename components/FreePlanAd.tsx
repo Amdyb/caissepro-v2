@@ -32,7 +32,7 @@ export default function FreePlanAd({
         </div>
 
         <Link
-          href="/pricing"
+          href="/upgrade"
           className="inline-flex items-center justify-center gap-2 rounded-2xl bg-amber-500 px-6 py-4 text-sm font-black text-white transition hover:bg-amber-600"
         >
           <Crown size={18} />

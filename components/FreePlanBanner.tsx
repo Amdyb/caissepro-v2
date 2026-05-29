@@ -30,7 +30,7 @@ export default function FreePlanBanner() {
 
         <div className="flex shrink-0 flex-col gap-3 sm:flex-row">
           <Link
-            href="/pricing"
+            href="/upgrade"
             className="inline-flex items-center justify-center gap-2 rounded-2xl bg-amber-500 px-6 py-4 text-sm font-black text-white shadow-lg shadow-amber-500/20 transition hover:bg-amber-600"
           >
             <Crown size={18} />
@@ -38,7 +38,7 @@ export default function FreePlanBanner() {
           </Link>
 
           <Link
-            href="/pricing"
+            href="/upgrade"
             className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-6 py-4 text-sm font-black text-slate-700 transition hover:bg-slate-50"
           >
             Passer à Starter

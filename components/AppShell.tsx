@@ -760,8 +760,8 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
                   </p>
                 )}
               </div>
-              <Link href="/subscription" className="rounded-xl bg-emerald-600 px-2.5 py-1.5 text-[10px] font-black text-white transition hover:bg-emerald-700">
-                {isActive && days !== null && days > 0 ? 'Gérer' : 'Upgrader'}
+              <Link href="/upgrade" className="rounded-xl bg-emerald-600 px-2.5 py-1.5 text-[10px] font-black text-white transition hover:bg-emerald-700">
+                {isActive && days !== null && days > 0 ? 'Renouveler' : 'Upgrader'}
               </Link>
             </div>
           )
