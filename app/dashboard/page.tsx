@@ -276,12 +276,7 @@ export default function DashboardPage() {
     )
   }
 
-  const actionHref =
-    businessType === 'tontine'
-      ? '/tontines'
-      : businessType === 'rental'
-        ? '/properties'
-        : '/pos'
+  const actionHref = '/pos'
 
   const referralUrl = `https://caissepro.app/register?ref=${business?.slug || ''}`
 

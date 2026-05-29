@@ -1,52 +1,24 @@
 'use client'
 
 import { supabase } from '@/lib/supabaseClient'
-import { ArrowRight, Building2, Home, ShoppingBag, Store, Utensils, Users } from 'lucide-react'
+import { ArrowRight, Building2, ShoppingBag, Store } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 
 const businessTypes = [
   {
     id: 'retail',
-    title: 'Boutique / Retail',
+    title: 'Commerce & Boutique',
     description: 'Produits, stock, caisse, clients, paiements et boutique en ligne.',
-    icon: Store,
-    examples: 'Fashion, électronique, beauté, supérette, vape shop'
-  },
-  {
-    id: 'restaurant',
-    title: 'Restauration',
-    description: 'Menu, commandes, caisse rapide, clients, rapports et paiements.',
-    icon: Utensils,
-    examples: 'Fast food, restaurant, traiteur, café'
-  },
-  {
-    id: 'tontine',
-    title: 'Tontine',
-    description: 'Groupes, participants, cotisations, tirages, transparence et rappels.',
-    icon: Users,
-    examples: 'Tontine familiale, association, groupe communautaire'
-  },
-  {
-    id: 'rental',
-    title: 'Gestion immobilière',
-    description: 'Locataires, loyers, rappels, reçus, appartements et paiements.',
-    icon: Home,
-    examples: 'Location, appartements, chambres meublées, immeubles'
-  },
-  {
-    id: 'automobile',
-    title: 'Automobile',
-    description: 'Location, vente, clients, paiements, contrats et suivi véhicules.',
-    icon: Building2,
-    examples: 'Vente auto, location voiture, garage'
-  },
-  {
-    id: 'service',
-    title: 'Services',
-    description: 'Prestations, clients, rendez-vous, factures et paiements.',
     icon: ShoppingBag,
-    examples: 'Salon, agence, prestation, réparation'
+    examples: 'Mode, électronique, beauté, supérette, épicerie, pharmacie...'
+  },
+  {
+    id: 'other',
+    title: 'Autre',
+    description: 'Tout autre type d\'activité commerciale ou de service.',
+    icon: Building2,
+    examples: 'Services, artisanat, prestation, agence, réparation...'
   }
 ]
 
@@ -74,7 +46,6 @@ export default function BusinessTypeOnboardingPage() {
 
       const member: any = membership
 
-      // Only owners/admins can access the business setup wizard
       if (member?.business_id && !['owner', 'admin'].includes(member?.role)) {
         router.push('/dashboard')
         return
@@ -82,7 +53,8 @@ export default function BusinessTypeOnboardingPage() {
 
       if (member?.business_id) {
         setBusinessId(member.business_id)
-        setSelected(member.businesses?.business_type || 'retail')
+        const btype = member.businesses?.business_type || 'retail'
+        setSelected(['retail', 'other'].includes(btype) ? btype : 'retail')
       }
 
       setLoading(false)
@@ -115,20 +87,20 @@ export default function BusinessTypeOnboardingPage() {
 
   return (
     <main className="min-h-screen bg-slate-50 px-5 py-10 text-slate-950">
-      <div className="mx-auto max-w-6xl">
+      <div className="mx-auto max-w-3xl">
         <div className="mb-10 text-center">
           <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-3xl bg-emerald-600 text-white shadow-xl shadow-emerald-600/20">
             <Store size={34} />
           </div>
           <h1 className="text-5xl font-black tracking-tight">Quel type de business gérez-vous ?</h1>
           <p className="mx-auto mt-4 max-w-2xl text-lg font-semibold leading-8 text-slate-600">
-            CaissePro va générer une expérience adaptée à votre activité: navigation, modules, boutique et rapports.
+            CaissePro va générer une expérience adaptée à votre activité.
           </p>
         </div>
 
         {message && <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-bold text-red-700">{message}</div>}
 
-        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-5 md:grid-cols-2">
           {businessTypes.map((type) => {
             const Icon = type.icon
             const active = selected === type.id
@@ -154,7 +126,7 @@ export default function BusinessTypeOnboardingPage() {
             Continuer
             <ArrowRight size={20} />
           </button>
-          <p className="text-sm font-semibold text-slate-500">Vous pourrez modifier certains paramètres plus tard.</p>
+          <p className="text-sm font-semibold text-slate-500">Vous pourrez modifier ces paramètres plus tard.</p>
         </div>
       </div>
     </main>

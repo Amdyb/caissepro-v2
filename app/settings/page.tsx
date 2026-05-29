@@ -9,39 +9,23 @@ import {
   ArrowLeft,
   BriefcaseBusiness,
   Building2,
-  Car,
   Clock,
-  Droplets,
-  HardHat,
-  Heart,
   MapPin,
   Moon,
-  Package,
   Palette,
   Phone,
-  PiggyBank,
   Quote,
   Save,
   ShoppingBag,
-  Sparkles,
   Sun,
-  Utensils,
   Volume2,
   VolumeX,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabaseClient'
 
 const businessTypes = [
-  { value: 'retail',     label: 'Commerce & Boutique',   desc: 'Vente au détail, boutique',    icon: ShoppingBag, accent: '#16a34a', bg: '#f0fdf4', border: '#86efac' },
-  { value: 'restaurant', label: 'Restaurant & Fast Food', desc: 'Restauration, snack, café',    icon: Utensils,    accent: '#ea580c', bg: '#fff7ed', border: '#fdba74' },
-  { value: 'beauty',     label: 'Salon & Beauté',         desc: 'Coiffure, esthétique, spa',    icon: Sparkles,    accent: '#db2777', bg: '#fdf2f8', border: '#f9a8d4' },
-  { value: 'pharmacy',   label: 'Pharmacie',              desc: 'Médicaments, santé',           icon: Heart,       accent: '#dc2626', bg: '#fef2f2', border: '#fca5a5' },
-  { value: 'garage',     label: 'Garage & Auto',          desc: 'Mécanique, réparation',        icon: Car,         accent: '#2563eb', bg: '#eff6ff', border: '#93c5fd' },
-  { value: 'btp',        label: 'BTP & Services',         desc: 'Construction, artisanat',      icon: HardHat,     accent: '#ca8a04', bg: '#fefce8', border: '#fde047' },
-  { value: 'tontine',    label: 'Tontine & Épargne',      desc: 'Épargne collective, finance',  icon: PiggyBank,   accent: '#7c3aed', bg: '#f5f3ff', border: '#c4b5fd' },
-  { value: 'rental',     label: 'Location & Immobilier',  desc: 'Immobilier, location',         icon: Building2,   accent: '#4338ca', bg: '#eef2ff', border: '#a5b4fc' },
-  { value: 'wholesale',  label: 'Grossiste',              desc: 'Vente en gros, distribution',  icon: Package,     accent: '#475569', bg: '#f8fafc', border: '#cbd5e1' },
-  { value: 'laundry',    label: 'Laverie & Pressing',     desc: 'Nettoyage, pressing',          icon: Droplets,    accent: '#0891b2', bg: '#ecfeff', border: '#67e8f9' },
+  { value: 'retail', label: 'Commerce & Boutique', desc: 'Vente au détail, boutique, supérette', icon: ShoppingBag, accent: '#16a34a', bg: '#f0fdf4', border: '#86efac' },
+  { value: 'other',  label: 'Autre',               desc: 'Tout autre type d\'activité',          icon: Building2,   accent: '#64748b', bg: '#f8fafc', border: '#cbd5e1' },
 ]
 
 function slugify(value: string) {

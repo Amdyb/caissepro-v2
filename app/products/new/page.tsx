@@ -1,6 +1,7 @@
 'use client'
 
 import AppShell from '@/components/AppShell'
+import { PLAN_LIMITS, PlanName, getNumericLimit } from '@/lib/plans'
 import { supabase } from '@/lib/supabaseClient'
 import { ArrowLeft, ImagePlus, PackagePlus, Save } from 'lucide-react'
 import Link from 'next/link'
@@ -11,6 +12,8 @@ export default function NewProductPage() {
   const router = useRouter()
 
   const [businessId, setBusinessId] = useState<string | null>(null)
+  const [plan, setPlan] = useState<PlanName>('free')
+  const [productCount, setProductCount] = useState(0)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
 
@@ -48,7 +51,15 @@ export default function NewProductPage() {
         return
       }
 
-      setBusinessId(membership.business_id)
+      const bId = membership.business_id
+      setBusinessId(bId)
+
+      const [subResult, countResult] = await Promise.all([
+        supabase.from('subscriptions').select('plan').eq('business_id', bId).eq('status', 'active').order('created_at', { ascending: false }).limit(1).maybeSingle(),
+        supabase.from('products').select('id', { count: 'exact', head: true }).eq('business_id', bId).not('archived', 'is', true),
+      ])
+      setPlan((subResult.data?.plan as PlanName) || 'free')
+      setProductCount(countResult.count || 0)
     }
 
     init()
@@ -58,6 +69,12 @@ export default function NewProductPage() {
     e.preventDefault()
 
     if (!businessId) return
+
+    const limit = getNumericLimit(plan, 'products')
+    if (limit !== -1 && productCount >= limit) {
+      setMessage(`Limite atteinte : votre plan ${plan === 'free' ? 'Gratuit' : plan} permet ${limit} produits maximum. Passez à un plan supérieur pour en ajouter plus.`)
+      return
+    }
 
     setSaving(true)
     setMessage('')

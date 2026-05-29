@@ -17,13 +17,32 @@ export default function EmployeeSetupPage() {
   const [message, setMessage] = useState('')
   const [isError, setIsError] = useState(false)
 
-  // Data fetched from DB during verify step
   const [memberId, setMemberId] = useState<string | null>(null)
   const [memberEmail, setMemberEmail] = useState('')
   const [memberFullName, setMemberFullName] = useState('')
 
   function showError(msg: string) { setMessage(msg); setIsError(true) }
   function showSuccess(msg: string) { setMessage(msg); setIsError(false) }
+
+  function friendlyError(raw: string): string {
+    const msg = raw.toLowerCase()
+    if (msg.includes('database error') || msg.includes('unexpected') || msg.includes('internal')) {
+      return "Une erreur technique est survenue. Veuillez réessayer dans quelques instants."
+    }
+    if (msg.includes('already registered') || msg.includes('user already exists') || msg.includes('already been registered')) {
+      return "Ce compte existe déjà. Veuillez vous connecter directement."
+    }
+    if (msg.includes('invalid email') || msg.includes('email')) {
+      return "Adresse email invalide ou déjà utilisée. Vérifiez vos informations."
+    }
+    if (msg.includes('password') || msg.includes('too short')) {
+      return "Le mot de passe ne respecte pas les critères de sécurité requis."
+    }
+    if (msg.includes('rate limit') || msg.includes('too many')) {
+      return "Trop de tentatives. Veuillez patienter quelques minutes avant de réessayer."
+    }
+    return "Erreur lors de la création du compte. Veuillez réessayer."
+  }
 
   async function verifyTempPassword(e: React.FormEvent) {
     e.preventDefault()
@@ -33,7 +52,6 @@ export default function EmployeeSetupPage() {
     const cleanEmail = email.trim().toLowerCase()
     const cleanTemp = tempPassword.trim()
 
-    // Query by temp_password + is_active to get full member record
     const { data: member, error } = await supabase
       .from('business_members')
       .select('id, user_id, email, full_name, business_id')
@@ -47,7 +65,6 @@ export default function EmployeeSetupPage() {
       return
     }
 
-    // Verify email matches (security check)
     if (member.email?.toLowerCase() !== cleanEmail) {
       showError("Email ou mot de passe temporaire incorrect. Vérifiez vos identifiants.")
       setLoading(false)
@@ -82,21 +99,14 @@ export default function EmployeeSetupPage() {
     setLoading(true)
     setMessage('')
 
-    // signUp with the email from DB (canonical, not user-typed)
-    // The handle_new_user trigger will:
-    //   1. Create the profiles row (satisfies business_members.user_id FK)
-    //   2. Detect this is an employee activation and link user_id automatically
-    //   3. Skip creating a new business
     const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email: memberEmail,
       password: newPassword,
-      options: {
-        data: { full_name: memberFullName }
-      }
+      options: { data: { full_name: memberFullName } }
     })
 
     if (signUpError) {
-      showError(signUpError.message)
+      showError(friendlyError(signUpError.message))
       setLoading(false)
       return
     }
@@ -108,7 +118,23 @@ export default function EmployeeSetupPage() {
       return
     }
 
-    // Verify the trigger linked the record correctly
+    // Sign in FIRST to get a session — required so RLS allows us to update business_members
+    let session = signUpData.session
+    if (!session) {
+      const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
+        email: memberEmail,
+        password: newPassword,
+      })
+
+      if (loginError) {
+        showSuccess("Compte créé. Vérifiez votre email pour confirmer votre compte, puis connectez-vous.")
+        setLoading(false)
+        return
+      }
+      session = loginData.session
+    }
+
+    // Now that we have a session, check if the trigger linked the record
     const { data: linked } = await supabase
       .from('business_members')
       .select('id')
@@ -117,7 +143,7 @@ export default function EmployeeSetupPage() {
       .maybeSingle()
 
     if (!linked) {
-      // Trigger may not have fired — retry manual update up to 3 times
+      // Trigger did not fire — retry update with active session so RLS passes
       let success = false
       for (let attempt = 0; attempt < 3; attempt++) {
         if (attempt > 0) await new Promise(r => setTimeout(r, 600))
@@ -127,23 +153,8 @@ export default function EmployeeSetupPage() {
           .eq('id', memberId)
         if (!updateError) { success = true; break }
       }
-      // Even if retries fail, getNextRoute has an email-based fallback on next login
       if (!success) {
         console.warn('[employee-setup] Could not link user_id — will be repaired on first login')
-      }
-    }
-
-    // Sign in if no session yet (email confirmation may be required)
-    if (!signUpData.session) {
-      const { error: loginError } = await supabase.auth.signInWithPassword({
-        email: memberEmail,
-        password: newPassword
-      })
-
-      if (loginError) {
-        showSuccess("Compte activé. Vérifiez vos emails pour confirmer, puis connectez-vous.")
-        setLoading(false)
-        return
       }
     }
 

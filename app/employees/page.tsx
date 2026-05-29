@@ -1,6 +1,7 @@
 'use client'
 
 import AppShell from '@/components/AppShell'
+import { PlanName, getNumericLimit } from '@/lib/plans'
 import { supabase } from '@/lib/supabaseClient'
 import { Copy, MessageCircle, RefreshCw, UserPlus, Users } from 'lucide-react'
 import { useEffect, useState } from 'react'
@@ -32,6 +33,7 @@ function generateTempPassword() {
 
 export default function EmployeesPage() {
   const [businessId, setBusinessId] = useState('')
+  const [plan, setPlan] = useState<PlanName>('free')
   const [members, setMembers] = useState<Member[]>([])
   const [email, setEmail] = useState('')
   const [fullName, setFullName] = useState('')
@@ -66,6 +68,8 @@ export default function EmployeesPage() {
       }
 
       setBusinessId(membership.business_id)
+      const { data: sub } = await supabase.from('subscriptions').select('plan').eq('business_id', membership.business_id).eq('status', 'active').order('created_at', { ascending: false }).limit(1).maybeSingle()
+      setPlan((sub?.plan as PlanName) || 'free')
       await loadMembers(membership.business_id)
       setLoading(false)
     }
@@ -92,6 +96,14 @@ export default function EmployeesPage() {
   async function addEmployee(e: React.FormEvent) {
     e.preventDefault()
     if (!businessId) return
+
+    const empLimit = getNumericLimit(plan, 'employees')
+    const nonOwnerCount = members.filter(m => m.role !== 'owner').length
+    if (empLimit !== -1 && nonOwnerCount >= empLimit) {
+      setMessage(`Limite atteinte : votre plan ${plan === 'free' ? 'Gratuit' : plan} permet ${empLimit} employé(s) maximum. Passez à un plan supérieur pour en ajouter.`)
+      setIsError(true)
+      return
+    }
 
     setSaving(true)
     setMessage('')

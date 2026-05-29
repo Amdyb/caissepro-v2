@@ -3,7 +3,7 @@
 import AppShell from '@/components/AppShell'
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Building2, ChevronDown, ChevronUp, HandCoins, Mail, MapPin, MessageCircle, Phone, Plus, Search, Trash2, Wallet } from 'lucide-react'
+import { Building2, CalendarDays, ChevronDown, ChevronUp, HandCoins, Mail, MapPin, MessageCircle, Package, Phone, Plus, Search, ShoppingCart, Trash2, Wallet, X } from 'lucide-react'
 import { supabase } from '@/lib/supabaseClient'
 
 type Supplier = {
@@ -47,6 +47,12 @@ export default function SuppliersPage() {
 
   const [form, setForm] = useState({ name: '', phone: '', email: '', address: '', balance: '', note: '' })
   const [addingSupplier, setAddingSupplier] = useState(false)
+
+  type Product = { id: string; name: string }
+  const [reassortSupplier, setReassortSupplier] = useState<Supplier | null>(null)
+  const [reassortProducts, setReassortProducts] = useState<Product[]>([])
+  const [reassortForm, setReassortForm] = useState({ product_id: '', product_name: '', quantity: '', expected_date: '' })
+  const [submittingReassort, setSubmittingReassort] = useState(false)
 
   function flash(msg: string) {
     setMessage(msg)
@@ -255,6 +261,60 @@ export default function SuppliersPage() {
     flash(`Paiement partiel de ${amt.toLocaleString('fr-FR')} CFA enregistré.`)
   }
 
+  async function openReassort(supplier: Supplier) {
+    setReassortSupplier(supplier)
+    setReassortForm({ product_id: '', product_name: '', quantity: '', expected_date: '' })
+    if (businessId && reassortProducts.length === 0) {
+      const { data } = await supabase
+        .from('products')
+        .select('id,name')
+        .eq('business_id', businessId)
+        .not('archived', 'is', true)
+        .order('name')
+        .limit(200)
+      setReassortProducts((data || []) as Product[])
+    }
+  }
+
+  async function submitReassort(e: React.FormEvent) {
+    e.preventDefault()
+    if (!businessId || !reassortSupplier) return
+    if (!reassortForm.product_name && !reassortForm.product_id) {
+      flash('Sélectionnez ou saisissez un produit.')
+      return
+    }
+    if (!reassortForm.quantity || Number(reassortForm.quantity) <= 0) {
+      flash('Quantité invalide.')
+      return
+    }
+
+    setSubmittingReassort(true)
+
+    const selectedProduct = reassortProducts.find(p => p.id === reassortForm.product_id)
+    const productName = selectedProduct?.name || reassortForm.product_name
+
+    const { error } = await supabase.from('restock_orders').insert({
+      business_id: businessId,
+      supplier_id: reassortSupplier.id,
+      supplier_name: reassortSupplier.name,
+      product_id: reassortForm.product_id || null,
+      product_name: productName,
+      quantity: Number(reassortForm.quantity),
+      expected_date: reassortForm.expected_date || null,
+      status: 'pending',
+    })
+
+    setSubmittingReassort(false)
+
+    if (error) {
+      flash(`Erreur: ${error.message}`)
+      return
+    }
+
+    setReassortSupplier(null)
+    flash(`Commande de réassort créée pour ${productName} (${reassortForm.quantity} unités) chez ${reassortSupplier.name}.`)
+  }
+
   function sendWhatsApp(supplier: Supplier) {
     if (!supplier.phone) { flash('Ce fournisseur n\'a pas de numéro de téléphone.'); return }
     const remaining = Number(supplier.remaining_balance ?? supplier.balance ?? 0)
@@ -424,6 +484,9 @@ export default function SuppliersPage() {
                         </div>
 
                         <div className="flex items-center gap-2">
+                          <button onClick={() => openReassort(supplier)} title="Réassort" className="rounded-2xl border border-slate-200 p-3 text-slate-500 hover:bg-blue-50 hover:text-blue-700">
+                            <ShoppingCart size={17} />
+                          </button>
                           <button onClick={() => sendWhatsApp(supplier)} className="rounded-2xl border border-slate-200 p-3 text-slate-500 hover:bg-emerald-50 hover:text-emerald-700">
                             <MessageCircle size={17} />
                           </button>
@@ -496,6 +559,107 @@ export default function SuppliersPage() {
           </div>
         </div>
       </div>
+      {/* Réassort modal */}
+      {reassortSupplier && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm">
+          <div className="relative w-full max-w-md rounded-[2rem] bg-white p-8 shadow-2xl">
+            <button
+              onClick={() => setReassortSupplier(null)}
+              className="absolute right-4 top-4 rounded-full bg-slate-100 p-1.5 text-slate-500 hover:bg-slate-200"
+            >
+              <X size={16} />
+            </button>
+
+            <div className="mb-6 flex items-center gap-3">
+              <div className="rounded-2xl bg-blue-50 p-3 text-blue-700"><Package size={22} /></div>
+              <div>
+                <h2 className="text-xl font-black text-slate-950">Commande de réassort</h2>
+                <p className="text-sm font-semibold text-slate-500">{reassortSupplier.name}</p>
+              </div>
+            </div>
+
+            <form onSubmit={submitReassort} className="space-y-4">
+              <div>
+                <label className="text-sm font-bold text-slate-700">Fournisseur</label>
+                <input
+                  value={reassortSupplier.name}
+                  disabled
+                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 font-bold text-slate-500"
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-bold text-slate-700">Produit</label>
+                {reassortProducts.length > 0 ? (
+                  <select
+                    value={reassortForm.product_id}
+                    onChange={(e) => {
+                      const p = reassortProducts.find(x => x.id === e.target.value)
+                      setReassortForm(f => ({ ...f, product_id: e.target.value, product_name: p?.name || '' }))
+                    }}
+                    className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 font-semibold outline-none focus:border-blue-500"
+                  >
+                    <option value="">— Sélectionner un produit —</option>
+                    {reassortProducts.map(p => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    placeholder="Nom du produit"
+                    value={reassortForm.product_name}
+                    onChange={(e) => setReassortForm(f => ({ ...f, product_name: e.target.value }))}
+                    className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 font-semibold outline-none focus:border-blue-500"
+                  />
+                )}
+              </div>
+
+              <div>
+                <label className="text-sm font-bold text-slate-700">Quantité</label>
+                <input
+                  type="number"
+                  min="1"
+                  required
+                  placeholder="Ex: 50"
+                  value={reassortForm.quantity}
+                  onChange={(e) => setReassortForm(f => ({ ...f, quantity: e.target.value }))}
+                  className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 font-semibold outline-none focus:border-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="flex items-center gap-2 text-sm font-bold text-slate-700">
+                  <CalendarDays size={15} />
+                  Date de livraison prévue
+                </label>
+                <input
+                  type="date"
+                  value={reassortForm.expected_date}
+                  onChange={(e) => setReassortForm(f => ({ ...f, expected_date: e.target.value }))}
+                  className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 font-semibold outline-none focus:border-blue-500"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setReassortSupplier(null)}
+                  className="flex-1 rounded-2xl border border-slate-300 py-4 font-black text-slate-600 hover:bg-slate-50"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingReassort}
+                  className="flex-1 rounded-2xl bg-blue-600 py-4 font-black text-white hover:bg-blue-700 disabled:opacity-60"
+                >
+                  {submittingReassort ? 'Envoi...' : 'Commander'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </AppShell>
   )
 }

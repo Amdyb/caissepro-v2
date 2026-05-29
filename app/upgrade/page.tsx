@@ -3,8 +3,24 @@
 import AppShell from '@/components/AppShell'
 import PaymentModal from '@/components/PaymentModal'
 import { supabase } from '@/lib/supabaseClient'
-import { CheckCircle2, Crown, Rocket, ShieldCheck, Sparkles } from 'lucide-react'
+import { CheckCircle2, Crown, Gift, Rocket, ShieldCheck, Sparkles } from 'lucide-react'
 import { useEffect, useState } from 'react'
+
+const FREE_PLAN = {
+  id: 'free',
+  name: 'Gratuit',
+  price: '0',
+  amount: 0,
+  icon: Gift,
+  features: [
+    'Caisse POS',
+    '50 produits max',
+    '1 employé',
+    '1 boutique',
+    'Ventes illimitées',
+    'Mode hors ligne',
+  ],
+}
 
 const PLANS = [
   {
@@ -123,7 +139,35 @@ export default function UpgradePage() {
         </div>
 
         {/* Plans */}
-        <div className="grid gap-6 md:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+          {/* Free plan card */}
+          {(() => {
+            const Icon = FREE_PLAN.icon
+            return (
+              <div className="rounded-[2rem] border border-slate-200 bg-slate-50 p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800/50">
+                <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-200 text-slate-500 dark:bg-slate-700 dark:text-slate-400">
+                  <Icon size={26} />
+                </div>
+                <h3 className="text-2xl font-black text-slate-950 dark:text-white">{FREE_PLAN.name}</h3>
+                <p className="mt-1 text-3xl font-black text-slate-500">
+                  {FREE_PLAN.price}{' '}
+                  <span className="text-base font-bold text-slate-400">XOF/mois</span>
+                </p>
+                <div className="mt-5 space-y-3">
+                  {FREE_PLAN.features.map((feature) => (
+                    <p key={feature} className="flex items-center gap-2 text-sm font-bold text-slate-500 dark:text-slate-400">
+                      <CheckCircle2 size={16} className="shrink-0 text-slate-400" />
+                      {feature}
+                    </p>
+                  ))}
+                </div>
+                <div className="mt-6 w-full rounded-2xl border border-slate-300 py-4 text-center font-black text-slate-400">
+                  Plan actuel
+                </div>
+              </div>
+            )
+          })()}
+
           {PLANS.map((plan) => {
             const Icon = plan.icon
             return (
