@@ -80,6 +80,7 @@ const MANAGER_ALLOWED_PATHS = [
   '/customers', '/expenses', '/reports', '/finances',
   '/orders', '/debts', '/payment-links', '/purchases',
   '/stock-movements', '/activity',
+  '/settings', '/payment-methods',
   '/profile', '/change-password', '/help', '/feedback', '/legal',
 ]
 
@@ -180,6 +181,8 @@ const MANAGER_PROFILE_SECTION: SectionConfig = {
   defaultOpen: false,
   items: [
     { label: 'Mon profil', href: '/profile', icon: User },
+    { label: 'Parametres', href: '/settings', icon: Settings },
+    { label: 'Modes de paiement', href: '/payment-methods', icon: CreditCard },
     { label: 'Aide', href: '/help', icon: HelpCircle },
   ],
 }
