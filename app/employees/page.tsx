@@ -18,8 +18,11 @@ type Member = {
 
 const roleLabels: Record<string, string> = {
   sales: 'Vendeur',
+  cashier: 'Caissier',
+  staff: 'Employé',
+  employee: 'Employé',
   manager: 'Manager',
-  admin: 'Administrateur'
+  admin: 'Administrateur',
 }
 
 function generateTempPassword() {
@@ -217,6 +220,9 @@ export default function EmployeesPage() {
               className="rounded-2xl border border-slate-300 bg-white px-5 py-4 font-bold outline-none focus:border-emerald-500"
             >
               <option value="sales">Vendeur</option>
+              <option value="cashier">Caissier</option>
+              <option value="staff">Employé</option>
+              <option value="employee">Employé (général)</option>
               <option value="manager">Manager</option>
               <option value="admin">Administrateur</option>
             </select>
