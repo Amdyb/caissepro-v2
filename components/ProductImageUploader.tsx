@@ -84,7 +84,7 @@ export default function ProductImageUploader({
             </>
           ) : (
             <>
-              🖼️ Ajoute l&apos;image du produit
+              <ImagePlus size={17} /> Ajoute l&apos;image du produit
             </>
           )}
 

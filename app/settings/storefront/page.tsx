@@ -2,7 +2,7 @@
 
 import AppShell from '@/components/AppShell'
 import { supabase } from '@/lib/supabaseClient'
-import { Copy, Download, ExternalLink, MessageCircle, Printer, QrCode, Save } from 'lucide-react'
+import { Copy, Download, ExternalLink, ImagePlus, MessageCircle, Printer, QrCode, Save, Upload } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
@@ -200,7 +200,7 @@ export default function StorefrontSettingsPage() {
           <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-black text-slate-700"><input type="checkbox" checked={form.online_store_enabled} onChange={(e) => setForm({ ...form, online_store_enabled: e.target.checked })} />Publier ma boutique en ligne</label>
           <div className="flex flex-row gap-3">
             <label className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-4 text-sm font-black text-white transition hover:bg-emerald-700">
-              🖼️ Ajoute ton Logo
+              <ImagePlus size={17} /> Ajoute ton Logo
               <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
                 const file = e.target.files?.[0]
                 if (!file) return
@@ -209,7 +209,7 @@ export default function StorefrontSettingsPage() {
               }} />
             </label>
             <label className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-4 text-sm font-black text-white transition hover:bg-emerald-700">
-              🏞️ Ajoute ta Bannière
+              <Upload size={17} /> Ajoute ta Bannière
               <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
                 const file = e.target.files?.[0]
                 if (!file) return

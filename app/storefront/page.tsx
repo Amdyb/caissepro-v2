@@ -9,6 +9,7 @@ import {
   Download,
   ExternalLink,
   Globe2,
+  ImagePlus,
   Info,
   MessageCircle,
   Palette,
@@ -17,6 +18,7 @@ import {
   QrCode,
   Share2,
   Store,
+  Upload,
 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
@@ -241,7 +243,7 @@ export default function StorefrontPage() {
                       onClick={() => (document.getElementById('logo-upload') as HTMLInputElement)?.click()}
                       className="flex-1 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-xl"
                     >
-                      🖼️ Ajoute ton Logo
+                      <ImagePlus size={17} /> Ajoute ton Logo
                     </button>
                     <input id="logo-upload" type="file" accept="image/*" className="hidden" onChange={(e) => handleLogoUpload(e)} />
 
@@ -250,7 +252,7 @@ export default function StorefrontPage() {
                       onClick={() => (document.getElementById('banniere-upload') as HTMLInputElement)?.click()}
                       className="flex-1 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-xl"
                     >
-                      🏞️ Ajoute ta Bannière
+                      <Upload size={17} /> Ajoute ta Bannière
                     </button>
                     <input id="banniere-upload" type="file" accept="image/*" className="hidden" onChange={(e) => handleBanniereUpload(e)} />
                   </div>

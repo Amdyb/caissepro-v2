@@ -2,7 +2,7 @@
 
 import AppShell from '@/components/AppShell'
 import { supabase } from '@/lib/supabaseClient'
-import { ArrowLeft, PackagePlus, Save } from 'lucide-react'
+import { ArrowLeft, ImagePlus, PackagePlus, Save } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
@@ -146,7 +146,7 @@ export default function NewProductPage() {
                 onClick={() => (document.getElementById('product-image-upload') as HTMLInputElement)?.click()}
                 className="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-xl"
               >
-                🖼️ Ajoute l&apos;image du produit
+                <ImagePlus size={17} /> Ajoute l&apos;image du produit
               </button>
               <input id="product-image-upload" type="file" accept="image/*" className="hidden" onChange={handleProductImageUpload} />
             </div>

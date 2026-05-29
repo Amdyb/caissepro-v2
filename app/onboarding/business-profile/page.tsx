@@ -2,7 +2,7 @@
 
 import { seedDemoBusiness } from '@/lib/seedDemoBusiness'
 import { supabase } from '@/lib/supabaseClient'
-import { ArrowRight, MapPin, Phone, Store } from 'lucide-react'
+import { ArrowRight, ImagePlus, MapPin, Phone, Store, Upload } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Suspense, useEffect, useState } from 'react'
 
@@ -144,7 +144,7 @@ function BusinessProfileContent() {
                   onClick={() => (document.getElementById('logo-upload-onboarding') as HTMLInputElement)?.click()}
                   className="flex-1 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-xl"
                 >
-                  🖼️ Ajoute ton Logo
+                  <ImagePlus size={17} /> Ajoute ton Logo
                 </button>
                 <input id="logo-upload-onboarding" type="file" accept="image/*" className="hidden" onChange={(e) => handleLogoUpload(e)} />
 
@@ -153,7 +153,7 @@ function BusinessProfileContent() {
                   onClick={() => (document.getElementById('banniere-upload-onboarding') as HTMLInputElement)?.click()}
                   className="flex-1 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-xl"
                 >
-                  🏞️ Ajoute ta Bannière
+                  <Upload size={17} /> Ajoute ta Bannière
                 </button>
                 <input id="banniere-upload-onboarding" type="file" accept="image/*" className="hidden" onChange={(e) => handleBanniereUpload(e)} />
               </div>
