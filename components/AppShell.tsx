@@ -80,7 +80,7 @@ const MANAGER_ALLOWED_PATHS = [
   '/customers', '/expenses', '/reports', '/finances',
   '/orders', '/debts', '/payment-links', '/purchases',
   '/stock-movements', '/activity',
-  '/settings', '/payment-methods',
+  '/settings', '/payment-methods', '/employees', '/staff',
   '/profile', '/change-password', '/help', '/feedback', '/legal',
 ]
 
@@ -153,6 +153,7 @@ const MANAGER_GESTION_SECTION: SectionConfig = {
   items: [
     { label: 'Produits', href: '/products', icon: Package },
     { label: 'Clients', href: '/customers', icon: Users },
+    { label: 'Employes', href: '/employees', icon: UserCog },
     { label: 'Depenses', href: '/expenses', icon: Receipt },
   ],
 }
