@@ -4,6 +4,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { generateUniqueSlug } from '@/lib/generateUniqueSlug'
 import { supabase } from '@/lib/supabaseClient'
 
 
@@ -69,12 +70,7 @@ function RegisterForm() {
 
     if (existingMembership) return null
 
-    const safeSlug = businessName
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[̀-ͯ]/g, '')
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/(^-|-$)/g, '') || `shop-${Date.now()}`
+    const safeSlug = await generateUniqueSlug(businessName)
 
     const { data: businessRows, error: businessError } = await supabase
       .from('businesses')

@@ -1,5 +1,6 @@
 'use client'
 
+import { generateUniqueSlug } from '@/lib/generateUniqueSlug'
 import { supabase } from '@/lib/supabaseClient'
 import { ArrowLeft, ArrowRight, Briefcase, Check, Package, Palette, PiggyBank, Scissors, Shirt, ShoppingBasket, Store, Tv, Utensils } from 'lucide-react'
 import { useRouter } from 'next/navigation'
@@ -128,8 +129,7 @@ export default function OnboardingPage() {
           .maybeSingle()
         if (existingMember?.business_id) { router.push('/dashboard'); return }
 
-        const baseSlug = slugify(businessName) || `business-${Date.now()}`
-        let slug = baseSlug
+        const slug = await generateUniqueSlug(businessName)
 
         const { data: businesses, error } = await supabase
           .from('businesses')
@@ -137,21 +137,8 @@ export default function OnboardingPage() {
           .select('id')
           .limit(1)
 
-        let biz = businesses?.[0]
-
-        if (error?.code === '23505') {
-          // Unique constraint on slug — retry with a 4-digit suffix
-          slug = `${baseSlug}-${Math.floor(1000 + Math.random() * 9000)}`
-          const { data: retryBusinesses, error: retryError } = await supabase
-            .from('businesses')
-            .insert({ ...payload, slug })
-            .select('id')
-            .limit(1)
-          if (retryError || !retryBusinesses?.[0]) throw retryError || new Error('Impossible de créer la boutique.')
-          biz = retryBusinesses[0]
-        } else if (error || !biz) {
-          throw error || new Error('Impossible de créer la boutique.')
-        }
+        if (error || !businesses?.[0]) throw error || new Error('Impossible de créer la boutique.')
+        let biz = businesses[0]
 
         setBusinessId(biz.id)
 
