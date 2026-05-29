@@ -5,31 +5,43 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import BrandingImageUploader from '@/components/BrandingImageUploader'
 import { getThemePreference, setThemePreference } from '@/components/DarkModeProvider'
-import { Clock, Moon, Sun,
+import {
   ArrowLeft,
-  Building2,
-  Palette,
-  Save,
-  Phone,
-  MapPin,
-  Quote,
   BriefcaseBusiness,
+  Building2,
+  Car,
+  Clock,
+  Droplets,
+  HardHat,
+  Heart,
+  MapPin,
+  Moon,
+  Package,
+  Palette,
+  Phone,
+  PiggyBank,
+  Quote,
+  Save,
+  ShoppingBag,
+  Sparkles,
+  Sun,
+  Utensils,
   Volume2,
-  VolumeX
+  VolumeX,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabaseClient'
 
 const businessTypes = [
-  { value: 'retail', label: 'Commerce & Boutique' },
-  { value: 'restaurant', label: 'Restaurant & Fast Food' },
-  { value: 'beauty', label: 'Salon & Beauté' },
-  { value: 'pharmacy', label: 'Pharmacie' },
-  { value: 'garage', label: 'Garage & Auto' },
-  { value: 'btp', label: 'BTP & Services' },
-  { value: 'tontine', label: 'Tontine & Épargne' },
-  { value: 'rental', label: 'Location & Immobilier' },
-  { value: 'wholesale', label: 'Grossiste' },
-  { value: 'laundry', label: 'Laverie & Pressing' },
+  { value: 'retail',     label: 'Commerce & Boutique',   desc: 'Vente au détail, boutique',    icon: ShoppingBag, accent: '#16a34a', bg: '#f0fdf4', border: '#86efac' },
+  { value: 'restaurant', label: 'Restaurant & Fast Food', desc: 'Restauration, snack, café',    icon: Utensils,    accent: '#ea580c', bg: '#fff7ed', border: '#fdba74' },
+  { value: 'beauty',     label: 'Salon & Beauté',         desc: 'Coiffure, esthétique, spa',    icon: Sparkles,    accent: '#db2777', bg: '#fdf2f8', border: '#f9a8d4' },
+  { value: 'pharmacy',   label: 'Pharmacie',              desc: 'Médicaments, santé',           icon: Heart,       accent: '#dc2626', bg: '#fef2f2', border: '#fca5a5' },
+  { value: 'garage',     label: 'Garage & Auto',          desc: 'Mécanique, réparation',        icon: Car,         accent: '#2563eb', bg: '#eff6ff', border: '#93c5fd' },
+  { value: 'btp',        label: 'BTP & Services',         desc: 'Construction, artisanat',      icon: HardHat,     accent: '#ca8a04', bg: '#fefce8', border: '#fde047' },
+  { value: 'tontine',    label: 'Tontine & Épargne',      desc: 'Épargne collective, finance',  icon: PiggyBank,   accent: '#7c3aed', bg: '#f5f3ff', border: '#c4b5fd' },
+  { value: 'rental',     label: 'Location & Immobilier',  desc: 'Immobilier, location',         icon: Building2,   accent: '#4338ca', bg: '#eef2ff', border: '#a5b4fc' },
+  { value: 'wholesale',  label: 'Grossiste',              desc: 'Vente en gros, distribution',  icon: Package,     accent: '#475569', bg: '#f8fafc', border: '#cbd5e1' },
+  { value: 'laundry',    label: 'Laverie & Pressing',     desc: 'Nettoyage, pressing',          icon: Droplets,    accent: '#0891b2', bg: '#ecfeff', border: '#67e8f9' },
 ]
 
 function slugify(value: string) {
@@ -191,13 +203,16 @@ export default function SettingsPage() {
 
   async function autoSaveBusinessType(newType: string) {
     if (!business) return
+    console.log('[business_type] saving:', newType)
     setForm((prev) => ({ ...prev, business_type: newType }))
     const { error } = await supabase.from('businesses').update({ business_type: newType }).eq('id', business.id)
     if (error) {
+      console.log('[business_type] save error:', error.message)
       setMessage(error.message)
       window.dispatchEvent(new Event('play-error'))
       return
     }
+    console.log('[business_type] saved successfully:', newType)
     setMessage('Type de commerce mis à jour')
     window.dispatchEvent(new Event('play-success'))
     window.dispatchEvent(new CustomEvent('business-type-changed', { detail: { businessType: newType } }))
@@ -292,9 +307,25 @@ export default function SettingsPage() {
 
               <div>
                 <label className="flex items-center gap-2 text-sm font-bold text-slate-700"><BriefcaseBusiness size={16} />Type de business</label>
-                <select className="mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 font-bold outline-none focus:border-green-600" value={form.business_type} onChange={(e) => autoSaveBusinessType(e.target.value)}>
-                  {businessTypes.map((type) => <option key={type.value} value={type.value}>{type.label}</option>)}
-                </select>
+                <div className="mt-2 grid grid-cols-2 gap-2 md:grid-cols-3">
+                  {businessTypes.map((type) => {
+                    const Icon = type.icon
+                    const selected = form.business_type === type.value
+                    return (
+                      <button
+                        key={type.value}
+                        type="button"
+                        onClick={() => autoSaveBusinessType(type.value)}
+                        className="flex flex-col items-start gap-1.5 rounded-2xl border p-3 text-left transition"
+                        style={selected ? { borderColor: type.border, backgroundColor: type.bg } : { borderColor: '#e2e8f0', backgroundColor: '#fff' }}
+                      >
+                        <Icon size={20} style={{ color: selected ? type.accent : '#94a3b8' }} />
+                        <p className="text-xs font-black leading-tight" style={{ color: selected ? type.accent : '#1e293b' }}>{type.label}</p>
+                        <p className="text-xs font-semibold text-slate-400 leading-tight">{type.desc}</p>
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
 
               {business && (
@@ -321,6 +352,17 @@ export default function SettingsPage() {
               <div className="pt-20">
                 <h2 className="text-3xl font-black text-slate-950">{form.name || 'Nom boutique'}</h2>
                 <p className="mt-2 font-semibold text-slate-500">{form.slogan || 'Votre slogan ici'}</p>
+                {(() => {
+                  const bt = businessTypes.find(t => t.value === form.business_type)
+                  if (!bt) return null
+                  const Icon = bt.icon
+                  return (
+                    <div className="mt-3 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-black" style={{ backgroundColor: bt.bg, color: bt.accent, border: `1.5px solid ${bt.border}` }}>
+                      <Icon size={13} />
+                      {bt.label}
+                    </div>
+                  )
+                })()}
               </div>
             </div>
           </div>
