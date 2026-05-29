@@ -36,12 +36,17 @@ export default function NewProductPage() {
 
       const { data: membership } = await supabase
         .from('business_members')
-        .select('business_id')
+        .select('business_id, role')
         .eq('user_id', userData.user.id)
         .limit(1)
         .maybeSingle()
 
       if (!membership?.business_id) return
+
+      if (membership.role === 'sales') {
+        router.replace('/products')
+        return
+      }
 
       setBusinessId(membership.business_id)
     }

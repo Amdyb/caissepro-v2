@@ -70,7 +70,7 @@ const STAFF_ROLES = ['sales', 'staff', 'employee', 'cashier']
 const MANAGER_ROLES = ['manager', 'admin', 'owner']
 
 const STAFF_ALLOWED_PATHS = [
-  '/pos', '/checkout', '/products',
+  '/pos', '/checkout',
   '/register-shifts', '/profile', '/change-password',
 ]
 
@@ -81,7 +81,8 @@ const MANAGER_ALLOWED_PATHS = [
   '/orders', '/debts', '/payment-links', '/purchases',
   '/stock-movements', '/activity',
   '/settings', '/payment-methods', '/employees', '/staff',
-  '/storefront', '/orders', '/categories',
+  '/storefront', '/orders', '/categories', '/suppliers',
+  '/reminders', '/automation',
   '/profile', '/change-password', '/help', '/feedback', '/legal',
 ]
 
@@ -660,9 +661,9 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
   useEffect(() => {
     if (!ready) return
     if (STAFF_ROLES.includes(userRole)) {
-      const allowed = STAFF_ALLOWED_PATHS.some(
-        (p) => pathname === p || pathname.startsWith(p + '/')
-      )
+      const allowed =
+        pathname === '/products' ||
+        STAFF_ALLOWED_PATHS.some((p) => pathname === p || pathname.startsWith(p + '/'))
       if (!allowed) router.replace('/pos')
     } else if (MANAGER_ROLES.includes(userRole)) {
       const allowed = MANAGER_ALLOWED_PATHS.some(

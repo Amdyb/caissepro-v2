@@ -29,6 +29,21 @@ export default function EditProductPage() {
 
   useEffect(() => {
     async function load() {
+      const { data: userData } = await supabase.auth.getUser()
+      if (!userData.user) { router.replace('/login'); return }
+
+      const { data: membership } = await supabase
+        .from('business_members')
+        .select('role')
+        .eq('user_id', userData.user.id)
+        .limit(1)
+        .maybeSingle()
+
+      if (membership?.role === 'sales') {
+        router.replace('/products')
+        return
+      }
+
       const { data, error } = await supabase
         .from('products')
         .select('*')
