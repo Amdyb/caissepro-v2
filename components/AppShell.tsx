@@ -69,8 +69,8 @@ const PLAN_LEVELS: Record<string, number> = { free: 0, starter: 1, business: 2, 
 const STAFF_ROLES = ['sales', 'staff', 'employee', 'cashier']
 
 const STAFF_ALLOWED_PATHS = [
-  '/dashboard', '/pos', '/checkout', '/products',
-  '/register-shifts', '/expenses', '/profile', '/change-password', '/sales',
+  '/pos', '/checkout', '/products',
+  '/register-shifts', '/profile', '/change-password',
 ]
 
 const STAFF_SECTION: SectionConfig = {
@@ -85,8 +85,35 @@ const STAFF_SECTION: SectionConfig = {
     { label: 'Vendre', href: '/pos', icon: ShoppingCart },
     { label: 'Produits', href: '/products', icon: Package },
     { label: 'Caisse du jour', href: '/register-shifts', icon: Wallet },
-    { label: 'Depenses', href: '/expenses', icon: Receipt },
   ],
+}
+
+const STAFF_PROFILE_SECTION: SectionConfig = {
+  key: 'staff-profil',
+  title: 'MON COMPTE',
+  borderColor: 'border-slate-300',
+  bgColor: 'bg-slate-100 dark:bg-slate-700',
+  textColor: 'text-slate-700 dark:text-slate-200',
+  headerColor: 'text-slate-500 dark:text-slate-400',
+  defaultOpen: false,
+  items: [
+    { label: 'Mon profil', href: '/profile', icon: User },
+  ],
+}
+
+const STAFF_BOTTOM_NAV = [
+  { label: 'Vendre', href: '/pos', icon: ShoppingCart },
+  { label: 'Produits', href: '/products', icon: Package },
+  { label: 'Caisse', href: '/register-shifts', icon: Wallet },
+  { label: 'Profil', href: '/profile', icon: User },
+]
+
+const ROLE_LABELS: Record<string, string> = {
+  sales: 'Vendeur',
+  cashier: 'Caissier',
+  staff: 'Employé',
+  employee: 'Employé',
+  manager: 'Manager',
 }
 
 const PROFILE_SECTION: SectionConfig = {
@@ -475,6 +502,7 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
   const [businessLogo, setBusinessLogo] = useState<string | null>(null)
   const [businessType, setBusinessType] = useState('retail')
   const [userRole, setUserRole] = useState('owner')
+  const [userName, setUserName] = useState('')
   const [ready, setReady] = useState(false)
   const [subscription, setSubscription] = useState<{ plan: string; expires_at: string | null } | null>(null)
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({})
@@ -486,7 +514,7 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
 
       const { data: membership } = await supabase
         .from('business_members')
-        .select('business_id, role, businesses(name, logo_url, business_type)')
+        .select('business_id, role, full_name, businesses(name, logo_url, business_type)')
         .eq('user_id', userData.user.id)
         .limit(1)
         .maybeSingle()
@@ -498,6 +526,7 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
         setBusinessType(member.businesses.business_type || 'retail')
       }
       setUserRole(member?.role || 'owner')
+      setUserName(member?.full_name || userData.user.email?.split('@')[0] || '')
 
       if (member?.business_id) {
         const { data: sub } = await supabase
@@ -536,7 +565,7 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
     const allowed = STAFF_ALLOWED_PATHS.some(
       (p) => pathname === p || pathname.startsWith(p + '/')
     )
-    if (!allowed) router.replace('/dashboard')
+    if (!allowed) router.replace('/pos')
   }, [ready, userRole, pathname, router])
 
   function toggleSection(key: string) {
@@ -557,7 +586,7 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
   }
 
   const isStaff = STAFF_ROLES.includes(userRole)
-  const navSections = isStaff ? [STAFF_SECTION] : getNavSections(businessType)
+  const navSections = isStaff ? [STAFF_SECTION, STAFF_PROFILE_SECTION] : getNavSections(businessType)
   const currentPlanLevel = PLAN_LEVELS[subscription?.plan || 'free'] ?? 0
 
   const sidebarContent = (
@@ -570,13 +599,22 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
             : <Store size={22} />}
         </div>
         <div className="min-w-0">
-          <h1 className="truncate text-lg font-black text-slate-950 dark:text-white">{businessName}</h1>
-          <p className="text-xs font-bold text-slate-400 dark:text-slate-500">Propulse par CaissePro</p>
+          <h1 className="truncate text-base font-black text-slate-950 dark:text-white">{businessName}</h1>
+          {isStaff ? (
+            <>
+              <p className="truncate text-sm font-bold text-slate-600 dark:text-slate-300">{userName}</p>
+              <span className="mt-0.5 inline-block rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-black text-slate-500 dark:bg-slate-700 dark:text-slate-400">
+                {ROLE_LABELS[userRole] || userRole}
+              </span>
+            </>
+          ) : (
+            <p className="text-xs font-bold text-slate-400 dark:text-slate-500">Propulse par CaissePro</p>
+          )}
         </div>
       </div>
 
-      {/* Subscription status */}
-      <div className="px-4 pt-3">
+      {/* Subscription status — hidden for employees */}
+      {!isStaff && <div className="px-4 pt-3">
         {(() => {
           const planName = subscription?.plan
           const exp = subscription?.expires_at
@@ -613,7 +651,7 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
             </div>
           )
         })()}
-      </div>
+      </div>}
 
       {/* VENDRE button */}
       <div className="px-4 pt-4">
@@ -627,22 +665,24 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
         </Link>
       </div>
 
-      {/* ACCUEIL */}
-      <div className="px-4 pt-3">
-        <p className="mb-1 px-3 text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">ACCUEIL</p>
-        <Link
-          href="/dashboard"
-          onClick={() => setMobileMenuOpen(false)}
-          className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold transition-colors ${
-            pathname === '/dashboard'
-              ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-              : 'text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700'
-          }`}
-        >
-          <LayoutDashboard size={17} />
-          Tableau de bord
-        </Link>
-      </div>
+      {/* ACCUEIL — hidden for employees */}
+      {!isStaff && (
+        <div className="px-4 pt-3">
+          <p className="mb-1 px-3 text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">ACCUEIL</p>
+          <Link
+            href="/dashboard"
+            onClick={() => setMobileMenuOpen(false)}
+            className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold transition-colors ${
+              pathname === '/dashboard'
+                ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                : 'text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700'
+            }`}
+          >
+            <LayoutDashboard size={17} />
+            Tableau de bord
+          </Link>
+        </div>
+      )}
 
       {/* Collapsible sections */}
       <nav className="flex-1 space-y-2 overflow-y-auto px-4 py-3">
@@ -803,7 +843,7 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
       {/* Fixed bottom nav (mobile only) */}
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800 lg:hidden">
         <div className="grid grid-cols-5">
-          {BOTTOM_NAV.map((item) => {
+          {(isStaff ? STAFF_BOTTOM_NAV : BOTTOM_NAV).map((item) => {
             const Icon = item.icon
             const active = pathname === item.href
             return (

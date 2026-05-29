@@ -38,6 +38,7 @@ export default function ProductsPage() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [showImporter, setShowImporter] = useState(false)
+  const [userRole, setUserRole] = useState('owner')
 
   const filteredProducts = useMemo(() => {
     const q = search.toLowerCase().trim()
@@ -60,7 +61,7 @@ export default function ProductsPage() {
 
       const { data: membership } = await supabase
         .from('business_members')
-        .select('business_id')
+        .select('business_id, role')
         .eq('user_id', userData.user.id)
         .limit(1)
         .maybeSingle()
@@ -71,6 +72,7 @@ export default function ProductsPage() {
       }
 
       setBusinessId(membership.business_id)
+      setUserRole(membership.role || 'owner')
       await loadProducts(membership.business_id)
       setLoading(false)
     }
@@ -139,31 +141,35 @@ export default function ProductsPage() {
   return (
     <AppShell title="Produits" subtitle="Inventaire, prix, stock et catalogue produit.">
       <div className="mx-auto max-w-[1500px]">
-        <div className="mb-5 grid grid-cols-2 gap-3">
-          <button
-            onClick={() => setShowImporter(!showImporter)}
-            className="flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-4 text-sm font-black text-slate-700 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
-          >
-            <Upload size={18} />
-            Importer
-          </button>
+        {userRole !== 'sales' && (
+          <>
+            <div className="mb-5 grid grid-cols-2 gap-3">
+              <button
+                onClick={() => setShowImporter(!showImporter)}
+                className="flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-4 text-sm font-black text-slate-700 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+              >
+                <Upload size={18} />
+                Importer
+              </button>
 
-          <button
-            onClick={downloadTemplate}
-            className="flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-4 text-sm font-black text-slate-700 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
-          >
-            <FileSpreadsheet size={18} />
-            Modèle
-          </button>
-        </div>
+              <button
+                onClick={downloadTemplate}
+                className="flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-4 text-sm font-black text-slate-700 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+              >
+                <FileSpreadsheet size={18} />
+                Modèle
+              </button>
+            </div>
 
-        <Link
-          href="/products/new"
-          className="mb-5 flex items-center justify-center gap-2 rounded-[1.6rem] bg-emerald-600 px-6 py-4 text-base font-black text-white shadow-xl shadow-emerald-600/20"
-        >
-          <Plus size={20} />
-          Ajouter un produit
-        </Link>
+            <Link
+              href="/products/new"
+              className="mb-5 flex items-center justify-center gap-2 rounded-[1.6rem] bg-emerald-600 px-6 py-4 text-base font-black text-white shadow-xl shadow-emerald-600/20"
+            >
+              <Plus size={20} />
+              Ajouter un produit
+            </Link>
+          </>
+        )}
 
         {showImporter && businessId && (
           <div className="mb-5 overflow-hidden rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
@@ -201,15 +207,17 @@ export default function ProductsPage() {
                       {status.label}
                     </span>
 
-                    <div className="flex gap-2 opacity-100 transition sm:opacity-0 sm:group-hover:opacity-100">
-                      <Link href={`/products/${product.id}/edit`} className="rounded-full border border-slate-200 bg-white p-2 text-slate-500 transition hover:text-emerald-700 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-400">
-                        <Edit size={15} />
-                      </Link>
+                    {userRole !== 'sales' && (
+                      <div className="flex gap-2 opacity-100 transition sm:opacity-0 sm:group-hover:opacity-100">
+                        <Link href={`/products/${product.id}/edit`} className="rounded-full border border-slate-200 bg-white p-2 text-slate-500 transition hover:text-emerald-700 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-400">
+                          <Edit size={15} />
+                        </Link>
 
-                      <button onClick={() => deleteProduct(product.id)} className="rounded-full border border-slate-200 bg-white p-2 text-slate-500 transition hover:text-red-600 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-400">
-                        <Trash2 size={15} />
-                      </button>
-                    </div>
+                        <button onClick={() => deleteProduct(product.id)} className="rounded-full border border-slate-200 bg-white p-2 text-slate-500 transition hover:text-red-600 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-400">
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   <h3 className="text-base font-black text-slate-900 dark:text-white">{product.name}</h3>
