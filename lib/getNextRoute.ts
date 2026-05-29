@@ -37,9 +37,9 @@ export async function getNextRoute(userId: string, userEmail: string): Promise<s
 
   if (member.must_change_password) return '/change-password'
 
-  // Staff/sales employees never go through onboarding — send straight to dashboard
-  const STAFF_ROLES = ['sales', 'staff', 'employee', 'cashier']
-  if (STAFF_ROLES.includes(member.role)) return '/dashboard'
+  // Employees (any non-owner role) always go to dashboard — never through onboarding
+  const OWNER_ROLES = ['owner', 'admin']
+  if (!OWNER_ROLES.includes(member.role)) return '/dashboard'
 
   if (business.onboarding_completed) return '/dashboard'
 
@@ -51,5 +51,6 @@ export async function getNextRoute(userId: string, userEmail: string): Promise<s
     return '/dashboard'
   }
 
+  // Only owners/admins without a completed business go through onboarding
   return '/onboarding'
 }

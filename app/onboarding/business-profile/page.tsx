@@ -28,12 +28,19 @@ function BusinessProfileContent() {
 
       const { data: membership } = await supabase
         .from('business_members')
-        .select('business_id, businesses(*)')
+        .select('business_id, role, businesses(*)')
         .eq('user_id', userData.user.id)
         .limit(1)
         .maybeSingle()
 
       const member: any = membership
+
+      // Only owners/admins can access the business setup wizard
+      if (member?.business_id && !['owner', 'admin'].includes(member?.role)) {
+        router.push('/dashboard')
+        return
+      }
+
       if (member?.business_id) {
         setBusinessId(member.business_id)
         if (member.businesses) {

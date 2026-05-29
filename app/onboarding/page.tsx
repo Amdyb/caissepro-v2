@@ -61,13 +61,13 @@ export default function OnboardingPage() {
 
       const member: any = sorted[0]
 
-      // Staff/sales never go through onboarding
-      const STAFF_ROLES = ['sales', 'staff', 'employee', 'cashier']
-      if (member?.role && STAFF_ROLES.includes(member.role)) { router.push('/dashboard'); return }
-
-      if (member?.businesses?.onboarding_completed) { router.push('/dashboard'); return }
-
       if (member?.business_id) {
+        // Only owners/admins without completed onboarding should see the onboarding wizard
+        // All other roles (sales, manager, etc.) go straight to dashboard
+        const OWNER_ROLES = ['owner', 'admin']
+        const isOwnerDoingOnboarding = OWNER_ROLES.includes(member?.role) && !member?.businesses?.onboarding_completed
+        if (!isOwnerDoingOnboarding) { router.push('/dashboard'); return }
+
         setBusinessId(member.business_id)
         const biz = member.businesses || {}
         setBusinessName(biz.name || userData.user.user_metadata?.business_name || '')
@@ -107,7 +107,6 @@ export default function OnboardingPage() {
 
       const payload: Record<string, any> = {
         name: businessName,
-        slug: slugify(businessName) || `business-${Date.now()}`,
         business_type: businessType,
         primary_color: primaryColor,
         currency: 'CFA',
@@ -120,9 +119,40 @@ export default function OnboardingPage() {
         const { error } = await supabase.from('businesses').update(payload).eq('id', businessId)
         if (error) throw error
       } else {
-        const { data: businesses, error } = await supabase.from('businesses').insert(payload).select('id').limit(1)
-        const biz = businesses?.[0]
-        if (error || !biz) throw error || new Error('Impossible de créer la boutique.')
+        // Guard: never create a new business if user already has one
+        const { data: existingMember } = await supabase
+          .from('business_members')
+          .select('business_id')
+          .eq('user_id', userId)
+          .eq('is_active', true)
+          .maybeSingle()
+        if (existingMember?.business_id) { router.push('/dashboard'); return }
+
+        const baseSlug = slugify(businessName) || `business-${Date.now()}`
+        let slug = baseSlug
+
+        const { data: businesses, error } = await supabase
+          .from('businesses')
+          .insert({ ...payload, slug })
+          .select('id')
+          .limit(1)
+
+        let biz = businesses?.[0]
+
+        if (error?.code === '23505') {
+          // Unique constraint on slug — retry with a 4-digit suffix
+          slug = `${baseSlug}-${Math.floor(1000 + Math.random() * 9000)}`
+          const { data: retryBusinesses, error: retryError } = await supabase
+            .from('businesses')
+            .insert({ ...payload, slug })
+            .select('id')
+            .limit(1)
+          if (retryError || !retryBusinesses?.[0]) throw retryError || new Error('Impossible de créer la boutique.')
+          biz = retryBusinesses[0]
+        } else if (error || !biz) {
+          throw error || new Error('Impossible de créer la boutique.')
+        }
+
         setBusinessId(biz.id)
 
         const { data: userData } = await supabase.auth.getUser()

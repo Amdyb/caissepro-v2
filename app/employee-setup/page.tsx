@@ -81,33 +81,38 @@ export default function EmployeeSetupPage() {
       return
     }
 
-    let user = signUpData.user
-
-    if (!signUpData.session) {
-      const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
-        email: cleanEmail,
-        password: newPassword
-      })
-
-      if (loginError) {
-        showSuccess("Compte créé. Vérifiez vos emails pour confirmer votre inscription, puis connectez-vous.")
-        setLoading(false)
-        return
-      }
-
-      user = loginData.user
-    }
-
-    if (!user) {
+    const newUserId = signUpData.user?.id
+    if (!newUserId) {
       showError("Erreur lors de la création du compte. Réessayez.")
       setLoading(false)
       return
     }
 
-    await supabase
+    // Link auth user to business_members immediately — before email confirmation check
+    const { error: memberError } = await supabase
       .from('business_members')
-      .update({ user_id: user.id, temp_password: null, must_change_password: false })
+      .update({ user_id: newUserId, temp_password: null, must_change_password: false })
       .eq('id', memberId)
+
+    if (memberError) {
+      showError("Compte créé mais erreur de liaison à la boutique. Contactez votre administrateur.")
+      setLoading(false)
+      return
+    }
+
+    if (!signUpData.session) {
+      // Email confirmation required — try to sign in anyway (works if confirmation is disabled)
+      const { error: loginError } = await supabase.auth.signInWithPassword({
+        email: cleanEmail,
+        password: newPassword
+      })
+
+      if (loginError) {
+        showSuccess("Compte activé. Vérifiez vos emails pour confirmer votre inscription, puis connectez-vous.")
+        setLoading(false)
+        return
+      }
+    }
 
     router.push('/dashboard')
   }
