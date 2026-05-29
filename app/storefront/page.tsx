@@ -1,7 +1,6 @@
 'use client'
 
 import AppShell from '@/components/AppShell'
-import BrandingImageUploader from '@/components/BrandingImageUploader'
 import { supabase } from '@/lib/supabaseClient'
 import {
   CheckCircle2,
@@ -156,6 +155,34 @@ export default function StorefrontPage() {
     supabase.from('businesses').update({ primary_color: theme.primary, secondary_color: theme.secondary }).eq('id', business.id)
   }
 
+  async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    if (!business) return
+    const file = e.target.files?.[0]
+    if (!file) return
+    const ext = file.name.split('.').pop() || 'jpg'
+    const path = `${business.id}/logos/${Date.now()}.${ext}`
+    const { error } = await supabase.storage.from('business-assets').upload(path, file, { cacheControl: '3600', upsert: true })
+    if (error) { showFlash(error.message); return }
+    const { data } = supabase.storage.from('business-assets').getPublicUrl(path)
+    await supabase.from('businesses').update({ logo_url: data.publicUrl }).eq('id', business.id)
+    setBusiness({ ...business, logo_url: data.publicUrl })
+    showFlash('Logo enregistré !')
+  }
+
+  async function handleBanniereUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    if (!business) return
+    const file = e.target.files?.[0]
+    if (!file) return
+    const ext = file.name.split('.').pop() || 'jpg'
+    const path = `${business.id}/banners/${Date.now()}.${ext}`
+    const { error } = await supabase.storage.from('business-assets').upload(path, file, { cacheControl: '3600', upsert: true })
+    if (error) { showFlash(error.message); return }
+    const { data } = supabase.storage.from('business-assets').getPublicUrl(path)
+    await supabase.from('businesses').update({ banner_url: data.publicUrl }).eq('id', business.id)
+    setBusiness({ ...business, banner_url: data.publicUrl })
+    showFlash('Bannière enregistrée !')
+  }
+
   async function copyLink() {
     await navigator.clipboard.writeText(shopUrl)
     showFlash('Lien copié !')
@@ -208,9 +235,24 @@ export default function StorefrontPage() {
             <div className="space-y-5 border-t border-slate-100 px-6 pb-6 pt-5">
               {business && (
                 <>
-                  <div className="grid gap-5 sm:grid-cols-2">
-                    <BrandingImageUploader businessId={business.id} label="Logo" value={business.logo_url || ''} folder="logos" onUploaded={(url) => setBusiness({ ...business, logo_url: url })} />
-                    <BrandingImageUploader businessId={business.id} label="Bannière" value={business.banner_url || ''} folder="banners" onUploaded={(url) => setBusiness({ ...business, banner_url: url })} />
+                  <div className="flex flex-row gap-3 w-full">
+                    <button
+                      type="button"
+                      onClick={() => (document.getElementById('logo-upload') as HTMLInputElement)?.click()}
+                      className="flex-1 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-xl"
+                    >
+                      🖼️ Ajoute ton Logo
+                    </button>
+                    <input id="logo-upload" type="file" accept="image/*" className="hidden" onChange={(e) => handleLogoUpload(e)} />
+
+                    <button
+                      type="button"
+                      onClick={() => (document.getElementById('banniere-upload') as HTMLInputElement)?.click()}
+                      className="flex-1 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-xl"
+                    >
+                      🏞️ Ajoute ta Bannière
+                    </button>
+                    <input id="banniere-upload" type="file" accept="image/*" className="hidden" onChange={(e) => handleBanniereUpload(e)} />
                   </div>
 
                   <div>

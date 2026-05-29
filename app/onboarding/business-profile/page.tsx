@@ -1,6 +1,5 @@
 'use client'
 
-import BusinessImageUploader from '@/components/BusinessImageUploader'
 import { seedDemoBusiness } from '@/lib/seedDemoBusiness'
 import { supabase } from '@/lib/supabaseClient'
 import { ArrowRight, MapPin, Phone, Store } from 'lucide-react'
@@ -89,6 +88,28 @@ function BusinessProfileContent() {
     router.push('/dashboard')
   }
 
+  async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const ext = file.name.split('.').pop() || 'jpg'
+    const path = `logos/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+    const { error } = await supabase.storage.from('business-assets').upload(path, file, { upsert: false })
+    if (error) { setMessage(error.message); return }
+    const { data } = supabase.storage.from('business-assets').getPublicUrl(path)
+    setForm(f => ({ ...f, logo_url: data.publicUrl }))
+  }
+
+  async function handleBanniereUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const ext = file.name.split('.').pop() || 'jpg'
+    const path = `banners/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+    const { error } = await supabase.storage.from('business-assets').upload(path, file, { upsert: false })
+    if (error) { setMessage(error.message); return }
+    const { data } = supabase.storage.from('business-assets').getPublicUrl(path)
+    setForm(f => ({ ...f, banner_url: data.publicUrl }))
+  }
+
   if (checking) return <main className="flex min-h-screen items-center justify-center bg-slate-50"><p className="font-bold text-slate-700">Chargement...</p></main>
 
   return (
@@ -117,8 +138,25 @@ function BusinessProfileContent() {
 
               <div><label className="mb-2 flex items-center gap-2 text-sm font-black text-slate-700"><MapPin size={16}/>Adresse</label><input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="Dakar, Sénégal" className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-semibold outline-none transition focus:border-emerald-500 focus:bg-white" /></div>
 
-              <BusinessImageUploader label="Logo" value={form.logo_url} folder="logos" previewClassName="h-40" onChange={(url) => setForm({ ...form, logo_url: url })} />
-              <BusinessImageUploader label="Bannière" value={form.banner_url} folder="banners" previewClassName="h-52" onChange={(url) => setForm({ ...form, banner_url: url })} />
+              <div className="flex flex-row gap-3 w-full">
+                <button
+                  type="button"
+                  onClick={() => (document.getElementById('logo-upload-onboarding') as HTMLInputElement)?.click()}
+                  className="flex-1 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-xl"
+                >
+                  🖼️ Ajoute ton Logo
+                </button>
+                <input id="logo-upload-onboarding" type="file" accept="image/*" className="hidden" onChange={(e) => handleLogoUpload(e)} />
+
+                <button
+                  type="button"
+                  onClick={() => (document.getElementById('banniere-upload-onboarding') as HTMLInputElement)?.click()}
+                  className="flex-1 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-xl"
+                >
+                  🏞️ Ajoute ta Bannière
+                </button>
+                <input id="banniere-upload-onboarding" type="file" accept="image/*" className="hidden" onChange={(e) => handleBanniereUpload(e)} />
+              </div>
             </div>
           </div>
 
