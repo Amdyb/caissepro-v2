@@ -1,5 +1,4 @@
 // @ts-check
-const { withSentryConfig } = require('@sentry/nextjs');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -37,18 +36,4 @@ const nextConfig = {
   },
 }
 
-module.exports = withSentryConfig(nextConfig, {
-  org: 'amdy-labs',
-  project: 'javascript-nextjs',
-  authToken: process.env.SENTRY_AUTH_TOKEN,
-
-  silent: !process.env.CI,
-  widenClientFileUpload: true,
-  hideSourceMaps: true,
-  webpack: {
-    treeshake: {
-      removeDebugLogging: true,
-    },
-    automaticVercelMonitors: true,
-  },
-});
+module.exports = nextConfig
