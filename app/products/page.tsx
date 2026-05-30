@@ -5,7 +5,7 @@ import AppShell from '@/components/AppShell'
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Edit, Eye, FileSpreadsheet, PackagePlus, Plus, RefreshCw, Search, Trash2, Upload, X } from 'lucide-react'
+import { Edit, Eye, FileSpreadsheet, PackagePlus, Plus, RefreshCw, Search, ShoppingBag, Trash2, Upload, X } from 'lucide-react'
 import { supabase } from '@/lib/supabaseClient'
 
 type Product = {
@@ -292,6 +292,14 @@ export default function ProductsPage() {
                       </div>
                     )}
                   </div>
+
+                  {product.image ? (
+                    <img src={product.image} alt={product.name} className="mb-4 w-full h-40 object-cover rounded-2xl" />
+                  ) : (
+                    <div className="mb-4 w-full h-40 bg-slate-100 dark:bg-slate-700 rounded-2xl flex items-center justify-center">
+                      <ShoppingBag className="text-slate-300" size={32} />
+                    </div>
+                  )}
 
                   <h3 className="text-base font-black text-slate-900 dark:text-white">{product.name}</h3>
                   <p className="mt-2 text-xl font-black text-emerald-600">{Number(product.sell_price || 0).toLocaleString('fr-FR')} CFA</p>
