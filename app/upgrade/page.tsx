@@ -6,6 +6,13 @@ import { supabase } from '@/lib/supabaseClient'
 import { CheckCircle2, Crown, Gift, Rocket, ShieldCheck, Sparkles } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
+const PLAN_LABELS: Record<string, string> = {
+  free: 'Gratuit',
+  starter: 'Starter',
+  business: 'Business',
+  premium: 'Premium',
+}
+
 const FREE_PLAN = {
   id: 'free',
   name: 'Gratuit',
@@ -77,6 +84,7 @@ const PLANS = [
 
 export default function UpgradePage() {
   const [business, setBusiness] = useState<any>(null)
+  const [currentPlan, setCurrentPlan] = useState<string>('free')
   const [userEmail, setUserEmail] = useState('')
   const [loading, setLoading] = useState(true)
   const [selectedPlan, setSelectedPlan] = useState<typeof PLANS[0] | null>(null)
@@ -86,16 +94,22 @@ export default function UpgradePage() {
       const { data: userData } = await supabase.auth.getUser()
       if (!userData.user) { setLoading(false); return }
       setUserEmail(userData.user.email || '')
+
       const { data: membership } = await supabase
         .from('business_members')
-        .select('business_id, businesses(id,name,business_type)')
+        .select('business_id, businesses(id, name, business_type, plan)')
         .eq('user_id', userData.user.id)
         .limit(1)
         .maybeSingle()
+
       const member: any = membership
       if (member?.businesses) {
-        setBusiness({ ...member.businesses, id: member.business_id })
+        const biz = member.businesses
+        setBusiness({ ...biz, id: member.business_id })
+        // Fetch plan from businesses table — reliable even with no subscription row
+        setCurrentPlan(biz.plan || 'free')
       }
+
       setLoading(false)
     }
     init()
@@ -108,6 +122,8 @@ export default function UpgradePage() {
       </main>
     )
   }
+
+  const currentPlanLabel = PLAN_LABELS[currentPlan] ?? 'Gratuit'
 
   return (
     <AppShell title="Mise à niveau" subtitle="Choisissez un plan pour votre boutique.">
@@ -122,13 +138,19 @@ export default function UpgradePage() {
       )}
 
       <div className="mx-auto max-w-5xl">
-        {/* Boutique liée */}
-        <div className="mb-6 rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-          <p className="text-xs font-black uppercase tracking-wide text-slate-400 dark:text-slate-500">Boutique liée</p>
-          <p className="mt-1 text-lg font-black text-slate-950 dark:text-white">
-            {business?.name || 'Aucune boutique trouvée'}
-            {userEmail && <span className="ml-2 text-sm font-bold text-slate-400"> · {userEmail}</span>}
-          </p>
+        {/* Current plan banner */}
+        <div className="mb-6 flex items-center justify-between rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+          <div>
+            <p className="text-xs font-black uppercase tracking-wide text-slate-400 dark:text-slate-500">Boutique liée</p>
+            <p className="mt-1 text-lg font-black text-slate-950 dark:text-white">
+              {business?.name || 'Votre boutique'}
+              {userEmail && <span className="ml-2 text-sm font-bold text-slate-400"> · {userEmail}</span>}
+            </p>
+          </div>
+          <div className="shrink-0 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-right dark:border-emerald-800 dark:bg-emerald-900/20">
+            <p className="text-[10px] font-black uppercase tracking-wide text-emerald-600 dark:text-emerald-400">Votre plan actuel</p>
+            <p className="text-base font-black text-emerald-700 dark:text-emerald-300">{currentPlanLabel}</p>
+          </div>
         </div>
 
         {/* Promo banner */}
@@ -143,8 +165,13 @@ export default function UpgradePage() {
           {/* Free plan card */}
           {(() => {
             const Icon = FREE_PLAN.icon
+            const isCurrent = currentPlan === 'free' || !currentPlan
             return (
-              <div className="rounded-[2rem] border border-slate-200 bg-slate-50 p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800/50">
+              <div className={`rounded-[2rem] border p-6 shadow-sm dark:bg-slate-800/50 ${
+                isCurrent
+                  ? 'border-emerald-300 bg-emerald-50 dark:border-emerald-700'
+                  : 'border-slate-200 bg-slate-50 dark:border-slate-700'
+              }`}>
                 <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-200 text-slate-500 dark:bg-slate-700 dark:text-slate-400">
                   <Icon size={26} />
                 </div>
@@ -161,8 +188,12 @@ export default function UpgradePage() {
                     </p>
                   ))}
                 </div>
-                <div className="mt-6 w-full rounded-2xl border border-slate-300 py-4 text-center font-black text-slate-400">
-                  Plan actuel
+                <div className={`mt-6 w-full rounded-2xl py-4 text-center font-black ${
+                  isCurrent
+                    ? 'border border-emerald-400 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                    : 'border border-slate-300 text-slate-400'
+                }`}>
+                  {isCurrent ? '✓ Plan actuel' : 'Plan Gratuit'}
                 </div>
               </div>
             )
@@ -170,14 +201,26 @@ export default function UpgradePage() {
 
           {PLANS.map((plan) => {
             const Icon = plan.icon
+            const isCurrent = currentPlan === plan.id
             return (
               <div
                 key={plan.id}
-                className="relative rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800"
+                className={`relative rounded-[2rem] border p-6 shadow-sm dark:bg-slate-800 ${
+                  isCurrent
+                    ? 'border-emerald-400 bg-emerald-50 dark:border-emerald-600 dark:bg-emerald-900/20'
+                    : 'border-slate-200 bg-white dark:border-slate-700'
+                }`}
               >
-                <div className="absolute right-4 top-4 rounded-full bg-emerald-600 px-2.5 py-1 text-[10px] font-black text-white">
-                  2 MOIS OFFERTS
-                </div>
+                {!isCurrent && (
+                  <div className="absolute right-4 top-4 rounded-full bg-emerald-600 px-2.5 py-1 text-[10px] font-black text-white">
+                    2 MOIS OFFERTS
+                  </div>
+                )}
+                {isCurrent && (
+                  <div className="absolute right-4 top-4 rounded-full bg-emerald-600 px-2.5 py-1 text-[10px] font-black text-white">
+                    ✓ ACTUEL
+                  </div>
+                )}
 
                 <div className="mb-5 mt-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
                   <Icon size={26} />
@@ -200,9 +243,13 @@ export default function UpgradePage() {
 
                 <button
                   onClick={() => setSelectedPlan(plan)}
-                  className="mt-6 w-full rounded-2xl bg-emerald-600 py-4 font-black text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700 active:scale-[0.98]"
+                  className={`mt-6 w-full rounded-2xl py-4 font-black shadow-lg transition active:scale-[0.98] ${
+                    isCurrent
+                      ? 'bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300'
+                      : 'bg-emerald-600 text-white shadow-emerald-600/20 hover:bg-emerald-700'
+                  }`}
                 >
-                  Choisir {plan.name}
+                  {isCurrent ? 'Renouveler' : `Choisir ${plan.name}`}
                 </button>
               </div>
             )
@@ -218,8 +265,12 @@ export default function UpgradePage() {
                 <tr className="border-b border-slate-100 dark:border-slate-700">
                   <th className="px-6 py-4 text-left font-black text-slate-500 dark:text-slate-400">Fonctionnalité</th>
                   {['Starter', 'Business', 'Premium'].map((name) => (
-                    <th key={name} className="px-6 py-4 text-center font-black text-slate-950 dark:text-white">
-                      {name}
+                    <th key={name} className={`px-6 py-4 text-center font-black ${
+                      currentPlan === name.toLowerCase()
+                        ? 'text-emerald-600'
+                        : 'text-slate-950 dark:text-white'
+                    }`}>
+                      {name}{currentPlan === name.toLowerCase() ? ' ✓' : ''}
                     </th>
                   ))}
                 </tr>

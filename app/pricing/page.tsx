@@ -6,6 +6,13 @@ import { Check, Crown, Rocket, ShieldCheck, Sparkles, Store } from 'lucide-react
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 
+const PLAN_LABELS: Record<string, string> = {
+  free: 'Gratuit',
+  starter: 'Starter',
+  business: 'Business',
+  premium: 'Premium',
+}
+
 const PLANS = [
   {
     id: 'free',
@@ -90,26 +97,32 @@ export default function PricingPage() {
   const [businessId, setBusinessId] = useState<string | null>(null)
   const [businessName, setBusinessName] = useState('')
   const [userEmail, setUserEmail] = useState('')
+  const [currentPlan, setCurrentPlan] = useState<string>('free')
 
   useEffect(() => {
     async function loadUser() {
       const { data: userData } = await supabase.auth.getUser()
       if (!userData.user) return
       setUserEmail(userData.user.email || '')
+
       const { data: membership } = await supabase
         .from('business_members')
-        .select('business_id, businesses(name)')
+        .select('business_id, businesses(name, plan)')
         .eq('user_id', userData.user.id)
         .limit(1)
         .maybeSingle()
+
       const member: any = membership
       if (member) {
         setBusinessId(member.business_id)
         setBusinessName(member.businesses?.name || '')
+        setCurrentPlan(member.businesses?.plan || 'free')
       }
     }
     loadUser()
   }, [])
+
+  const currentPlanLabel = PLAN_LABELS[currentPlan] ?? 'Gratuit'
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-950">
@@ -134,6 +147,11 @@ export default function PricingPage() {
           <p className="mt-5 text-lg font-semibold text-slate-600">
             Choisissez le plan adapté à votre boutique. Payable par Wave ou Orange Money.
           </p>
+          {currentPlan && (
+            <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-5 py-2 text-sm font-black text-emerald-700">
+              <Check size={15} /> Votre plan actuel : {currentPlanLabel}
+            </div>
+          )}
         </div>
 
         {/* Promo banner */}
@@ -146,21 +164,29 @@ export default function PricingPage() {
         <div className="mt-8 grid gap-6 lg:grid-cols-4">
           {PLANS.map((plan) => {
             const Icon = plan.icon
+            const isCurrent = currentPlan === plan.id || (plan.id === 'free' && (!currentPlan || currentPlan === 'free'))
             return (
               <div
                 key={plan.name}
                 className={`relative rounded-3xl border p-6 shadow-sm ${
-                  plan.highlighted
+                  isCurrent
+                    ? 'border-emerald-400 bg-emerald-50 shadow-emerald-100'
+                    : plan.highlighted
                     ? 'border-emerald-300 bg-emerald-600 text-white shadow-xl shadow-emerald-600/20'
                     : 'border-slate-200 bg-white text-slate-950'
                 }`}
               >
-                {plan.highlighted && (
+                {plan.highlighted && !isCurrent && (
                   <div className="absolute -top-4 left-1/2 -translate-x-1/2 rounded-full bg-slate-950 px-4 py-2 text-xs font-black text-white">
                     Recommandé
                   </div>
                 )}
-                {plan.isPaid && (
+                {isCurrent && (
+                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 rounded-full bg-emerald-600 px-4 py-2 text-xs font-black text-white">
+                    ✓ Plan actuel
+                  </div>
+                )}
+                {plan.isPaid && !isCurrent && (
                   <div className={`absolute right-3 top-3 rounded-full px-2.5 py-1 text-[10px] font-black ${
                     plan.highlighted ? 'bg-white text-emerald-700' : 'bg-emerald-600 text-white'
                   }`}>
@@ -168,19 +194,30 @@ export default function PricingPage() {
                   </div>
                 )}
 
-                <div className={`mb-6 mt-4 inline-flex rounded-2xl p-4 ${plan.highlighted ? 'bg-white/15' : 'bg-emerald-50 text-emerald-700'}`}>
+                <div className={`mb-6 mt-4 inline-flex rounded-2xl p-4 ${
+                  isCurrent
+                    ? 'bg-emerald-100 text-emerald-700'
+                    : plan.highlighted
+                    ? 'bg-white/15'
+                    : 'bg-emerald-50 text-emerald-700'
+                }`}>
                   <Icon size={28} />
                 </div>
 
-                <h2 className="text-2xl font-black">{plan.name}</h2>
-                <p className={`mt-2 text-sm font-bold ${plan.highlighted ? 'text-white/80' : 'text-slate-500'}`}>
+                <h2 className={`text-2xl font-black ${isCurrent ? 'text-emerald-800' : ''}`}>{plan.name}</h2>
+                <p className={`mt-2 text-sm font-bold ${
+                  isCurrent ? 'text-emerald-600' : plan.highlighted ? 'text-white/80' : 'text-slate-500'
+                }`}>
                   {plan.audience}
                 </p>
 
                 <div className="mt-6">
                   {plan.isPaid ? (
                     <p className="text-3xl font-black">
-                      {plan.price} <span className={`text-base font-bold ${plan.highlighted ? 'text-white/70' : 'text-slate-400'}`}>XOF/mois</span>
+                      {plan.price}{' '}
+                      <span className={`text-base font-bold ${
+                        isCurrent ? 'text-emerald-500' : plan.highlighted ? 'text-white/70' : 'text-slate-400'
+                      }`}>XOF/mois</span>
                     </p>
                   ) : (
                     <p className="text-3xl font-black">Gratuit</p>
@@ -190,8 +227,13 @@ export default function PricingPage() {
                 <div className="mt-6 space-y-3">
                   {plan.features.map((feature) => (
                     <div key={feature} className="flex items-start gap-3">
-                      <Check className={plan.highlighted ? 'text-white' : 'text-emerald-600'} size={18} />
-                      <span className={`text-sm font-bold ${plan.highlighted ? 'text-white/90' : 'text-slate-700'}`}>
+                      <Check
+                        className={isCurrent ? 'text-emerald-600' : plan.highlighted ? 'text-white' : 'text-emerald-600'}
+                        size={18}
+                      />
+                      <span className={`text-sm font-bold ${
+                        isCurrent ? 'text-emerald-800' : plan.highlighted ? 'text-white/90' : 'text-slate-700'
+                      }`}>
                         {feature}
                       </span>
                     </div>
@@ -202,19 +244,25 @@ export default function PricingPage() {
                   <button
                     onClick={() => setSelectedPlan(plan)}
                     className={`mt-8 block w-full rounded-2xl px-5 py-4 text-center text-sm font-black transition hover:scale-[1.02] active:scale-[0.98] ${
-                      plan.highlighted
+                      isCurrent
+                        ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+                        : plan.highlighted
                         ? 'bg-white text-emerald-700 hover:bg-emerald-50'
                         : 'bg-slate-950 text-white hover:bg-slate-800'
                     }`}
                   >
-                    Choisir {plan.name}
+                    {isCurrent ? 'Renouveler' : `Choisir ${plan.name}`}
                   </button>
                 ) : (
                   <Link
-                    href="/register"
-                    className="mt-8 block rounded-2xl bg-slate-950 px-5 py-4 text-center text-sm font-black text-white transition hover:bg-slate-800"
+                    href="/dashboard"
+                    className={`mt-8 block rounded-2xl px-5 py-4 text-center text-sm font-black transition hover:bg-slate-800 ${
+                      isCurrent
+                        ? 'border-2 border-emerald-400 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                        : 'bg-slate-950 text-white'
+                    }`}
                   >
-                    Commencer gratuitement
+                    {isCurrent ? '✓ Plan actuel' : 'Commencer gratuitement'}
                   </Link>
                 )}
               </div>
@@ -239,11 +287,17 @@ export default function PricingPage() {
               <thead>
                 <tr className="border-b border-slate-100">
                   <th className="px-6 py-4 text-left font-black text-slate-500">Fonctionnalité</th>
-                  {['Gratuit', 'Starter', 'Business', 'Premium'].map((name) => (
-                    <th key={name} className={`px-6 py-4 text-center font-black ${name === 'Starter' ? 'text-emerald-600' : 'text-slate-950'}`}>
-                      {name}
-                    </th>
-                  ))}
+                  {['Gratuit', 'Starter', 'Business', 'Premium'].map((name) => {
+                    const planId = name.toLowerCase()
+                    const isActive = currentPlan === planId || (planId === 'gratuit' && (!currentPlan || currentPlan === 'free'))
+                    return (
+                      <th key={name} className={`px-6 py-4 text-center font-black ${
+                        isActive ? 'text-emerald-600' : name === 'Starter' ? 'text-emerald-500' : 'text-slate-950'
+                      }`}>
+                        {name}{isActive ? ' ✓' : ''}
+                      </th>
+                    )
+                  })}
                 </tr>
               </thead>
               <tbody>

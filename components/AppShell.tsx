@@ -72,6 +72,7 @@ const MANAGER_ROLES = ['manager', 'admin', 'owner']
 const STAFF_ALLOWED_PATHS = [
   '/pos', '/checkout',
   '/register-shifts', '/profile', '/change-password', '/expenses',
+  '/upgrade', '/pricing',
 ]
 
 const MANAGER_ALLOWED_PATHS = [
@@ -84,6 +85,7 @@ const MANAGER_ALLOWED_PATHS = [
   '/storefront', '/orders', '/categories', '/suppliers',
   '/reminders', '/automation',
   '/profile', '/change-password', '/help', '/feedback', '/legal',
+  '/upgrade', '/pricing',
 ]
 
 const STAFF_SECTION: SectionConfig = {
