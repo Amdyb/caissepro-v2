@@ -2,7 +2,7 @@
 
 import { supabase } from '@/lib/supabaseClient'
 import { sendPaymentConfirmation } from '@/lib/whatsapp'
-import { CheckCircle2, X } from 'lucide-react'
+import { CheckCircle2, CreditCard, Loader2, X } from 'lucide-react'
 import { useState } from 'react'
 
 type Plan = { id: string; name: string; price: string; amount: number }
@@ -18,20 +18,23 @@ type Props = {
 export default function PaymentModal({ plan, businessId, businessName, userEmail, onClose }: Props) {
   const [done, setDone] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [onlineLoading, setOnlineLoading] = useState(false)
+  const [error, setError] = useState('')
 
-  async function confirmPayment() {
+  async function confirmManualPayment() {
     setLoading(true)
+    setError('')
 
     if (businessId) {
       try {
         await supabase.from('upgrade_requests').insert({
-          business_id: businessId,
-          business_name: businessName || 'Inconnu',
-          user_email: userEmail,
-          plan: plan.name,
-          price: `${plan.price} XOF/mois`,
-          status: 'pending',
-          whatsapp_sent: true,
+          business_id:     businessId,
+          business_name:   businessName || 'Inconnu',
+          user_email:      userEmail,
+          plan:            plan.name,
+          price:           `${plan.price} XOF/mois`,
+          status:          'pending',
+          whatsapp_sent:   true,
           duration_months: 2,
         })
       } catch {
@@ -42,6 +45,43 @@ export default function PaymentModal({ plan, businessId, businessName, userEmail
     await sendPaymentConfirmation(businessName, plan.name, plan.amount, userEmail)
     setDone(true)
     setLoading(false)
+  }
+
+  async function payOnline() {
+    if (!businessId) {
+      setError('Boutique introuvable. Veuillez réessayer.')
+      return
+    }
+    setOnlineLoading(true)
+    setError('')
+
+    try {
+      const res = await fetch('/api/paydunya/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          plan:         plan.name,
+          amount:       plan.amount,
+          businessId,
+          businessName,
+          email:        userEmail,
+        }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok || !data.payment_url) {
+        setError(data.error || 'Erreur lors de l\'initialisation du paiement.')
+        setOnlineLoading(false)
+        return
+      }
+
+      window.location.href = data.payment_url
+    } catch (err) {
+      console.error('[PayDunya] payOnline error:', err)
+      setError('Erreur de connexion. Veuillez réessayer.')
+      setOnlineLoading(false)
+    }
   }
 
   return (
@@ -75,7 +115,26 @@ export default function PaymentModal({ plan, businessId, businessName, userEmail
               </div>
             </div>
 
-            {/* Payment options */}
+            {/* Online payment button */}
+            <button
+              onClick={payOnline}
+              disabled={onlineLoading}
+              className="mb-4 flex w-full items-center justify-center gap-3 rounded-2xl bg-slate-950 py-4 font-black text-white shadow-lg transition hover:bg-slate-800 disabled:opacity-60"
+            >
+              {onlineLoading ? (
+                <><Loader2 size={18} className="animate-spin" /> Redirection...</>
+              ) : (
+                <><CreditCard size={18} /> Payer en ligne</>
+              )}
+            </button>
+
+            <div className="mb-4 flex items-center gap-3">
+              <div className="flex-1 border-t border-slate-200" />
+              <span className="text-xs font-bold text-slate-400">OU MOBILE MONEY</span>
+              <div className="flex-1 border-t border-slate-200" />
+            </div>
+
+            {/* Wave / Orange Money */}
             <p className="mb-3 text-center text-sm font-bold text-slate-500">
               Envoyez le montant au numéro de votre choix
             </p>
@@ -102,16 +161,22 @@ export default function PaymentModal({ plan, businessId, businessName, userEmail
               </div>
             </div>
 
-            <p className="mb-5 text-center text-xs font-semibold text-slate-400">
-              Après le paiement, cliquez ci-dessous pour confirmer votre demande via WhatsApp.
+            <p className="mb-4 text-center text-xs font-semibold text-slate-400">
+              Après paiement mobile, cliquez ci-dessous pour confirmer votre demande.
             </p>
 
+            {error && (
+              <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 p-3 text-sm font-bold text-red-700">
+                {error}
+              </div>
+            )}
+
             <button
-              onClick={confirmPayment}
+              onClick={confirmManualPayment}
               disabled={loading}
-              className="w-full rounded-2xl bg-emerald-600 py-4 font-black text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700 disabled:opacity-60"
+              className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-4 font-black text-slate-700 transition hover:bg-slate-100 disabled:opacity-60"
             >
-              {loading ? 'Envoi en cours...' : "J'ai effectué le paiement"}
+              {loading ? 'Envoi en cours...' : "J'ai effectué le paiement mobile"}
             </button>
           </div>
         ) : (

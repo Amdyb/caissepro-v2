@@ -13,8 +13,21 @@ const nextConfig = {
     ],
     formats: ['image/avif', 'image/webp'],
   },
+  serverExternalPackages: ['paydunya'],
   experimental: {
     optimizePackageImports: ['lucide-react'],
+  },
+  webpack: (config, { isServer }) => {
+    if (isServer) {
+      const existing = Array.isArray(config.externals) ? config.externals : [config.externals].filter(Boolean)
+      config.externals = [...existing, function(ctx, callback) {
+        if (ctx.request === 'paydunya' || ctx.request.startsWith('paydunya/')) {
+          return callback(null, 'commonjs ' + ctx.request)
+        }
+        callback()
+      }]
+    }
+    return config
   },
   async headers() {
     return [
