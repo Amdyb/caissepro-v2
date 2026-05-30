@@ -46,7 +46,7 @@ export default function NewProductPage() {
 
       if (!membership?.business_id) return
 
-      if (membership.role === 'sales') {
+      if (['sales', 'staff', 'employee', 'cashier', 'vendeur'].includes(membership.role ?? '')) {
         router.replace('/products')
         return
       }

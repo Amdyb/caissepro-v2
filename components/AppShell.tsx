@@ -61,7 +61,7 @@ type SectionConfig = {
   textColor: string
   headerColor: string
   defaultOpen?: boolean
-  items: { label: string; href: string; icon: any; tourId?: string; lockedPlan?: string }[]
+  items: { label: string; href: string; icon: any; tourId?: string; lockedPlan?: string; readOnly?: boolean }[]
 }
 
 const PLAN_LEVELS: Record<string, number> = { free: 0, starter: 1, business: 2, premium: 3 }
@@ -98,7 +98,7 @@ const STAFF_SECTION: SectionConfig = {
   defaultOpen: true,
   items: [
     { label: 'Vendre', href: '/pos', icon: ShoppingCart },
-    { label: 'Produits', href: '/products', icon: Package },
+    { label: 'Produits', href: '/products', icon: Package, readOnly: true },
     { label: 'Caisse du jour', href: '/register-shifts', icon: Wallet },
     { label: 'Dépenses', href: '/expenses', icon: Receipt },
   ],
@@ -857,6 +857,9 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
                         <Icon size={16} />
                         <span className="flex-1">{item.label}</span>
                         {isLocked && <Lock size={12} className="shrink-0 text-amber-500" />}
+                        {item.readOnly && !isLocked && (
+                          <span title="Accès lecture seule"><Lock size={11} className="shrink-0 text-slate-400" /></span>
+                        )}
                       </Link>
                     )
                   })}

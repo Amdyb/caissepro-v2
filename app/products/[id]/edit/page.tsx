@@ -39,7 +39,7 @@ export default function EditProductPage() {
         .limit(1)
         .maybeSingle()
 
-      if (membership?.role === 'sales') {
+      if (['sales', 'staff', 'employee', 'cashier', 'vendeur'].includes(membership?.role ?? '')) {
         router.replace('/products')
         return
       }

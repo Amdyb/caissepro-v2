@@ -5,7 +5,7 @@ import AppShell from '@/components/AppShell'
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Edit, FileSpreadsheet, PackagePlus, Plus, RefreshCw, Search, Trash2, Upload, X } from 'lucide-react'
+import { Edit, Eye, FileSpreadsheet, PackagePlus, Plus, RefreshCw, Search, Trash2, Upload, X } from 'lucide-react'
 import { supabase } from '@/lib/supabaseClient'
 
 type Product = {
@@ -154,6 +154,9 @@ export default function ProductsPage() {
     document.body.removeChild(link)
   }
 
+  const READ_ONLY_ROLES = ['sales', 'staff', 'employee', 'cashier', 'vendeur']
+  const isReadOnly = READ_ONLY_ROLES.includes(userRole)
+
   if (loading) return <main className="flex min-h-screen items-center justify-center bg-slate-50"><p className="font-bold text-slate-700">Chargement...</p></main>
 
   return (
@@ -197,7 +200,14 @@ export default function ProductsPage() {
         </div>
       )}
       <div className="mx-auto max-w-[1500px]">
-        {userRole !== 'sales' && (
+        {isReadOnly && (
+          <div className="mb-5 flex items-center gap-3 rounded-2xl border border-blue-200 bg-blue-50 px-5 py-3 text-sm font-bold text-blue-700 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-400">
+            <Eye size={16} className="shrink-0" />
+            Mode consultation — Vous pouvez uniquement consulter les produits.
+          </div>
+        )}
+
+        {!isReadOnly && (
           <>
             <div className="mb-5 grid grid-cols-2 gap-3">
               <button
@@ -263,7 +273,7 @@ export default function ProductsPage() {
                       {status.label}
                     </span>
 
-                    {userRole !== 'sales' && (
+                    {!isReadOnly && (
                       <div className="flex gap-2 opacity-100 transition sm:opacity-0 sm:group-hover:opacity-100">
                         <button
                           onClick={() => { setRestockProduct(product); setRestockQty(String(product.stock ?? 0)) }}
