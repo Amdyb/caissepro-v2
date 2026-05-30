@@ -6,15 +6,27 @@ function normalizePhone(raw: string): string {
   return digits.startsWith('221') ? `+${digits}` : `+221${digits}`
 }
 
+const TEMPLATE_SIDS: Record<string, string | undefined> = {
+  receipt:  process.env.WHATSAPP_TEMPLATE_RECEIPT,
+  payment:  process.env.WHATSAPP_TEMPLATE_PAYMENT,
+  reminder: process.env.WHATSAPP_TEMPLATE_REMINDER,
+  order:    process.env.WHATSAPP_TEMPLATE_ORDER,
+}
+
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null)
-  if (!body?.to || !body?.message) {
+  if (!body?.to || (!body?.body && !body?.template)) {
     return NextResponse.json({ error: 'Missing to or message' }, { status: 400 })
   }
 
-  const { to, message } = body as { to: string; message: string }
-  const phone = normalizePhone(to)
+  const { to, body: messageBody, template, variables } = body as {
+    to: string
+    body?: string
+    template?: string
+    variables?: Record<string, string>
+  }
 
+  const phone = normalizePhone(to)
   const accountSid = process.env.TWILIO_ACCOUNT_SID
   const authToken  = process.env.TWILIO_AUTH_TOKEN
   const from       = process.env.TWILIO_WHATSAPP_FROM || 'whatsapp:+12487030072'
@@ -22,13 +34,23 @@ export async function POST(req: NextRequest) {
   if (accountSid && authToken) {
     try {
       const client = twilio(accountSid, authToken)
-      const msg = await client.messages.create({
-        from,
-        to: `whatsapp:${phone}`,
-        body: message,
-      })
-      console.log(`[Twilio] sent to ${phone} — SID: ${msg.sid}`)
-      return NextResponse.json({ success: true, method: 'twilio', sid: msg.sid })
+      const contentSid = template ? TEMPLATE_SIDS[template] : undefined
+
+      const msg = contentSid
+        ? await client.messages.create({
+            from,
+            to: `whatsapp:${phone}`,
+            contentSid,
+            ...(variables ? { contentVariables: JSON.stringify(variables) } : {}),
+          })
+        : await client.messages.create({
+            from,
+            to: `whatsapp:${phone}`,
+            body: messageBody,
+          })
+
+      console.log(`[Twilio] sent to ${phone} — SID: ${msg.sid} | method: ${contentSid ? 'template' : 'body'}`)
+      return NextResponse.json({ success: true, method: contentSid ? 'template' : 'twilio', sid: msg.sid })
     } catch (err: any) {
       console.error(`[Twilio] error sending to ${phone}:`, err?.message || err)
       return NextResponse.json(
@@ -40,6 +62,6 @@ export async function POST(req: NextRequest) {
 
   // No Twilio credentials — return wa.me fallback URL for client to open
   console.log('[WhatsApp] no Twilio credentials, returning wa.me fallback')
-  const url = `https://wa.me/${phone.replace('+', '')}?text=${encodeURIComponent(message)}`
+  const url = `https://wa.me/${phone.replace('+', '')}?text=${encodeURIComponent(messageBody || '')}`
   return NextResponse.json({ success: true, method: 'fallback', url })
 }

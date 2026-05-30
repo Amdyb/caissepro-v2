@@ -2,7 +2,6 @@
 
 import AppShell from '@/components/AppShell'
 import { supabase } from '@/lib/supabaseClient'
-import { sendPaymentConfirmation } from '@/lib/whatsapp'
 import { ArrowLeft, CheckCircle2, MessageCircle, XCircle } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'

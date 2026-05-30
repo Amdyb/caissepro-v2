@@ -39,7 +39,7 @@ export default function PaymentModal({ plan, businessId, businessName, userEmail
       }
     }
 
-    await sendPaymentConfirmation('221784581111', plan.name, plan.amount)
+    await sendPaymentConfirmation(businessName, plan.name, plan.amount, userEmail)
     setDone(true)
     setLoading(false)
   }
