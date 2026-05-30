@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
 
   const accountSid = process.env.TWILIO_ACCOUNT_SID
   const authToken  = process.env.TWILIO_AUTH_TOKEN
-  const from       = process.env.TWILIO_WHATSAPP_FROM || 'whatsapp:+2487030072'
+  const from       = process.env.TWILIO_WHATSAPP_FROM || 'whatsapp:+12487030072'
 
   if (accountSid && authToken) {
     try {
