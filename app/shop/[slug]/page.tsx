@@ -1,11 +1,18 @@
 'use client'
 
-import { supabasePublic as supabase } from '@/lib/supabasePublic'
+import { createClient } from '@supabase/supabase-js'
 import { sendOrderNotification } from '@/lib/whatsapp'
 import Image from 'next/image'
 import { ChevronRight, MapPin, MessageCircle, Navigation, Phone, Search, Share2, ShoppingBag, Store, Verified, X } from 'lucide-react'
 import { useParams } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
+
+// Dedicated no-auth client — never inherits session from the app's auth client
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } }
+)
 
 type Business = {
   id: string
@@ -80,33 +87,28 @@ export default function PublicShopPage() {
           return
         }
 
-        const response = await supabase
+        const { data: shop, error: bizError } = await supabase
           .from('businesses')
           .select('*')
           .eq('slug', slug)
-          .limit(1)
+          .eq('status', 'active')
+          .maybeSingle()
 
-        if (response.error) { setError(response.error.message); return }
-
-        const shop = response.data?.[0]
+        if (bizError) { setError(bizError.message); return }
         if (!shop) { setError('Boutique introuvable'); return }
 
         setBusiness(shop as Business)
 
-        const productsResponse = await supabase
+        const { data: productsData } = await supabase
           .from('products')
           .select('*')
           .eq('business_id', shop.id)
+          .is('deleted_at', null)
+          .not('archived', 'is', true)
+          .not('is_active', 'is', false)
           .order('created_at', { ascending: false })
 
-        const visibleProducts = (productsResponse.data || []).filter((p: any) => {
-          if (p.deleted_at) return false
-          if (p.archived === true) return false
-          if (p.is_active === false) return false
-          return true
-        })
-
-        setProducts(shuffleArray(visibleProducts) as Product[])
+        setProducts(shuffleArray((productsData || []) as Product[]))
       } catch (err: any) {
         setError(err?.message || 'Erreur storefront')
       } finally {
