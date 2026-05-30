@@ -288,7 +288,7 @@ export default function DashboardPage() {
 
   function handleWhatsApp() {
     const text = `Rejoignez CaissePro et gerez votre commerce facilement ! Utilisez mon lien : ${referralUrl}`
-    window.open(`whatsapp://send?text=${encodeURIComponent(text)}`, '_blank')
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank')
   }
 
   const filteredMenuItems = shortcutSearch.trim()

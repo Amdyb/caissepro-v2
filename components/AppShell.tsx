@@ -71,7 +71,7 @@ const MANAGER_ROLES = ['manager', 'admin', 'owner']
 
 const STAFF_ALLOWED_PATHS = [
   '/pos', '/checkout',
-  '/register-shifts', '/profile', '/change-password',
+  '/register-shifts', '/profile', '/change-password', '/expenses',
 ]
 
 const MANAGER_ALLOWED_PATHS = [
@@ -98,6 +98,7 @@ const STAFF_SECTION: SectionConfig = {
     { label: 'Vendre', href: '/pos', icon: ShoppingCart },
     { label: 'Produits', href: '/products', icon: Package },
     { label: 'Caisse du jour', href: '/register-shifts', icon: Wallet },
+    { label: 'Dépenses', href: '/expenses', icon: Receipt },
   ],
 }
 

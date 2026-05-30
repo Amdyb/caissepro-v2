@@ -52,12 +52,23 @@ export default function EmployeeSetupPage() {
     const cleanEmail = email.trim().toLowerCase()
     const cleanTemp = tempPassword.trim()
 
-    const { data: member, error } = await supabase
+    // Check both temp_password and temporary_password columns
+    let { data: member, error } = await supabase
       .from('business_members')
       .select('id, user_id, email, full_name, business_id')
       .eq('temp_password', cleanTemp)
       .eq('is_active', true)
       .maybeSingle()
+
+    if (!member) {
+      const { data: member2 } = await supabase
+        .from('business_members')
+        .select('id, user_id, email, full_name, business_id')
+        .eq('temporary_password', cleanTemp)
+        .eq('is_active', true)
+        .maybeSingle()
+      if (member2) member = member2
+    }
 
     if (error || !member) {
       showError("Email ou mot de passe temporaire incorrect. Vérifiez vos identifiants.")
@@ -149,13 +160,23 @@ export default function EmployeeSetupPage() {
         if (attempt > 0) await new Promise(r => setTimeout(r, 600))
         const { error: updateError } = await supabase
           .from('business_members')
-          .update({ user_id: newUserId, temp_password: null, must_change_password: false })
+          .update({ user_id: newUserId, temp_password: null, temporary_password: null, must_change_password: false })
           .eq('id', memberId)
         if (!updateError) { success = true; break }
       }
       if (!success) {
         console.warn('[employee-setup] Could not link user_id — will be repaired on first login')
       }
+    }
+
+    // Store business_id so dashboard loads the correct business
+    const { data: linkedMember } = await supabase
+      .from('business_members')
+      .select('business_id')
+      .eq('id', memberId)
+      .maybeSingle()
+    if (linkedMember?.business_id) {
+      localStorage.setItem('caissepro_active_business', linkedMember.business_id)
     }
 
     setStep('success')

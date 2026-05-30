@@ -5,7 +5,7 @@ import AppShell from '@/components/AppShell'
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Edit, FileSpreadsheet, PackagePlus, Plus, Search, Trash2, Upload } from 'lucide-react'
+import { Edit, FileSpreadsheet, PackagePlus, Plus, RefreshCw, Search, Trash2, Upload, X } from 'lucide-react'
 import { supabase } from '@/lib/supabaseClient'
 
 type Product = {
@@ -39,6 +39,9 @@ export default function ProductsPage() {
   const [search, setSearch] = useState('')
   const [showImporter, setShowImporter] = useState(false)
   const [userRole, setUserRole] = useState('owner')
+  const [restockProduct, setRestockProduct] = useState<Product | null>(null)
+  const [restockQty, setRestockQty] = useState('')
+  const [restockSaving, setRestockSaving] = useState(false)
 
   const filteredProducts = useMemo(() => {
     const q = search.toLowerCase().trim()
@@ -122,6 +125,21 @@ export default function ProductsPage() {
     )
   }
 
+  async function saveRestock() {
+    if (!restockProduct || restockQty === '') return
+    setRestockSaving(true)
+    const newStock = Number(restockQty)
+    const { error } = await supabase
+      .from('products')
+      .update({ stock: newStock })
+      .eq('id', restockProduct.id)
+    setRestockSaving(false)
+    if (error) { alert(error.message); return }
+    setProducts((prev) => prev.map((p) => p.id === restockProduct.id ? { ...p, stock: newStock } : p))
+    setRestockProduct(null)
+    setRestockQty('')
+  }
+
   function downloadTemplate() {
     const csv = 'name,prix,stock,categorie,barcode\nProduit Demo,5000,10,Vape,123456789'
 
@@ -140,6 +158,44 @@ export default function ProductsPage() {
 
   return (
     <AppShell title="Produits" subtitle="Inventaire, prix, stock et catalogue produit.">
+      {restockProduct && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm">
+          <div className="relative w-full max-w-sm rounded-[2rem] bg-white p-8 shadow-2xl dark:bg-slate-800">
+            <button
+              onClick={() => setRestockProduct(null)}
+              className="absolute right-4 top-4 rounded-full bg-slate-100 p-1.5 text-slate-500 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300"
+            >
+              <X size={16} />
+            </button>
+            <div className="mb-6 flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-100 text-blue-600">
+                <RefreshCw size={22} />
+              </div>
+              <div>
+                <h2 className="text-lg font-black text-slate-950 dark:text-white">Réassort</h2>
+                <p className="text-sm font-semibold text-slate-500 truncate max-w-[180px]">{restockProduct.name}</p>
+              </div>
+            </div>
+            <p className="mb-2 text-sm font-black text-slate-700 dark:text-slate-300">Nouveau stock</p>
+            <input
+              type="number"
+              min="0"
+              value={restockQty}
+              onChange={(e) => setRestockQty(e.target.value)}
+              className="w-full rounded-2xl border border-slate-300 px-5 py-4 text-2xl font-black outline-none focus:border-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+              autoFocus
+            />
+            <p className="mt-2 text-xs font-semibold text-slate-400">Stock actuel : {restockProduct.stock ?? 0}</p>
+            <button
+              onClick={saveRestock}
+              disabled={restockSaving}
+              className="mt-5 w-full rounded-2xl bg-blue-600 py-4 text-sm font-black text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-700 disabled:opacity-60"
+            >
+              {restockSaving ? 'Enregistrement...' : 'Mettre à jour le stock'}
+            </button>
+          </div>
+        </div>
+      )}
       <div className="mx-auto max-w-[1500px]">
         {userRole !== 'sales' && (
           <>
@@ -209,6 +265,13 @@ export default function ProductsPage() {
 
                     {userRole !== 'sales' && (
                       <div className="flex gap-2 opacity-100 transition sm:opacity-0 sm:group-hover:opacity-100">
+                        <button
+                          onClick={() => { setRestockProduct(product); setRestockQty(String(product.stock ?? 0)) }}
+                          className="rounded-full border border-slate-200 bg-white p-2 text-slate-500 transition hover:text-blue-600 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-400"
+                          title="Réassort"
+                        >
+                          <RefreshCw size={15} />
+                        </button>
                         <Link href={`/products/${product.id}/edit`} className="rounded-full border border-slate-200 bg-white p-2 text-slate-500 transition hover:text-emerald-700 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-400">
                           <Edit size={15} />
                         </Link>

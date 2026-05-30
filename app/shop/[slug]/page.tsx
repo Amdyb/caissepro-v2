@@ -226,7 +226,7 @@ export default function PublicShopPage() {
         )}
         <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/45 to-[#050505]" />
 
-        <div className="relative pb-10 pt-5 md:pb-14 md:pt-10">
+        <div className="relative px-4 pb-10 pt-5 md:px-8 md:pb-14 md:pt-10">
           <div className="mb-8 flex items-center justify-between">
             <div className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-black/40 px-3 py-1.5 backdrop-blur-xl">
               <Image src="/amdy-labs-logo.png" alt="Amdy Labs" width={80} height={24} className="object-contain opacity-90" />

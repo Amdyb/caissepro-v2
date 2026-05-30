@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic'
 
 const POSCheckoutDrawer = dynamic(() => import('@/components/POSCheckoutDrawer'), { ssr: false })
 import { supabase } from '@/lib/supabaseClient'
-import { ImageIcon, ReceiptText, ShoppingCart, Trash2, Zap } from 'lucide-react'
+import { ImageIcon, Lock, ReceiptText, ShoppingCart, Trash2, X, Zap } from 'lucide-react'
 function dispatch(event: string) { window.dispatchEvent(new Event(event)) }
 import { savePendingSale } from '@/lib/offlineStore'
 import { formatPhone, sendReceipt } from '@/lib/whatsapp'
@@ -47,6 +47,8 @@ export default function POSPage() {
   const [lastSaleId, setLastSaleId] = useState<string | null>(null)
   const [confirmedTotal, setConfirmedTotal] = useState(0)
   const [newCustomer, setNewCustomer] = useState({ full_name: '', phone: '' })
+  const [plan, setPlan] = useState('free')
+  const [showPlanLimit, setShowPlanLimit] = useState(false)
 
   const filteredProducts = useMemo(() => {
     const q = search.toLowerCase().trim()
@@ -82,6 +84,9 @@ export default function POSPage() {
 
       const { data: productData } = await supabase.from('products').select('*').eq('business_id', member.business_id).not('is_active', 'is', false).not('archived', 'is', true).is('deleted_at', null)
       const { data: customerData } = await supabase.from('customers').select('id,full_name,phone').eq('business_id', member.business_id)
+
+      const { data: subData } = await supabase.from('subscriptions').select('plan').eq('business_id', member.business_id).eq('status', 'active').order('created_at', { ascending: false }).limit(1).maybeSingle()
+      setPlan(subData?.plan || 'free')
 
       setProducts((productData || []) as Product[])
       setCustomers(customerData || [])
@@ -135,6 +140,22 @@ export default function POSPage() {
 
   async function checkout() {
     if (!businessId || cart.length === 0) return
+
+    // Enforce free plan limit: 50 sales/month
+    if (plan === 'free') {
+      const monthStart = new Date()
+      monthStart.setDate(1)
+      monthStart.setHours(0, 0, 0, 0)
+      const { count } = await supabase
+        .from('sales')
+        .select('id', { count: 'exact', head: true })
+        .eq('business_id', businessId)
+        .gte('created_at', monthStart.toISOString())
+      if ((count || 0) >= 50) {
+        setShowPlanLimit(true)
+        return
+      }
+    }
 
     setCheckoutLoading(true)
 
@@ -287,6 +308,31 @@ export default function POSPage() {
 
   return (
     <AppShell title="Point de Vente" subtitle="Encaissement rapide et moderne.">
+      {showPlanLimit && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm">
+          <div className="relative w-full max-w-sm rounded-[2rem] bg-white p-8 shadow-2xl">
+            <button onClick={() => setShowPlanLimit(false)} className="absolute right-4 top-4 rounded-full bg-slate-100 p-1.5 text-slate-500 hover:bg-slate-200">
+              <X size={16} />
+            </button>
+            <div className="flex flex-col items-center gap-4 text-center">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-amber-100 text-3xl">🚀</div>
+              <h2 className="text-xl font-black text-slate-950">Limite du plan Gratuit atteinte</h2>
+              <p className="text-sm font-semibold text-slate-500">
+                Vous avez atteint <strong>50 ventes ce mois-ci</strong>. Passez à un plan payant pour continuer à vendre sans limite.
+              </p>
+              <Link
+                href="/upgrade"
+                className="w-full rounded-2xl bg-emerald-600 py-4 text-sm font-black text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700"
+              >
+                Upgrader maintenant
+              </Link>
+              <button onClick={() => setShowPlanLimit(false)} className="w-full rounded-2xl border border-slate-200 py-3 text-sm font-black text-slate-600 hover:bg-slate-50">
+                Plus tard
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="mx-auto max-w-7xl pb-36">
         {message && (
           <div className="mb-4 flex items-center justify-between gap-4 rounded-2xl bg-emerald-50 p-4 shadow-sm">

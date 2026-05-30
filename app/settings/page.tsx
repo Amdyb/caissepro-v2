@@ -9,23 +9,38 @@ import {
   ArrowLeft,
   BriefcaseBusiness,
   Building2,
+  Car,
   Clock,
+  Droplets,
+  HardHat,
+  Home,
   MapPin,
   Moon,
   Palette,
   Phone,
   Quote,
   Save,
+  Scissors,
   ShoppingBag,
+  ShoppingCart,
   Sun,
+  Users,
   Volume2,
   VolumeX,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabaseClient'
 
 const businessTypes = [
-  { value: 'retail', label: 'Commerce & Boutique', desc: 'Vente au détail, boutique, supérette', icon: ShoppingBag, accent: '#16a34a', bg: '#f0fdf4', border: '#86efac' },
-  { value: 'other',  label: 'Autre',               desc: 'Tout autre type d\'activité',          icon: Building2,   accent: '#64748b', bg: '#f8fafc', border: '#cbd5e1' },
+  { value: 'retail',    label: 'Commerce & Boutique',      desc: 'Vente au détail, boutique, supérette',  icon: ShoppingBag, accent: '#16a34a', bg: '#f0fdf4', border: '#86efac' },
+  { value: 'restaurant',label: 'Restaurant',               desc: 'Restauration, café, fast-food',          icon: ShoppingCart,accent: '#ea580c', bg: '#fff7ed', border: '#fed7aa' },
+  { value: 'beauty',    label: 'Salon & Beauté',            desc: 'Coiffure, esthétique, spa',              icon: Scissors,    accent: '#db2777', bg: '#fdf2f8', border: '#f9a8d4' },
+  { value: 'pharmacy',  label: 'Pharmacie',                desc: 'Pharmacie, parapharmacie',               icon: Building2,   accent: '#2563eb', bg: '#eff6ff', border: '#93c5fd' },
+  { value: 'garage',    label: 'Garage & Auto',             desc: 'Mécanique, carrosserie, pièces',        icon: Car,         accent: '#475569', bg: '#f8fafc', border: '#cbd5e1' },
+  { value: 'btp',       label: 'BTP & Services',            desc: 'Construction, artisanat, services',     icon: HardHat,     accent: '#b45309', bg: '#fffbeb', border: '#fde68a' },
+  { value: 'tontine',   label: 'Tontine',                  desc: 'Épargne communautaire, tontines',        icon: Users,       accent: '#7c3aed', bg: '#f5f3ff', border: '#c4b5fd' },
+  { value: 'rental',    label: 'Location & Immobilier',     desc: 'Location, agence immobilière',          icon: Home,        accent: '#0891b2', bg: '#ecfeff', border: '#a5f3fc' },
+  { value: 'wholesale', label: 'Grossiste',                desc: 'Vente en gros, distribution',            icon: ShoppingBag, accent: '#0d9488', bg: '#f0fdfa', border: '#99f6e4' },
+  { value: 'laundry',   label: 'Laverie & Pressing',        desc: 'Blanchisserie, pressing, nettoyage',   icon: Droplets,    accent: '#0284c7', bg: '#f0f9ff', border: '#bae6fd' },
 ]
 
 function slugify(value: string) {
