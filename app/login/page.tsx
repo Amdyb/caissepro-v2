@@ -1,19 +1,26 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import { getNextRoute } from '@/lib/getNextRoute'
 
 export default function LoginPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
   const [message, setMessage] = useState('')
+
+  useEffect(() => {
+    if (searchParams.get('error') === 'deactivated') {
+      setMessage('Votre compte a été désactivé. Contactez votre administrateur.')
+    }
+  }, [searchParams])
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
@@ -23,9 +30,29 @@ export default function LoginPage() {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
 
     if (error) {
-      setMessage(error.message)
+      setMessage(
+        error.message.toLowerCase().includes('invalid login')
+          ? 'Email ou mot de passe incorrect.'
+          : error.message
+      )
       setLoading(false)
       return
+    }
+
+    // Block deactivated employees before proceeding
+    if (data.user) {
+      const { data: membership } = await supabase
+        .from('business_members')
+        .select('is_active')
+        .eq('user_id', data.user.id)
+        .maybeSingle()
+
+      if (membership?.is_active === false) {
+        await supabase.auth.signOut()
+        setMessage('Votre compte a été désactivé. Contactez votre administrateur.')
+        setLoading(false)
+        return
+      }
     }
 
     const nextRoute = data.user

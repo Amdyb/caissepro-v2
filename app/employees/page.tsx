@@ -3,7 +3,7 @@
 import AppShell from '@/components/AppShell'
 import { PlanName, getNumericLimit } from '@/lib/plans'
 import { supabase } from '@/lib/supabaseClient'
-import { Copy, MessageCircle, RefreshCw, UserPlus, Users } from 'lucide-react'
+import { AlertTriangle, ChevronDown, ChevronUp, Copy, MessageCircle, RefreshCw, UserMinus, UserPlus, Users, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 type Member = {
@@ -14,6 +14,9 @@ type Member = {
   email?: string | null
   role?: string | null
   temp_password?: string | null
+  is_active?: boolean | null
+  deactivated_at?: string | null
+  deactivation_reason?: string | null
   created_at?: string | null
 }
 
@@ -24,11 +27,19 @@ const roleLabels: Record<string, string> = {
   employee: 'Employé',
   manager: 'Manager',
   admin: 'Administrateur',
+  owner: 'Propriétaire',
 }
+
+const DEACTIVATION_REASONS = ['Fin de contrat', 'Licenciement', 'Démission', 'Autre']
 
 function generateTempPassword() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
   return Array.from({ length: 8 }, () => chars[Math.floor(Math.random() * chars.length)]).join('')
+}
+
+function formatDate(iso: string | null | undefined) {
+  if (!iso) return ''
+  return new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
 export default function EmployeesPage() {
@@ -44,14 +55,18 @@ export default function EmployeesPage() {
   const [message, setMessage] = useState('')
   const [isError, setIsError] = useState(false)
   const [lastAdded, setLastAdded] = useState<Member | null>(null)
+  const [showInactive, setShowInactive] = useState(false)
+
+  // Deactivation modal state
+  const [deactivateTarget, setDeactivateTarget] = useState<Member | null>(null)
+  const [deactivateReason, setDeactivateReason] = useState('Fin de contrat')
+  const [deactivateCustom, setDeactivateCustom] = useState('')
+  const [deactivating, setDeactivating] = useState(false)
 
   useEffect(() => {
     async function init() {
       const { data: userData } = await supabase.auth.getUser()
-      if (!userData.user) {
-        setLoading(false)
-        return
-      }
+      if (!userData.user) { setLoading(false); return }
 
       const { data: membership } = await supabase
         .from('business_members')
@@ -68,28 +83,29 @@ export default function EmployeesPage() {
       }
 
       setBusinessId(membership.business_id)
-      const { data: sub } = await supabase.from('subscriptions').select('plan').eq('business_id', membership.business_id).eq('status', 'active').order('created_at', { ascending: false }).limit(1).maybeSingle()
+      const { data: sub } = await supabase
+        .from('subscriptions')
+        .select('plan')
+        .eq('business_id', membership.business_id)
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
       setPlan((sub?.plan as PlanName) || 'free')
       await loadMembers(membership.business_id)
       setLoading(false)
     }
-
     init()
   }, [])
 
   async function loadMembers(id: string) {
     const { data, error } = await supabase
       .from('business_members')
-      .select('*')
+      .select('id,business_id,user_id,full_name,email,role,temp_password,is_active,deactivated_at,deactivation_reason,created_at')
       .eq('business_id', id)
       .order('created_at', { ascending: false })
 
-    if (error) {
-      setMessage(error.message)
-      setIsError(true)
-      return
-    }
-
+    if (error) { setMessage(error.message); setIsError(true); return }
     setMembers((data || []) as Member[])
   }
 
@@ -98,9 +114,9 @@ export default function EmployeesPage() {
     if (!businessId) return
 
     const empLimit = getNumericLimit(plan, 'employees')
-    const nonOwnerCount = members.filter(m => m.role !== 'owner').length
-    if (empLimit !== -1 && nonOwnerCount >= empLimit) {
-      setMessage(`Limite atteinte : votre plan ${plan === 'free' ? 'Gratuit' : plan} permet ${empLimit} employé(s) maximum. Passez à un plan supérieur pour en ajouter.`)
+    const nonOwnerActive = members.filter(m => m.role !== 'owner' && m.is_active !== false).length
+    if (empLimit !== -1 && nonOwnerActive >= empLimit) {
+      setMessage(`Limite atteinte : votre plan ${plan === 'free' ? 'Gratuit' : plan} permet ${empLimit} employé(s) maximum.`)
       setIsError(true)
       return
     }
@@ -110,8 +126,7 @@ export default function EmployeesPage() {
     setIsError(false)
 
     const cleanEmail = email.trim().toLowerCase()
-    const exists = members.some((m) => m.email?.toLowerCase() === cleanEmail)
-
+    const exists = members.some((m) => m.email?.toLowerCase() === cleanEmail && m.is_active !== false)
     if (exists) {
       setMessage('Cet employé existe déjà dans cette boutique.')
       setIsError(true)
@@ -124,7 +139,7 @@ export default function EmployeesPage() {
       email: cleanEmail,
       full_name: fullName || cleanEmail.split('@')[0],
       role,
-      temp_password: tempPassword
+      temp_password: tempPassword,
     }
 
     const { error } = await supabase.from('business_members').insert({
@@ -135,16 +150,11 @@ export default function EmployeesPage() {
       temp_password: tempPassword,
       temporary_password: tempPassword,
       must_change_password: true,
-      is_active: true
+      is_active: true,
     })
 
     setSaving(false)
-
-    if (error) {
-      setMessage(error.message)
-      setIsError(true)
-      return
-    }
+    if (error) { setMessage(error.message); setIsError(true); return }
 
     setLastAdded({ ...newMember })
     setEmail('')
@@ -154,6 +164,62 @@ export default function EmployeesPage() {
     setMessage('Employé ajouté. Partagez les identifiants ci-dessous.')
     setIsError(false)
     await loadMembers(businessId)
+  }
+
+  async function confirmDeactivate() {
+    if (!deactivateTarget?.id) return
+    setDeactivating(true)
+    const reason = deactivateReason === 'Autre'
+      ? (deactivateCustom.trim() || 'Autre')
+      : deactivateReason
+
+    const { data, error } = await supabase.rpc('deactivate_employee', {
+      p_member_id: deactivateTarget.id,
+      p_reason: reason,
+    })
+
+    setDeactivating(false)
+    const result = data as { success: boolean; error?: string } | null
+    if (error || !result?.success) {
+      setMessage(result?.error || error?.message || 'Erreur lors de la désactivation.')
+      setIsError(true)
+      setDeactivateTarget(null)
+      return
+    }
+
+    const name = deactivateTarget.full_name || deactivateTarget.email || 'L\'employé'
+    setDeactivateTarget(null)
+    await loadMembers(businessId)
+    setMessage(`${name} a été désactivé.`)
+    setIsError(false)
+
+    // WhatsApp notification to admin
+    notifyDeactivationWhatsApp(name, reason)
+  }
+
+  async function reactivateEmployee(member: Member) {
+    if (!member.id) return
+    if (!confirm(`Réactiver ${member.full_name || member.email} ?`)) return
+
+    const { data, error } = await supabase.rpc('reactivate_employee', { p_member_id: member.id })
+    const result = data as { success: boolean } | null
+    if (error || !result?.success) {
+      setMessage(error?.message || 'Erreur lors de la réactivation.')
+      setIsError(true)
+      return
+    }
+
+    await loadMembers(businessId)
+    setMessage(`${member.full_name || member.email} a été réactivé.`)
+    setIsError(false)
+  }
+
+  function notifyDeactivationWhatsApp(name: string, reason: string) {
+    const date = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })
+    const text = encodeURIComponent(
+      `⚠️ *CaissePro – Compte désactivé*\n\n👤 Employé : ${name}\n📅 Date : ${date}\n📋 Motif : ${reason}\n\nVous pouvez réactiver ce compte depuis la page Employés.`
+    )
+    window.open(`https://wa.me/?text=${text}`, '_blank')
   }
 
   function shareWhatsApp(member: Member, pw: string) {
@@ -172,12 +238,95 @@ export default function EmployeesPage() {
     setTimeout(() => setMessage(''), 2500)
   }
 
+  const activeMembers = members.filter(m => m.is_active !== false)
+  const inactiveMembers = members.filter(m => m.is_active === false)
+
   if (loading) {
-    return <main className="flex min-h-screen items-center justify-center bg-slate-50"><p className="font-black text-slate-600">Chargement employés...</p></main>
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-slate-50">
+        <p className="font-black text-slate-600">Chargement employés...</p>
+      </main>
+    )
   }
 
   return (
     <AppShell title="Employés" subtitle="Ajoutez et gérez les accès de votre équipe.">
+      {/* Deactivation modal */}
+      {deactivateTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm">
+          <div className="relative w-full max-w-md rounded-[2rem] bg-white p-8 shadow-2xl dark:bg-slate-800">
+            <button
+              onClick={() => setDeactivateTarget(null)}
+              className="absolute right-4 top-4 rounded-full bg-slate-100 p-1.5 text-slate-500 hover:bg-slate-200 dark:bg-slate-700"
+            >
+              <X size={16} />
+            </button>
+
+            <div className="mb-6 flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-100 text-orange-600">
+                <UserMinus size={22} />
+              </div>
+              <div>
+                <h2 className="text-lg font-black text-slate-950 dark:text-white">Désactiver l'accès</h2>
+                <p className="text-sm font-semibold text-slate-500 truncate max-w-[220px]">
+                  {deactivateTarget.full_name || deactivateTarget.email}
+                </p>
+              </div>
+            </div>
+
+            <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-xs font-semibold text-amber-700 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-400">
+              <AlertTriangle size={14} className="mb-1 inline" /> Cet employé ne pourra plus se connecter à CaissePro.
+            </div>
+
+            <div className="space-y-3">
+              <label className="text-sm font-black text-slate-700 dark:text-slate-300">Motif de désactivation</label>
+              <div className="grid grid-cols-2 gap-2">
+                {DEACTIVATION_REASONS.map((r) => (
+                  <button
+                    key={r}
+                    type="button"
+                    onClick={() => setDeactivateReason(r)}
+                    className={`rounded-2xl border px-4 py-3 text-sm font-bold transition ${
+                      deactivateReason === r
+                        ? 'border-orange-400 bg-orange-50 text-orange-700 dark:border-orange-600 dark:bg-orange-900/30 dark:text-orange-400'
+                        : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300'
+                    }`}
+                  >
+                    {r}
+                  </button>
+                ))}
+              </div>
+
+              {deactivateReason === 'Autre' && (
+                <input
+                  type="text"
+                  placeholder="Précisez le motif..."
+                  value={deactivateCustom}
+                  onChange={(e) => setDeactivateCustom(e.target.value)}
+                  className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm font-bold outline-none focus:border-orange-500 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+                />
+              )}
+            </div>
+
+            <div className="mt-6 flex gap-3">
+              <button
+                onClick={() => setDeactivateTarget(null)}
+                className="flex-1 rounded-2xl border border-slate-200 py-3 text-sm font-black text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={confirmDeactivate}
+                disabled={deactivating || (deactivateReason === 'Autre' && !deactivateCustom.trim())}
+                className="flex-1 rounded-2xl bg-orange-500 py-3 text-sm font-black text-white hover:bg-orange-600 disabled:opacity-60"
+              >
+                {deactivating ? 'Désactivation...' : 'Confirmer'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="mx-auto max-w-4xl space-y-8 pb-20">
         {message && (
           <div className={`rounded-2xl p-4 text-sm font-black ${isError ? 'border border-red-200 bg-red-50 text-red-700' : 'border border-emerald-200 bg-emerald-50 text-emerald-700'}`}>
@@ -245,7 +394,7 @@ export default function EmployeesPage() {
               className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-6 py-4 font-black text-white disabled:opacity-60 lg:col-span-2"
             >
               <UserPlus size={18} />
-              {saving ? 'Ajout...' : 'Ajouter l\'employé'}
+              {saving ? 'Ajout...' : "Ajouter l'employé"}
             </button>
           </form>
         </div>
@@ -276,44 +425,116 @@ export default function EmployeesPage() {
           </div>
         )}
 
-        {/* Members list */}
+        {/* Active members list */}
         <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
           <div className="mb-5 flex items-center gap-3">
             <Users className="text-sky-500" />
-            <h2 className="text-2xl font-black text-slate-950">Équipe ({members.length})</h2>
+            <h2 className="text-2xl font-black text-slate-950">Équipe active ({activeMembers.length})</h2>
           </div>
 
           <div className="space-y-3">
-            {members.length === 0 ? (
+            {activeMembers.length === 0 ? (
               <p className="rounded-2xl bg-slate-50 p-5 text-sm font-bold text-slate-500">
-                Aucun employé ajouté pour l'instant.
+                Aucun employé actif pour l'instant.
               </p>
             ) : (
-              members.map((member) => (
+              activeMembers.map((member) => (
                 <div key={member.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
+                    <div className="flex-1 min-w-0">
                       <p className="font-black text-slate-950">{member.full_name || member.email}</p>
                       <p className="text-xs font-bold text-slate-500">
                         {member.email} · {roleLabels[member.role || ''] || member.role}
                       </p>
-                      {!member.user_id ? (
-                        <span className="mt-1 inline-block rounded-full bg-amber-100 px-3 py-1 text-xs font-black text-amber-700">
-                          Compte non activé
-                        </span>
-                      ) : (
-                        <span className="mt-1 inline-block rounded-full bg-emerald-100 px-3 py-1 text-xs font-black text-emerald-700">
-                          Actif
-                        </span>
-                      )}
+                      <div className="mt-1.5 flex flex-wrap gap-2">
+                        {!member.user_id ? (
+                          <span className="inline-block rounded-full bg-amber-100 px-3 py-1 text-xs font-black text-amber-700">
+                            Compte non activé
+                          </span>
+                        ) : (
+                          <span className="inline-block rounded-full bg-emerald-100 px-3 py-1 text-xs font-black text-emerald-700">
+                            Actif
+                          </span>
+                        )}
+                      </div>
                     </div>
 
+                    {member.role !== 'owner' && (
+                      <button
+                        onClick={() => {
+                          setDeactivateTarget(member)
+                          setDeactivateReason('Fin de contrat')
+                          setDeactivateCustom('')
+                        }}
+                        className="inline-flex items-center gap-2 rounded-2xl border border-orange-200 bg-orange-50 px-4 py-2 text-sm font-black text-orange-700 transition hover:bg-orange-100 shrink-0"
+                      >
+                        <UserMinus size={15} /> Désactiver
+                      </button>
+                    )}
                   </div>
                 </div>
               ))
             )}
           </div>
         </div>
+
+        {/* Inactive members — collapsed section */}
+        {inactiveMembers.length > 0 && (
+          <div className="rounded-[2rem] border border-slate-200 bg-white shadow-sm">
+            <button
+              onClick={() => setShowInactive(v => !v)}
+              className="flex w-full items-center justify-between p-6 text-left"
+            >
+              <div className="flex items-center gap-3">
+                <UserMinus className="text-slate-400" size={20} />
+                <span className="text-lg font-black text-slate-700">Anciens employés</span>
+                <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-black text-slate-500">
+                  {inactiveMembers.length}
+                </span>
+              </div>
+              {showInactive ? <ChevronUp size={18} className="text-slate-400" /> : <ChevronDown size={18} className="text-slate-400" />}
+            </button>
+
+            {showInactive && (
+              <div className="space-y-3 border-t border-slate-100 px-6 pb-6 pt-4">
+                {inactiveMembers.map((member) => (
+                  <div key={member.id} className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 opacity-75">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-black text-slate-700">{member.full_name || member.email}</p>
+                        <p className="text-xs font-bold text-slate-400">
+                          {member.email} · {roleLabels[member.role || ''] || member.role}
+                        </p>
+                        <div className="mt-1.5 flex flex-wrap gap-2">
+                          <span className="inline-block rounded-full bg-red-100 px-3 py-1 text-xs font-black text-red-700">
+                            Inactif
+                          </span>
+                          {member.deactivated_at && (
+                            <span className="inline-block rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-500">
+                              Désactivé le {formatDate(member.deactivated_at)}
+                            </span>
+                          )}
+                          {member.deactivation_reason && (
+                            <span className="inline-block rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-500">
+                              {member.deactivation_reason}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() => reactivateEmployee(member)}
+                        className="inline-flex items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-black text-emerald-700 transition hover:bg-emerald-100 shrink-0"
+                      >
+                        <UserPlus size={15} /> Réactiver
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </AppShell>
   )

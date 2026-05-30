@@ -124,7 +124,7 @@ export default function DashboardPage() {
       // Step 1: get memberships without nested join to avoid RLS recursion
       const { data: memberships, error } = await supabase
         .from('business_members')
-        .select('business_id, role')
+        .select('business_id, role, is_active')
         .eq('user_id', userData.user.id)
 
       if (error || !memberships || memberships.length === 0) {
@@ -138,6 +138,14 @@ export default function DashboardPage() {
       })
 
       const member: any = sorted[0]
+
+      // Block deactivated accounts immediately
+      if (member.is_active === false) {
+        await supabase.auth.signOut()
+        router.push('/login?error=deactivated')
+        return
+      }
+
       const businessId = member.business_id
       const memberRole: string = member.role || 'staff'
 
