@@ -21,37 +21,8 @@ export default function PaymentModal({ plan, businessId, businessName, userEmail
   const [onlineLoading, setOnlineLoading] = useState(false)
   const [error, setError] = useState('')
 
-  async function confirmManualPayment() {
-    setLoading(true)
-    setError('')
-
-    if (businessId) {
-      try {
-        await supabase.from('upgrade_requests').insert({
-          business_id:     businessId,
-          business_name:   businessName || 'Inconnu',
-          user_email:      userEmail,
-          plan:            plan.name,
-          price:           `${plan.price} XOF/mois`,
-          status:          'pending',
-          whatsapp_sent:   true,
-          duration_months: 2,
-        })
-      } catch {
-        // non-blocking
-      }
-    }
-
-    await sendPaymentConfirmation(businessName, plan.name, plan.amount, userEmail)
-    setDone(true)
-    setLoading(false)
-  }
-
   async function payOnline() {
-    if (!businessId) {
-      setError('Boutique introuvable. Veuillez réessayer.')
-      return
-    }
+    if (!businessId) { setError('Boutique introuvable. Veuillez réessayer.'); return }
     setOnlineLoading(true)
     setError('')
 
@@ -59,29 +30,42 @@ export default function PaymentModal({ plan, businessId, businessName, userEmail
       const res = await fetch('/api/paydunya/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          plan:         plan.name,
-          amount:       plan.amount,
-          businessId,
-          businessName,
-          email:        userEmail,
-        }),
+        body: JSON.stringify({ plan: plan.name, amount: plan.amount, businessId, businessName, email: userEmail }),
       })
-
       const data = await res.json()
-
       if (!res.ok || !data.payment_url) {
-        setError(data.error || 'Erreur lors de l\'initialisation du paiement.')
+        setError(data.error || "Erreur lors de l'initialisation du paiement.")
         setOnlineLoading(false)
         return
       }
-
       window.location.href = data.payment_url
     } catch (err) {
-      console.error('[PayDunya] payOnline error:', err)
+      console.error('[PayDunya] error:', err)
       setError('Erreur de connexion. Veuillez réessayer.')
       setOnlineLoading(false)
     }
+  }
+
+  async function confirmManualPayment() {
+    setLoading(true)
+    setError('')
+    if (businessId) {
+      try {
+        await supabase.from('upgrade_requests').insert({
+          business_id: businessId,
+          business_name: businessName || 'Inconnu',
+          user_email: userEmail,
+          plan: plan.name,
+          price: `${plan.price} XOF/mois`,
+          status: 'pending',
+          whatsapp_sent: true,
+          duration_months: 2,
+        })
+      } catch { /* non-blocking */ }
+    }
+    await sendPaymentConfirmation(businessName, plan.name, plan.amount, userEmail)
+    setDone(true)
+    setLoading(false)
   }
 
   return (
@@ -96,10 +80,7 @@ export default function PaymentModal({ plan, businessId, businessName, userEmail
             <p className="text-xs font-black uppercase tracking-widest text-emerald-600">Paiement</p>
             <h2 className="text-2xl font-black text-slate-950">{plan.name}</h2>
           </div>
-          <button
-            onClick={onClose}
-            className="rounded-xl border border-slate-200 p-2 text-slate-400 transition hover:bg-slate-50"
-          >
+          <button onClick={onClose} className="rounded-xl border border-slate-200 p-2 text-slate-400 transition hover:bg-slate-50">
             <X size={18} />
           </button>
         </div>
@@ -115,26 +96,29 @@ export default function PaymentModal({ plan, businessId, businessName, userEmail
               </div>
             </div>
 
-            {/* Online payment button */}
+            {/* Online payment — PayDunya */}
             <button
               onClick={payOnline}
               disabled={onlineLoading}
-              className="mb-4 flex w-full items-center justify-center gap-3 rounded-2xl bg-slate-950 py-4 font-black text-white shadow-lg transition hover:bg-slate-800 disabled:opacity-60"
+              className="mb-1 flex w-full items-center justify-center gap-3 rounded-2xl bg-emerald-600 py-4 font-black text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700 disabled:opacity-60"
             >
-              {onlineLoading ? (
-                <><Loader2 size={18} className="animate-spin" /> Redirection...</>
-              ) : (
-                <><CreditCard size={18} /> Payer en ligne</>
-              )}
+              {onlineLoading
+                ? <><Loader2 size={18} className="animate-spin" /> Redirection...</>
+                : <><CreditCard size={18} /> Payer en ligne — Rapide &amp; Sécurisé</>
+              }
             </button>
+            <p className="mb-5 text-center text-xs font-bold text-slate-400">
+              Wave, Orange Money, Carte bancaire — Activation automatique
+            </p>
 
-            <div className="mb-4 flex items-center gap-3">
+            {/* Divider */}
+            <div className="mb-5 flex items-center gap-3">
               <div className="flex-1 border-t border-slate-200" />
-              <span className="text-xs font-bold text-slate-400">OU MOBILE MONEY</span>
+              <span className="text-xs font-black text-slate-400">OU</span>
               <div className="flex-1 border-t border-slate-200" />
             </div>
 
-            {/* Wave / Orange Money */}
+            {/* Manual Mobile Money */}
             <p className="mb-3 text-center text-sm font-bold text-slate-500">
               Envoyez le montant au numéro de votre choix
             </p>
@@ -166,9 +150,7 @@ export default function PaymentModal({ plan, businessId, businessName, userEmail
             </p>
 
             {error && (
-              <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 p-3 text-sm font-bold text-red-700">
-                {error}
-              </div>
+              <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 p-3 text-sm font-bold text-red-700">{error}</div>
             )}
 
             <button

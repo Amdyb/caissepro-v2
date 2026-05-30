@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { createPaymentInvoice } from '@/lib/paydunya'
+
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const paydunya = require('paydunya')
 
 function adminClient() {
   return createClient(
@@ -16,16 +18,32 @@ export async function POST(req: NextRequest) {
   }
 
   const { plan, amount, businessId, businessName, email } = body as {
-    plan: string
-    amount: number
-    businessId: string
-    businessName: string
-    email: string
+    plan: string; amount: number; businessId: string; businessName: string; email: string
   }
+
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://caissepro.app'
+
+  const setup = new paydunya.Setup({
+    masterKey: process.env.PAYDUNYA_MASTER_KEY || '',
+    privateKey: process.env.PAYDUNYA_PRIVATE_KEY || '',
+    publicKey:  process.env.PAYDUNYA_PUBLIC_KEY  || '',
+    token:      process.env.PAYDUNYA_TOKEN        || '',
+    mode:       process.env.PAYDUNYA_MODE         || 'test',
+  })
+
+  const store = new paydunya.Store({
+    name:          'CaissePro',
+    tagline:       "La caisse enregistreuse de l'Afrique",
+    phoneNumber:   '+221784581111',
+    websiteURL:    'https://caissepro.app',
+    logoURL:       'https://caissepro.app/caissepro-logo.png',
+    callbackURL:   `${appUrl}/api/paydunya/webhook`,
+    cancelURL:     `${appUrl}/upgrade/cancelled`,
+    returnURL:     `${appUrl}/upgrade/success?plan=${encodeURIComponent(plan)}`,
+  })
 
   const supabase = adminClient()
 
-  // Record the pending payment intent
   await supabase.from('upgrade_requests').insert({
     business_id:     businessId,
     business_name:   businessName || 'Inconnu',
@@ -38,25 +56,25 @@ export async function POST(req: NextRequest) {
   })
 
   try {
-    const result = await createPaymentInvoice(plan, amount, businessName, email, businessId)
-    console.log('[PayDunya] invoice created:', result)
+    const invoice = new paydunya.CheckoutInvoice(setup, store)
+    invoice.addItem(plan, 1, amount, amount, `Abonnement CaissePro ${plan} — 2 mois offerts`)
+    invoice.totalAmount = amount
+    invoice.description = `Abonnement CaissePro ${plan}`
+    invoice.addCustomData('plan', plan)
+    invoice.addCustomData('business_id', businessId)
+    invoice.addCustomData('business_name', businessName)
+    invoice.addCustomData('email', email)
 
-    if (result.response_code !== '00') {
-      return NextResponse.json(
-        { error: result.description || 'Erreur PayDunya' },
-        { status: 502 }
-      )
+    await invoice.create()
+    console.log('[PayDunya] invoice created, url:', invoice.url)
+
+    if (!invoice.url) {
+      return NextResponse.json({ error: 'PayDunya did not return a payment URL' }, { status: 502 })
     }
 
-    return NextResponse.json({
-      payment_url: result.invoice_url,
-      token:       result.token,
-    })
+    return NextResponse.json({ payment_url: invoice.url, token: invoice.token })
   } catch (err: any) {
     console.error('[PayDunya] checkout error:', err?.message || err)
-    return NextResponse.json(
-      { error: err?.message || 'Initialisation du paiement échouée' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: err?.message || 'Payment initialization failed' }, { status: 500 })
   }
 }

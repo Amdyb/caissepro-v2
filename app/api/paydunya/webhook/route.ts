@@ -11,33 +11,30 @@ function adminClient() {
 
 export async function POST(req: NextRequest) {
   let body: any
-  try {
-    body = await req.json()
-  } catch {
+  try { body = await req.json() } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
   }
 
   console.log('[PayDunya IPN] received:', JSON.stringify(body))
 
-  // PayDunya IPN format: body.data.status, body.data.invoice.custom_data
-  const data = body?.data || body
-  const status = data?.status
+  // PayDunya sends: body.data.status, body.data.invoice.custom_data, body.data.invoice.total_amount
+  const data        = body?.data || body
+  const status      = data?.status
+  const customData  = data?.invoice?.custom_data || data?.custom_data || {}
+  const totalAmount = data?.invoice?.total_amount || data?.total_amount || 0
 
   if (status !== 'completed') {
     console.log('[PayDunya IPN] status not completed:', status)
     return NextResponse.json({ received: true })
   }
 
-  // Extract custom data — handle both possible IPN shapes
-  const customData = data?.invoice?.custom_data || data?.custom_data || {}
   const businessId   = customData.business_id
   const plan         = customData.plan
   const businessName = customData.business_name || 'Client'
   const email        = customData.email || ''
-  const totalAmount  = data?.invoice?.total_amount || data?.total_amount || 0
 
   if (!businessId || !plan) {
-    console.error('[PayDunya IPN] missing custom_data:', customData)
+    console.error('[PayDunya IPN] missing custom data:', customData)
     return NextResponse.json({ error: 'Missing custom data' }, { status: 400 })
   }
 
@@ -70,10 +67,9 @@ export async function POST(req: NextRequest) {
 
   console.log(`[PayDunya IPN] activated plan=${plan} for business=${businessId} until ${expiresAt.toISOString()}`)
 
-  // WhatsApp notifications (non-blocking)
-  sendPaymentConfirmation(businessName, plan, totalAmount, email).catch((err) =>
-    console.error('[PayDunya IPN] WhatsApp error:', err)
-  )
+  // WhatsApp to merchant + admin (non-blocking)
+  sendPaymentConfirmation(businessName, plan, totalAmount, email)
+    .catch((err) => console.error('[PayDunya IPN] WhatsApp error:', err))
 
   return NextResponse.json({ success: true })
 }
