@@ -50,9 +50,10 @@ export default function OnboardingPage() {
 
       setUserId(userData.user.id)
 
+      // Step 1: get memberships without nested join to avoid RLS recursion
       const { data: memberships } = await supabase
         .from('business_members')
-        .select('business_id, role, businesses(*)')
+        .select('business_id, role')
         .eq('user_id', userData.user.id)
 
       const sorted = (memberships || []).sort((a: any, b: any) => {
@@ -63,17 +64,33 @@ export default function OnboardingPage() {
       const member: any = sorted[0]
 
       if (member?.business_id) {
-        // Only owners/admins without completed onboarding should see the onboarding wizard
-        // All other roles (sales, manager, etc.) go straight to dashboard
-        const OWNER_ROLES = ['owner', 'admin']
-        const isOwnerDoingOnboarding = OWNER_ROLES.includes(member?.role) && !member?.businesses?.onboarding_completed
-        if (!isOwnerDoingOnboarding) { router.push('/dashboard'); return }
+        const role: string = member.role || ''
 
+        // Staff (sales/cashier/employee/staff) never see the onboarding wizard
+        const STAFF_ROLES_CHECK = ['sales', 'staff', 'cashier', 'employee']
+        if (STAFF_ROLES_CHECK.includes(role)) {
+          router.push('/dashboard')
+          return
+        }
+
+        // Step 2: get business info separately
+        const { data: biz } = await supabase
+          .from('businesses')
+          .select('*')
+          .eq('id', member.business_id)
+          .maybeSingle()
+
+        // If onboarding is already done, go to dashboard
+        if ((biz as any)?.onboarding_completed) {
+          router.push('/dashboard')
+          return
+        }
+
+        // Owner/admin with incomplete onboarding → show the wizard
         setBusinessId(member.business_id)
-        const biz = member.businesses || {}
-        setBusinessName(biz.name || userData.user.user_metadata?.business_name || '')
-        setBusinessType(biz.business_type || 'retail')
-        setPrimaryColor(biz.primary_color || '#16a34a')
+        setBusinessName((biz as any)?.name || userData.user.user_metadata?.business_name || '')
+        setBusinessType((biz as any)?.business_type || 'retail')
+        setPrimaryColor((biz as any)?.primary_color || '#16a34a')
       } else {
         setBusinessName(userData.user.user_metadata?.business_name || '')
       }

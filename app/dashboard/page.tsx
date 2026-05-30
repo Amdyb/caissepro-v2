@@ -121,9 +121,10 @@ export default function DashboardPage() {
 
       setUserId(userData.user.id)
 
+      // Step 1: get memberships without nested join to avoid RLS recursion
       const { data: memberships, error } = await supabase
         .from('business_members')
-        .select('business_id, role, businesses(*)')
+        .select('business_id, role')
         .eq('user_id', userData.user.id)
 
       if (error || !memberships || memberships.length === 0) {
@@ -137,17 +138,25 @@ export default function DashboardPage() {
       })
 
       const member: any = sorted[0]
-      const businessData = (Array.isArray(member.businesses) ? member.businesses[0] : member.businesses) as BusinessInfo
+      const businessId = member.business_id
+      const memberRole: string = member.role || 'staff'
 
-      if (!businessData?.onboarding_completed) {
+      // Step 2: get business info separately
+      const { data: businessData } = await supabase
+        .from('businesses')
+        .select('*')
+        .eq('id', businessId)
+        .maybeSingle()
+
+      // Staff (sales/cashier/employee/staff) go straight to dashboard — no onboarding needed
+      const STAFF_ROLES_CHECK = ['sales', 'staff', 'cashier', 'employee']
+      if (!STAFF_ROLES_CHECK.includes(memberRole) && !businessData?.onboarding_completed) {
         router.push('/onboarding')
         return
       }
 
-      const businessId = member.business_id
-
-      setBusinessType(businessData?.business_type || 'retail')
-      setBusiness(businessData)
+      setBusinessType((businessData as any)?.business_type || 'retail')
+      setBusiness((businessData as BusinessInfo | null) || { id: businessId })
 
       const today = new Date()
       today.setHours(0, 0, 0, 0)

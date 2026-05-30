@@ -116,57 +116,73 @@ export default function EmployeeSetupPage() {
       options: { data: { full_name: memberFullName } }
     })
 
+    let activeUserId: string | null = null
+
     if (signUpError) {
-      showError(friendlyError(signUpError.message))
-      setLoading(false)
-      return
-    }
+      const isAlreadyRegistered =
+        signUpError.message.toLowerCase().includes('already registered') ||
+        signUpError.message.toLowerCase().includes('already been registered') ||
+        signUpError.message.toLowerCase().includes('user already exists')
 
-    const newUserId = signUpData.user?.id
-    if (!newUserId) {
-      showError("Erreur lors de la création du compte. Réessayez.")
-      setLoading(false)
-      return
-    }
-
-    // Sign in FIRST to get a session — required so RLS allows us to update business_members
-    let session = signUpData.session
-    if (!session) {
-      const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
-        email: memberEmail,
-        password: newPassword,
-      })
-
-      if (loginError) {
-        showSuccess("Compte créé. Vérifiez votre email pour confirmer votre compte, puis connectez-vous.")
+      if (isAlreadyRegistered) {
+        // Auth account already exists — try signing in with the password they chose
+        const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
+          email: memberEmail,
+          password: newPassword,
+        })
+        if (loginError) {
+          showError("Ce compte existe déjà. Vérifiez votre mot de passe ou contactez votre administrateur.")
+          setLoading(false)
+          return
+        }
+        activeUserId = loginData.user?.id ?? null
+      } else {
+        showError(friendlyError(signUpError.message))
         setLoading(false)
         return
       }
-      session = loginData.session
+    } else {
+      activeUserId = signUpData.user?.id ?? null
+
+      if (!activeUserId) {
+        showError("Erreur lors de la création du compte. Réessayez.")
+        setLoading(false)
+        return
+      }
+
+      // Sign in to get a session if email confirmation isn't required
+      let session = signUpData.session
+      if (!session) {
+        const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
+          email: memberEmail,
+          password: newPassword,
+        })
+        if (loginError) {
+          showSuccess("Compte créé. Vérifiez votre email pour confirmer votre compte, puis connectez-vous.")
+          setLoading(false)
+          return
+        }
+      }
     }
 
-    // Now that we have a session, check if the trigger linked the record
-    const { data: linked } = await supabase
-      .from('business_members')
-      .select('id')
-      .eq('id', memberId)
-      .eq('user_id', newUserId)
-      .maybeSingle()
+    if (!activeUserId) {
+      showError("Impossible de récupérer l'identifiant du compte. Réessayez.")
+      setLoading(false)
+      return
+    }
 
+    // Link business_member to the auth user (retry in case trigger didn't fire)
+    let linked = false
+    for (let attempt = 0; attempt < 3; attempt++) {
+      if (attempt > 0) await new Promise(r => setTimeout(r, 600))
+      const { error: updateError } = await supabase
+        .from('business_members')
+        .update({ user_id: activeUserId, temp_password: null, temporary_password: null, must_change_password: false })
+        .eq('id', memberId)
+      if (!updateError) { linked = true; break }
+    }
     if (!linked) {
-      // Trigger did not fire — retry update with active session so RLS passes
-      let success = false
-      for (let attempt = 0; attempt < 3; attempt++) {
-        if (attempt > 0) await new Promise(r => setTimeout(r, 600))
-        const { error: updateError } = await supabase
-          .from('business_members')
-          .update({ user_id: newUserId, temp_password: null, temporary_password: null, must_change_password: false })
-          .eq('id', memberId)
-        if (!updateError) { success = true; break }
-      }
-      if (!success) {
-        console.warn('[employee-setup] Could not link user_id — will be repaired on first login')
-      }
+      console.warn('[employee-setup] Could not link user_id — will be repaired on first login')
     }
 
     // Store business_id so dashboard loads the correct business

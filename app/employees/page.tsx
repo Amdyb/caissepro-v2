@@ -133,6 +133,7 @@ export default function EmployeesPage() {
       full_name: fullName || cleanEmail.split('@')[0],
       role,
       temp_password: tempPassword,
+      temporary_password: tempPassword,
       must_change_password: true,
       is_active: true
     })

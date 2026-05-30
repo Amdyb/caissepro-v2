@@ -668,12 +668,13 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
         pathname === '/products' ||
         STAFF_ALLOWED_PATHS.some((p) => pathname === p || pathname.startsWith(p + '/'))
       if (!allowed) router.replace('/pos')
-    } else if (MANAGER_ROLES.includes(userRole)) {
+    } else if (MANAGER_ROLES.includes(userRole) && userRole !== 'owner') {
       const allowed = MANAGER_ALLOWED_PATHS.some(
         (p) => pathname === p || pathname.startsWith(p + '/')
       )
       if (!allowed) router.replace('/dashboard')
     }
+    // owner has unrestricted access
   }, [ready, userRole, pathname, router])
 
   function toggleSection(key: string) {
@@ -695,11 +696,14 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
 
   const isStaff = STAFF_ROLES.includes(userRole)
   const isManager = MANAGER_ROLES.includes(userRole)
+  const isOwner = userRole === 'owner'
   const isEmployee = isStaff || isManager
   const navSections = isStaff
     ? [STAFF_SECTION, STAFF_PROFILE_SECTION]
+    : isOwner
+    ? getNavSections(businessType)
     : isManager
-    ? [MANAGER_CAISSE_SECTION, MANAGER_GESTION_SECTION, MANAGER_BOUTIQUE_SECTION, MANAGER_RAPPORTS_SECTION, MANAGER_PROFILE_SECTION]
+    ? getNavSections(businessType).filter(s => s.key !== 'securite')
     : getNavSections(businessType)
   const currentPlanLevel = PLAN_LEVELS[subscription?.plan || 'free'] ?? 0
 
@@ -961,7 +965,7 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
       {/* Fixed bottom nav (mobile only) */}
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800 lg:hidden">
         <div className="grid grid-cols-5">
-          {(isStaff ? STAFF_BOTTOM_NAV : isManager ? MANAGER_BOTTOM_NAV : BOTTOM_NAV).map((item) => {
+          {(isStaff ? STAFF_BOTTOM_NAV : (isManager && !isOwner) ? MANAGER_BOTTOM_NAV : BOTTOM_NAV).map((item) => {
             const Icon = item.icon
             const active = pathname === item.href
             return (
