@@ -22,25 +22,33 @@ export default function PaymentModal({ plan, businessId, businessName, userEmail
   const [error, setError] = useState('')
 
   async function payOnline() {
+    console.log('[PayDunya] payOnline clicked — businessId:', businessId, 'plan:', plan.name, 'amount:', plan.amount)
     if (!businessId) { setError('Boutique introuvable. Veuillez réessayer.'); return }
     setOnlineLoading(true)
     setError('')
 
     try {
+      console.log('[PayDunya] calling /api/paydunya/checkout...')
       const res = await fetch('/api/paydunya/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ plan: plan.name, amount: plan.amount, businessId, businessName, email: userEmail }),
       })
       const data = await res.json()
+      console.log('[PayDunya] response:', res.status, data)
+
       if (!res.ok || !data.payment_url) {
-        setError(data.error || "Erreur lors de l'initialisation du paiement.")
+        const errMsg = data.error || "Erreur lors de l'initialisation du paiement."
+        console.error('[PayDunya] no payment_url:', errMsg)
+        setError(errMsg)
         setOnlineLoading(false)
         return
       }
+
+      console.log('[PayDunya] redirecting to:', data.payment_url)
       window.location.href = data.payment_url
     } catch (err) {
-      console.error('[PayDunya] error:', err)
+      console.error('[PayDunya] fetch error:', err)
       setError('Erreur de connexion. Veuillez réessayer.')
       setOnlineLoading(false)
     }
