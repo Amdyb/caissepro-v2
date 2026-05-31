@@ -6,8 +6,7 @@ import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { generateUniqueSlug } from '@/lib/generateUniqueSlug'
 import { supabase } from '@/lib/supabaseClient'
-import { Users } from 'lucide-react'
-
+import { Loader2, Users } from 'lucide-react'
 
 const BUSINESS_TYPES = [
   { value: 'retail', label: 'Commerce & Boutique' },
@@ -39,7 +38,6 @@ function RegisterForm() {
   const [agentCode, setAgentCode] = useState<string | null>(null)
 
   useEffect(() => {
-    // Capture agent code from URL or localStorage
     const urlAgent = searchParams.get('agent')
     if (urlAgent) {
       localStorage.setItem('caissepro_agent_code', urlAgent)
@@ -174,7 +172,6 @@ function RegisterForm() {
         }
       }
 
-      // Track agent referral
       const storedAgentCode = localStorage.getItem('caissepro_agent_code')
       if (storedAgentCode && newBusinessId) {
         const { data: agentRow } = await supabase
@@ -206,76 +203,97 @@ function RegisterForm() {
 
   if (checking) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-slate-50">
-        <p className="font-bold text-slate-500">Vérification...</p>
+      <main className="flex min-h-screen items-center justify-center bg-slate-950">
+        <div className="h-8 w-8 animate-pulse rounded-full bg-emerald-500/50" />
       </main>
     )
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gradient-to-b from-emerald-50 to-white px-6 py-12">
-      <div className="w-full max-w-md">
+    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-950 px-6 py-12">
+      {/* Background orbs */}
+      <div className="pointer-events-none absolute right-1/4 top-0 h-[500px] w-[500px] -translate-y-1/2 rounded-full bg-emerald-500/10 blur-3xl" />
+      <div className="pointer-events-none absolute left-0 bottom-0 h-64 w-64 rounded-full bg-emerald-600/10 blur-3xl" />
+      <div className="pointer-events-none absolute right-0 top-1/2 h-48 w-48 rounded-full bg-slate-700/30 blur-3xl" />
+
+      <div className="relative w-full max-w-md">
+        {/* Logo + heading */}
         <div className="mb-8 text-center">
-          <Image src="/caissepro-logo.png" alt="CaissePro" width={120} height={40} className="mx-auto mb-4 h-10 w-auto" priority />
-          <h1 className="text-3xl font-black text-slate-950">Créer votre boutique</h1>
-          <p className="mt-2 font-semibold text-slate-500">Lancez votre commerce en 2 minutes.</p>
+          <Link href="/" className="inline-block">
+            <Image
+              src="/caissepro-logo.png"
+              alt="CaissePro"
+              width={120}
+              height={40}
+              className="mx-auto mb-5 h-10 w-auto brightness-0 invert"
+              priority
+            />
+          </Link>
+          <h1 className="text-3xl font-black text-white">Créer votre boutique</h1>
+          <p className="mt-2 font-semibold text-white/50">Lancez votre commerce en 2 minutes.</p>
         </div>
 
-        <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-xl">
+        {/* Glass card */}
+        <div className="glass rounded-[2rem] p-8 shadow-2xl glow-emerald">
           {agentCode && (
-            <div className="mb-5 flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
-              <Users size={18} className="shrink-0 text-emerald-600" />
-              <p className="text-sm font-bold text-emerald-700">Vous avez été invité par un agent CaissePro</p>
+            <div className="mb-5 flex items-center gap-3 rounded-2xl border border-emerald-400/20 bg-emerald-500/10 p-4">
+              <Users size={18} className="shrink-0 text-emerald-400" />
+              <p className="text-sm font-bold text-emerald-300">Vous avez été invité par un agent CaissePro</p>
             </div>
           )}
-          {error && <div className="mb-5 rounded-2xl bg-red-50 p-4 text-sm font-bold text-red-700">{error}</div>}
-          {message && <div className="mb-5 rounded-2xl bg-emerald-50 p-4 text-sm font-bold text-emerald-700">{message}</div>}
+          {error && (
+            <div className="mb-5 rounded-2xl border border-red-400/20 bg-red-500/10 p-4 text-sm font-bold text-red-300">{error}</div>
+          )}
+          {message && (
+            <div className="mb-5 rounded-2xl border border-emerald-400/20 bg-emerald-500/10 p-4 text-sm font-bold text-emerald-300">{message}</div>
+          )}
 
+          {/* Google button */}
           <button
             type="button"
             onClick={handleGoogleRegister}
             disabled={googleLoading}
-            className="mb-4 flex w-full items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 font-bold text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-60"
+            className="mb-5 flex w-full items-center justify-center gap-3 rounded-2xl border border-white/20 bg-white/10 px-4 py-3.5 font-bold text-white backdrop-blur-sm transition-all hover:bg-white/20 disabled:opacity-60"
           >
             <img src="https://www.google.com/favicon.ico" alt="Google" className="h-5 w-5" />
             {googleLoading ? 'Redirection...' : 'Continuer avec Google'}
           </button>
 
-          <div className="relative mb-4 flex items-center gap-3">
-            <div className="flex-1 border-t border-slate-200" />
-            <span className="text-xs font-bold text-slate-400">OU</span>
-            <div className="flex-1 border-t border-slate-200" />
+          <div className="relative mb-5 flex items-center gap-3">
+            <div className="flex-1 border-t border-white/10" />
+            <span className="text-xs font-black text-white/30">OU</span>
+            <div className="flex-1 border-t border-white/10" />
           </div>
 
           <form onSubmit={handleRegister} className="space-y-4">
             <div>
-              <label className="text-sm font-black text-slate-700">Votre nom complet</label>
+              <label className="text-sm font-black text-white/70">Votre nom complet</label>
               <input
                 required
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 placeholder="Amadou Diallo"
-                className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 font-semibold outline-none focus:border-emerald-600"
+                className="mt-2 w-full rounded-2xl border border-white/20 bg-white/10 px-4 py-3.5 font-semibold text-white placeholder-white/30 outline-none backdrop-blur-sm transition-all focus:border-emerald-400/60 focus:bg-white/15"
               />
             </div>
 
             <div>
-              <label className="text-sm font-black text-slate-700">Nom du commerce</label>
+              <label className="text-sm font-black text-white/70">Nom du commerce</label>
               <input
                 required
                 value={businessName}
                 onChange={(e) => setBusinessName(e.target.value)}
                 placeholder="Dakar Vapes"
-                className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 font-semibold outline-none focus:border-emerald-600"
+                className="mt-2 w-full rounded-2xl border border-white/20 bg-white/10 px-4 py-3.5 font-semibold text-white placeholder-white/30 outline-none backdrop-blur-sm transition-all focus:border-emerald-400/60 focus:bg-white/15"
               />
             </div>
 
             <div>
-              <label className="text-sm font-black text-slate-700">Type de commerce</label>
+              <label className="text-sm font-black text-white/70">Type de commerce</label>
               <select
                 value={businessType}
                 onChange={(e) => setBusinessType(e.target.value)}
-                className="mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 font-semibold outline-none focus:border-emerald-600"
+                className="mt-2 w-full rounded-2xl border border-white/20 bg-slate-800 px-4 py-3.5 font-semibold text-white outline-none transition-all focus:border-emerald-400/60"
               >
                 {BUSINESS_TYPES.map((t) => (
                   <option key={t.value} value={t.value}>{t.label}</option>
@@ -284,30 +302,30 @@ function RegisterForm() {
             </div>
 
             <div>
-              <label className="text-sm font-black text-slate-700">Téléphone (optionnel)</label>
+              <label className="text-sm font-black text-white/70">Téléphone (optionnel)</label>
               <input
                 type="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="+221 77 000 00 00"
-                className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 font-semibold outline-none focus:border-emerald-600"
+                className="mt-2 w-full rounded-2xl border border-white/20 bg-white/10 px-4 py-3.5 font-semibold text-white placeholder-white/30 outline-none backdrop-blur-sm transition-all focus:border-emerald-400/60 focus:bg-white/15"
               />
             </div>
 
             <div>
-              <label className="text-sm font-black text-slate-700">Email</label>
+              <label className="text-sm font-black text-white/70">Email</label>
               <input
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="votre@email.com"
-                className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 font-semibold outline-none focus:border-emerald-600"
+                className="mt-2 w-full rounded-2xl border border-white/20 bg-white/10 px-4 py-3.5 font-semibold text-white placeholder-white/30 outline-none backdrop-blur-sm transition-all focus:border-emerald-400/60 focus:bg-white/15"
               />
             </div>
 
             <div>
-              <label className="text-sm font-black text-slate-700">Mot de passe</label>
+              <label className="text-sm font-black text-white/70">Mot de passe</label>
               <input
                 type="password"
                 required
@@ -315,37 +333,44 @@ function RegisterForm() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Minimum 6 caractères"
-                className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 font-semibold outline-none focus:border-emerald-600"
+                className="mt-2 w-full rounded-2xl border border-white/20 bg-white/10 px-4 py-3.5 font-semibold text-white placeholder-white/30 outline-none backdrop-blur-sm transition-all focus:border-emerald-400/60 focus:bg-white/15"
               />
             </div>
 
             <div>
-              <label className="text-sm font-black text-slate-700">Confirmer le mot de passe</label>
+              <label className="text-sm font-black text-white/70">Confirmer le mot de passe</label>
               <input
                 type="password"
                 required
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="••••••••"
-                className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 font-semibold outline-none focus:border-emerald-600"
+                className="mt-2 w-full rounded-2xl border border-white/20 bg-white/10 px-4 py-3.5 font-semibold text-white placeholder-white/30 outline-none backdrop-blur-sm transition-all focus:border-emerald-400/60 focus:bg-white/15"
               />
             </div>
 
             <button
+              type="submit"
               disabled={loading}
-              className="w-full rounded-2xl bg-emerald-600 py-4 font-black text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 disabled:opacity-60"
+              className="w-full rounded-2xl bg-emerald-500 py-4 font-black text-white shadow-lg shadow-emerald-500/30 transition-all hover:bg-emerald-400 hover:shadow-emerald-500/40 disabled:opacity-60"
             >
-              {loading ? 'Création en cours...' : 'Créer mon commerce'}
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <Loader2 size={18} className="animate-spin" /> Création en cours...
+                </span>
+              ) : (
+                'Créer mon commerce'
+              )}
             </button>
           </form>
 
-          <p className="mt-6 text-center text-sm font-semibold text-slate-500">
+          <p className="mt-6 text-center text-sm font-semibold text-white/50">
             Déjà un compte ?{' '}
-            <Link href="/login" className="font-black text-emerald-700 hover:underline">Se connecter</Link>
+            <Link href="/login" className="font-black text-emerald-400 hover:text-emerald-300 transition-colors">Se connecter</Link>
           </p>
-          <p className="mt-3 text-center text-xs text-slate-400">
+          <p className="mt-3 text-center text-xs text-white/30">
             En créant un compte, vous acceptez nos{' '}
-            <Link href="/legal" className="font-bold underline hover:text-slate-700">mentions légales</Link>.
+            <Link href="/legal" className="font-bold text-white/50 underline hover:text-white/70">mentions légales</Link>.
           </p>
         </div>
       </div>
@@ -356,8 +381,8 @@ function RegisterForm() {
 export default function RegisterPage() {
   return (
     <Suspense fallback={
-      <main className="flex min-h-screen items-center justify-center bg-slate-50">
-        <p className="font-bold text-slate-500">Chargement...</p>
+      <main className="flex min-h-screen items-center justify-center bg-slate-950">
+        <div className="h-8 w-8 animate-pulse rounded-full bg-emerald-500/50" />
       </main>
     }>
       <RegisterForm />

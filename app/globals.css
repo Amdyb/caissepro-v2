@@ -56,3 +56,32 @@ aside, header, footer, nav, section,
   from { width: 0% }
   to   { width: 100% }
 }
+
+/* ── Glass utilities ── */
+.glass {
+  background: rgba(255, 255, 255, 0.1);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+@supports not (backdrop-filter: blur(1px)) {
+  .glass { background: #1e293b; }
+}
+
+.glass-dark {
+  background: rgba(0, 0, 0, 0.2);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+@supports not (backdrop-filter: blur(1px)) {
+  .glass-dark { background: #0f172a; }
+}
+
+.glow-emerald {
+  box-shadow: 0 0 60px rgba(16, 163, 74, 0.15);
+}
+
+.glow-emerald-strong {
+  box-shadow: 0 0 80px rgba(16, 163, 74, 0.25), 0 0 160px rgba(16, 163, 74, 0.1);
+}

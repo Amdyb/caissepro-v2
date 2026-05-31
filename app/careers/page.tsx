@@ -71,24 +71,24 @@ const FAQS = [
 
 export default function CareersPage() {
   return (
-    <main className="min-h-screen overflow-hidden bg-white text-slate-950">
+    <main className="min-h-screen overflow-hidden bg-slate-950 text-white">
 
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-slate-100 bg-white/95 backdrop-blur-xl">
+      <header className="sticky top-0 z-50 border-b border-white/10 bg-slate-950/80 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4">
           <Link href="/" className="flex items-center gap-2">
-            <Image src="/caissepro-logo.png" alt="CaissePro" width={120} height={40} className="h-9 w-auto" />
+            <Image src="/caissepro-logo.png" alt="CaissePro" width={120} height={40} className="h-9 w-auto brightness-0 invert" />
           </Link>
           <div className="flex items-center gap-3">
             <Link
               href="/agents/login"
-              className="hidden rounded-2xl border border-slate-200 px-5 py-2.5 text-sm font-black text-slate-700 hover:bg-slate-50 sm:inline-flex"
+              className="hidden rounded-2xl border border-white/20 bg-white/10 px-5 py-2.5 text-sm font-black text-white backdrop-blur-sm hover:bg-white/20 transition-all sm:inline-flex"
             >
               Espace agent
             </Link>
             <Link
               href="/agents"
-              className="rounded-2xl bg-emerald-600 px-5 py-2.5 text-sm font-black text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700"
+              className="rounded-2xl bg-emerald-500 px-5 py-2.5 text-sm font-black text-white shadow-lg shadow-emerald-500/25 hover:bg-emerald-400 transition-all"
             >
               Postuler maintenant
             </Link>
@@ -97,29 +97,32 @@ export default function CareersPage() {
       </header>
 
       {/* Hero */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-emerald-50/60 to-white px-5 pb-24 pt-20">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-emerald-100/40 via-transparent to-transparent" />
+      <section className="relative overflow-hidden px-5 pb-24 pt-20">
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950" />
+        <div className="pointer-events-none absolute left-1/2 top-0 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-emerald-500/10 blur-3xl" />
+        <div className="pointer-events-none absolute right-0 bottom-0 h-48 w-48 rounded-full bg-emerald-600/10 blur-3xl" />
+
         <div className="relative mx-auto max-w-4xl text-center">
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white px-4 py-2 text-sm font-black text-emerald-700 shadow-sm">
+          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/20 px-4 py-2 text-sm font-black text-emerald-300 backdrop-blur-sm">
             <Briefcase size={14} /> Programme Agents CaissePro
           </div>
-          <h1 className="text-5xl font-black leading-[1.08] tracking-tight text-slate-950 md:text-7xl">
+          <h1 className="text-5xl font-black leading-[1.08] tracking-tight text-white md:text-7xl">
             Rejoignez l'équipe
-            <span className="block text-emerald-600">CaissePro</span>
+            <span className="block bg-gradient-to-r from-emerald-400 to-emerald-300 bg-clip-text text-transparent">CaissePro</span>
           </h1>
-          <p className="mx-auto mt-7 max-w-2xl text-xl font-semibold leading-relaxed text-slate-500">
+          <p className="mx-auto mt-7 max-w-2xl text-xl font-semibold leading-relaxed text-white/60">
             Aidez les commerçants africains à digitaliser leur business et gagnez des commissions chaque mois.
           </p>
           <div className="mt-10 flex flex-wrap justify-center gap-4">
             <Link
               href="/agents"
-              className="inline-flex items-center gap-2 rounded-2xl bg-emerald-600 px-8 py-4 text-lg font-black text-white shadow-2xl shadow-emerald-600/25 hover:bg-emerald-700"
+              className="inline-flex items-center gap-2 rounded-2xl bg-emerald-500 px-8 py-4 text-lg font-black text-white shadow-2xl shadow-emerald-500/25 hover:bg-emerald-400 transition-all"
             >
               Postuler maintenant <ArrowRight size={20} />
             </Link>
             <Link
               href="/agents/login"
-              className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-8 py-4 text-lg font-black text-slate-700 hover:bg-slate-50"
+              className="inline-flex items-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-8 py-4 text-lg font-black text-white backdrop-blur-sm hover:bg-white/20 transition-all"
             >
               Déjà agent ? Se connecter
             </Link>
@@ -130,9 +133,9 @@ export default function CareersPage() {
               ['20', 'Abonnés objectif'],
               ['0 XOF', "Frais d'inscription"],
             ].map(([val, label]) => (
-              <div key={label}>
-                <p className="text-3xl font-black text-emerald-600 md:text-4xl">{val}</p>
-                <p className="mt-1 text-sm font-bold text-slate-500">{label}</p>
+              <div key={label} className="glass rounded-[1.5rem] px-4 py-5">
+                <p className="text-3xl font-black text-emerald-400 md:text-4xl">{val}</p>
+                <p className="mt-1 text-sm font-bold text-white/50">{label}</p>
               </div>
             ))}
           </div>
@@ -141,7 +144,8 @@ export default function CareersPage() {
 
       {/* Commission Card */}
       <section className="mx-auto max-w-5xl px-5 py-6">
-        <div className="overflow-hidden rounded-[2rem] bg-emerald-600 p-8 text-white shadow-2xl shadow-emerald-600/20 md:p-12">
+        <div className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-emerald-600 to-emerald-700 p-8 shadow-2xl shadow-emerald-500/20 glow-emerald-strong md:p-12">
+          <div className="pointer-events-none absolute right-0 top-0 h-64 w-64 rounded-full bg-white/5 blur-3xl" />
           <div className="grid items-center gap-8 md:grid-cols-2">
             <div>
               <p className="text-sm font-black uppercase tracking-widest text-emerald-200">Commission mensuelle</p>
@@ -149,18 +153,18 @@ export default function CareersPage() {
               <p className="mt-3 text-lg font-bold text-white/80">pour 20 nouveaux abonnés payants par mois</p>
               <Link
                 href="/agents"
-                className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-white px-6 py-3 font-black text-emerald-700 hover:bg-emerald-50"
+                className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-white px-6 py-3 font-black text-emerald-700 shadow-xl hover:bg-emerald-50 transition-all"
               >
                 Postuler maintenant <ArrowRight size={16} />
               </Link>
             </div>
             <ul className="space-y-3">
               {[
-                'Paiement via Wave ou Orange Money',
-                'Versement sous 48h dès l\'objectif atteint',
-                'Suivi en temps réel sur votre dashboard',
-                'Disponible dans toute l\'Afrique',
-                'Aucun plafond de revenus sur plusieurs mois',
+                "Paiement via Wave ou Orange Money",
+                "Versement sous 48h dès l'objectif atteint",
+                "Suivi en temps réel sur votre dashboard",
+                "Disponible dans toute l'Afrique",
+                "Aucun plafond de revenus sur plusieurs mois",
               ].map((f) => (
                 <li key={f} className="flex items-start gap-3 text-sm font-semibold text-white/90">
                   <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-emerald-200" />
@@ -173,42 +177,44 @@ export default function CareersPage() {
       </section>
 
       {/* How it works */}
-      <section className="mx-auto max-w-7xl px-5 py-20">
-        <div className="mb-14 text-center">
-          <p className="text-sm font-black uppercase tracking-widest text-emerald-600">COMMENT ÇA MARCHE</p>
-          <h2 className="mt-3 text-4xl font-black tracking-tight md:text-5xl">Simple comme bonjour</h2>
-          <p className="mt-4 text-lg font-semibold text-slate-500">4 étapes pour commencer à gagner</p>
-        </div>
-        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
-          {STEPS.map(({ n, icon: Icon, title, desc }) => (
-            <div key={n} className="group rounded-[2rem] border border-slate-100 bg-slate-50 p-7 transition hover:border-emerald-200 hover:bg-white hover:shadow-lg">
-              <div className="mb-5 flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-600 text-white">
-                  <Icon size={22} />
+      <section className="bg-slate-900 px-5 py-20">
+        <div className="mx-auto max-w-7xl">
+          <div className="mb-14 text-center">
+            <p className="text-sm font-black uppercase tracking-widest text-emerald-400">COMMENT ÇA MARCHE</p>
+            <h2 className="mt-3 text-4xl font-black tracking-tight text-white md:text-5xl">Simple comme bonjour</h2>
+            <p className="mt-4 text-lg font-semibold text-white/50">4 étapes pour commencer à gagner</p>
+          </div>
+          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+            {STEPS.map(({ n, icon: Icon, title, desc }) => (
+              <div key={n} className="glass rounded-[2rem] p-7 transition-all hover:bg-white/15 hover:-translate-y-0.5">
+                <div className="mb-5 flex items-center gap-3">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500 text-white shadow-lg shadow-emerald-500/25">
+                    <Icon size={22} />
+                  </div>
+                  <span className="text-2xl font-black text-white/20">{n}</span>
                 </div>
-                <span className="text-2xl font-black text-slate-200 group-hover:text-emerald-100">{n}</span>
+                <h3 className="text-lg font-black leading-snug text-white">{title}</h3>
+                <p className="mt-3 text-sm font-semibold leading-relaxed text-white/50">{desc}</p>
               </div>
-              <h3 className="text-lg font-black leading-snug text-slate-950">{title}</h3>
-              <p className="mt-3 text-sm font-semibold leading-relaxed text-slate-500">{desc}</p>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </section>
 
       {/* Who can apply */}
-      <section className="bg-slate-950 px-5 py-20 text-white">
+      <section className="bg-slate-950 px-5 py-20">
         <div className="mx-auto max-w-7xl">
           <div className="mb-14 text-center">
             <p className="text-sm font-black uppercase tracking-widest text-emerald-400">QUI PEUT POSTULER</p>
-            <h2 className="mt-3 text-4xl font-black tracking-tight md:text-5xl">Ouvert à tous en Afrique</h2>
+            <h2 className="mt-3 text-4xl font-black tracking-tight text-white md:text-5xl">Ouvert à tous en Afrique</h2>
             <p className="mt-4 text-lg font-semibold text-white/50">Afrique francophone et anglophone — partout sur le continent</p>
           </div>
           <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
             {PROFILES.map(({ emoji, label, desc }) => (
-              <div key={label} className="rounded-[2rem] border border-white/10 bg-white/5 p-7 transition hover:border-emerald-500/40 hover:bg-white/10">
+              <div key={label} className="glass rounded-[2rem] p-7 transition-all hover:bg-white/15 hover:-translate-y-0.5">
                 <div className="mb-4 text-4xl">{emoji}</div>
-                <h3 className="text-xl font-black">{label}</h3>
-                <p className="mt-2 text-sm font-semibold text-white/60">{desc}</p>
+                <h3 className="text-xl font-black text-white">{label}</h3>
+                <p className="mt-2 text-sm font-semibold text-white/50">{desc}</p>
               </div>
             ))}
           </div>
@@ -220,58 +226,45 @@ export default function CareersPage() {
       </section>
 
       {/* Benefits */}
-      <section className="mx-auto max-w-7xl px-5 py-20">
-        <div className="mb-14 text-center">
-          <p className="text-sm font-black uppercase tracking-widest text-emerald-600">AVANTAGES</p>
-          <h2 className="mt-3 text-4xl font-black tracking-tight md:text-5xl">Pourquoi devenir agent ?</h2>
-        </div>
-        <div className="grid gap-6 md:grid-cols-3">
-          {[
-            {
-              icon: DollarSign,
-              title: 'Revenu récurrent',
-              desc: 'Chaque mois que vous atteignez votre objectif, vous êtes payé automatiquement via mobile money.',
-              color: 'bg-emerald-50 text-emerald-700',
-            },
-            {
-              icon: TrendingUp,
-              title: 'Croissance illimitée',
-              desc: 'Plus vous recrutez de commerçants actifs, plus votre réseau travaille pour vous chaque mois.',
-              color: 'bg-blue-50 text-blue-700',
-            },
-            {
-              icon: MessageCircle,
-              title: 'Support dédié',
-              desc: "Accès à un groupe WhatsApp d'agents CaissePro avec ressources marketing et support prioritaire.",
-              color: 'bg-violet-50 text-violet-700',
-            },
-          ].map(({ icon: Icon, title, desc, color }) => (
-            <div key={title} className="rounded-[2rem] border border-slate-100 bg-slate-50 p-8 transition hover:border-emerald-200 hover:bg-white hover:shadow-lg">
-              <div className={`flex h-14 w-14 items-center justify-center rounded-2xl ${color}`}>
-                <Icon size={24} />
+      <section className="bg-slate-900 px-5 py-20">
+        <div className="mx-auto max-w-7xl">
+          <div className="mb-14 text-center">
+            <p className="text-sm font-black uppercase tracking-widest text-emerald-400">AVANTAGES</p>
+            <h2 className="mt-3 text-4xl font-black tracking-tight text-white md:text-5xl">Pourquoi devenir agent ?</h2>
+          </div>
+          <div className="grid gap-6 md:grid-cols-3">
+            {[
+              { icon: DollarSign, title: 'Revenu récurrent',    desc: 'Chaque mois que vous atteignez votre objectif, vous êtes payé automatiquement via mobile money.', color: 'bg-emerald-500/20 text-emerald-300' },
+              { icon: TrendingUp, title: 'Croissance illimitée', desc: 'Plus vous recrutez de commerçants actifs, plus votre réseau travaille pour vous chaque mois.',   color: 'bg-blue-500/20 text-blue-300' },
+              { icon: MessageCircle, title: 'Support dédié',     desc: "Accès à un groupe WhatsApp d'agents CaissePro avec ressources marketing et support prioritaire.", color: 'bg-violet-500/20 text-violet-300' },
+            ].map(({ icon: Icon, title, desc, color }) => (
+              <div key={title} className="glass rounded-[2rem] p-8 transition-all hover:bg-white/15 hover:-translate-y-0.5">
+                <div className={`flex h-14 w-14 items-center justify-center rounded-2xl ${color}`}>
+                  <Icon size={24} />
+                </div>
+                <h3 className="mt-5 text-xl font-black text-white">{title}</h3>
+                <p className="mt-3 text-sm font-semibold leading-relaxed text-white/50">{desc}</p>
               </div>
-              <h3 className="mt-5 text-xl font-black text-slate-950">{title}</h3>
-              <p className="mt-3 text-sm font-semibold leading-relaxed text-slate-500">{desc}</p>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </section>
 
       {/* FAQ */}
-      <section className="bg-slate-50 px-5 py-20">
+      <section className="bg-slate-950 px-5 py-20">
         <div className="mx-auto max-w-3xl">
           <div className="mb-14 text-center">
-            <p className="text-sm font-black uppercase tracking-widest text-emerald-600">FAQ</p>
-            <h2 className="mt-3 text-4xl font-black tracking-tight">Questions fréquentes</h2>
+            <p className="text-sm font-black uppercase tracking-widest text-emerald-400">FAQ</p>
+            <h2 className="mt-3 text-4xl font-black tracking-tight text-white">Questions fréquentes</h2>
           </div>
           <div className="space-y-4">
             {FAQS.map(({ q, a }) => (
-              <div key={q} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+              <div key={q} className="glass rounded-2xl p-6">
                 <div className="flex items-start gap-4">
-                  <HelpCircle size={18} className="mt-0.5 shrink-0 text-emerald-500" />
+                  <HelpCircle size={18} className="mt-0.5 shrink-0 text-emerald-400" />
                   <div>
-                    <h3 className="font-black text-slate-950">{q}</h3>
-                    <p className="mt-2 text-sm font-semibold leading-7 text-slate-500">{a}</p>
+                    <h3 className="font-black text-white">{q}</h3>
+                    <p className="mt-2 text-sm font-semibold leading-7 text-white/50">{a}</p>
                   </div>
                 </div>
               </div>
@@ -281,36 +274,41 @@ export default function CareersPage() {
       </section>
 
       {/* CTA */}
-      <section className="mx-auto max-w-4xl px-5 py-24 text-center">
-        <div className="rounded-[2.5rem] bg-emerald-600 px-8 py-16 shadow-2xl shadow-emerald-600/20">
-          <Zap className="mx-auto text-white/70" size={40} />
-          <h2 className="mt-5 text-4xl font-black text-white md:text-5xl">Prêt à rejoindre CaissePro ?</h2>
-          <p className="mt-4 text-lg font-semibold text-white/70">
-            Inscription gratuite · Disponible dans toute l&apos;Afrique
-          </p>
-          <Link
-            href="/agents"
-            className="mt-8 inline-flex items-center gap-2 rounded-2xl bg-white px-8 py-4 text-lg font-black text-emerald-700 shadow-xl hover:bg-emerald-50"
-          >
-            Postuler maintenant <ArrowRight size={20} />
-          </Link>
+      <section className="relative overflow-hidden bg-slate-900 px-5 py-24 text-center">
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute left-1/2 top-1/2 h-[400px] w-[400px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-emerald-500/10 blur-3xl" />
+        </div>
+        <div className="relative mx-auto max-w-4xl">
+          <div className="glass-dark rounded-[2.5rem] px-8 py-16 glow-emerald">
+            <Zap className="mx-auto text-emerald-400" size={40} />
+            <h2 className="mt-5 text-4xl font-black text-white md:text-5xl">Prêt à rejoindre CaissePro ?</h2>
+            <p className="mt-4 text-lg font-semibold text-white/50">
+              Inscription gratuite · Disponible dans toute l&apos;Afrique
+            </p>
+            <Link
+              href="/agents"
+              className="mt-8 inline-flex items-center gap-2 rounded-2xl bg-emerald-500 px-8 py-4 text-lg font-black text-white shadow-xl shadow-emerald-500/30 hover:bg-emerald-400 transition-all"
+            >
+              Postuler maintenant <ArrowRight size={20} />
+            </Link>
+          </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-slate-100 bg-white px-5 py-10">
+      <footer className="border-t border-white/10 bg-slate-950 px-5 py-10">
         <div className="mx-auto flex max-w-7xl flex-col items-center gap-4 text-center md:flex-row md:justify-between md:text-left">
           <Link href="/" className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-600 text-sm font-black text-white">C</div>
-            <span className="font-black text-slate-950">CaissePro</span>
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-500 text-sm font-black text-white">C</div>
+            <span className="font-black text-white">CaissePro</span>
           </Link>
-          <div className="flex flex-wrap justify-center gap-6 text-sm font-bold text-slate-400">
-            <Link href="/" className="hover:text-slate-700">Accueil</Link>
-            <Link href="/agents" className="hover:text-emerald-700">Devenir agent</Link>
-            <Link href="/agents/login" className="hover:text-slate-700">Espace agent</Link>
-            <Link href="/legal" className="hover:text-slate-700">Mentions légales</Link>
+          <div className="flex flex-wrap justify-center gap-6 text-sm font-bold text-white/40">
+            <Link href="/" className="hover:text-white transition-colors">Accueil</Link>
+            <Link href="/agents" className="hover:text-emerald-400 transition-colors">Devenir agent</Link>
+            <Link href="/agents/login" className="hover:text-white transition-colors">Espace agent</Link>
+            <Link href="/legal" className="hover:text-white transition-colors">Mentions légales</Link>
           </div>
-          <p className="text-xs font-semibold text-slate-400">© {new Date().getFullYear()} CaissePro.</p>
+          <p className="text-xs font-semibold text-white/30">© {new Date().getFullYear()} CaissePro.</p>
         </div>
       </footer>
     </main>

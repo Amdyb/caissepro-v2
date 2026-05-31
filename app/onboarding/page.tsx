@@ -7,24 +7,20 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 
 const BUSINESS_TYPES = [
-  { value: 'retail', label: 'Commerce & Boutique', icon: Store, color: '#16a34a' },
-  { value: 'restaurant', label: 'Restaurant & Fast Food', icon: Utensils, color: '#ea580c' },
-  { value: 'beauty', label: 'Salon & Beauté', icon: Scissors, color: '#db2777' },
-  { value: 'tontine', label: 'Tontine & Épargne', icon: PiggyBank, color: '#7c3aed' },
-  { value: 'services', label: 'Services', icon: Briefcase, color: '#0891b2' },
-  { value: 'grocery', label: 'Épicerie & Alimentation', icon: ShoppingBasket, color: '#65a30d' },
-  { value: 'electronics', label: 'Électronique', icon: Tv, color: '#1d4ed8' },
-  { value: 'fashion', label: 'Mode & Accessoires', icon: Shirt, color: '#9333ea' },
+  { value: 'retail',       label: 'Commerce & Boutique',      icon: Store,         color: '#16a34a' },
+  { value: 'restaurant',   label: 'Restaurant & Fast Food',   icon: Utensils,      color: '#ea580c' },
+  { value: 'beauty',       label: 'Salon & Beauté',           icon: Scissors,      color: '#db2777' },
+  { value: 'tontine',      label: 'Tontine & Épargne',        icon: PiggyBank,     color: '#7c3aed' },
+  { value: 'services',     label: 'Services',                 icon: Briefcase,     color: '#0891b2' },
+  { value: 'grocery',      label: 'Épicerie & Alimentation',  icon: ShoppingBasket,color: '#65a30d' },
+  { value: 'electronics',  label: 'Électronique',             icon: Tv,            color: '#1d4ed8' },
+  { value: 'fashion',      label: 'Mode & Accessoires',       icon: Shirt,         color: '#9333ea' },
 ]
 
 const PRESET_COLORS = [
   '#16a34a', '#0891b2', '#7c3aed', '#db2777',
   '#ea580c', '#1d4ed8', '#65a30d', '#9333ea',
 ]
-
-function slugify(value: string) {
-  return value.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '')
-}
 
 export default function OnboardingPage() {
   const router = useRouter()
@@ -50,7 +46,6 @@ export default function OnboardingPage() {
 
       setUserId(userData.user.id)
 
-      // Step 1: get memberships without nested join to avoid RLS recursion
       const { data: memberships } = await supabase
         .from('business_members')
         .select('business_id, role')
@@ -65,28 +60,17 @@ export default function OnboardingPage() {
 
       if (member?.business_id) {
         const role: string = member.role || ''
-
-        // Staff (sales/cashier/employee/staff) never see the onboarding wizard
         const STAFF_ROLES_CHECK = ['sales', 'staff', 'cashier', 'employee']
-        if (STAFF_ROLES_CHECK.includes(role)) {
-          router.push('/dashboard')
-          return
-        }
+        if (STAFF_ROLES_CHECK.includes(role)) { router.push('/dashboard'); return }
 
-        // Step 2: get business info separately
         const { data: biz } = await supabase
           .from('businesses')
           .select('*')
           .eq('id', member.business_id)
           .maybeSingle()
 
-        // If onboarding is already done, go to dashboard
-        if ((biz as any)?.onboarding_completed) {
-          router.push('/dashboard')
-          return
-        }
+        if ((biz as any)?.onboarding_completed) { router.push('/dashboard'); return }
 
-        // Owner/admin with incomplete onboarding → show the wizard
         setBusinessId(member.business_id)
         setBusinessName((biz as any)?.name || userData.user.user_metadata?.business_name || '')
         setBusinessType((biz as any)?.business_type || 'retail')
@@ -137,7 +121,6 @@ export default function OnboardingPage() {
         const { error } = await supabase.from('businesses').update(payload).eq('id', businessId)
         if (error) throw error
       } else {
-        // Guard: never create a new business if user already has one
         const { data: existingMember } = await supabase
           .from('business_members')
           .select('business_id')
@@ -147,7 +130,6 @@ export default function OnboardingPage() {
         if (existingMember?.business_id) { router.push('/dashboard'); return }
 
         const slug = await generateUniqueSlug(businessName)
-
         const { data: businesses, error } = await supabase
           .from('businesses')
           .insert({ ...payload, slug })
@@ -155,8 +137,7 @@ export default function OnboardingPage() {
           .limit(1)
 
         if (error || !businesses?.[0]) throw error || new Error('Impossible de créer la boutique.')
-        let biz = businesses[0]
-
+        const biz = businesses[0]
         setBusinessId(biz.id)
 
         const { data: userData } = await supabase.auth.getUser()
@@ -200,15 +181,19 @@ export default function OnboardingPage() {
 
   if (loading) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-slate-50">
+      <main className="flex min-h-screen items-center justify-center bg-slate-950">
         <div className="h-10 w-10 animate-pulse rounded-full" style={{ backgroundColor: primaryColor }} />
       </main>
     )
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 px-5 py-10">
-      <div className="mx-auto max-w-2xl">
+    <main className="relative min-h-screen overflow-hidden bg-slate-950 px-5 py-10">
+      {/* Background orbs */}
+      <div className="pointer-events-none absolute left-1/2 top-0 h-[400px] w-[400px] -translate-x-1/2 -translate-y-1/2 rounded-full blur-3xl" style={{ backgroundColor: `${primaryColor}20` }} />
+      <div className="pointer-events-none absolute right-0 bottom-0 h-64 w-64 rounded-full bg-slate-700/30 blur-3xl" />
+
+      <div className="relative mx-auto max-w-2xl">
         {/* Header */}
         <div className="mb-6 text-center">
           <div
@@ -217,27 +202,27 @@ export default function OnboardingPage() {
           >
             <Store className="text-white" size={28} />
           </div>
-          <h1 className="text-3xl font-black text-slate-950">Bienvenue sur CaissePro</h1>
-          <p className="mt-2 text-sm font-bold text-slate-500">Configuration rapide en 3 étapes</p>
+          <h1 className="text-3xl font-black text-white">Bienvenue sur CaissePro</h1>
+          <p className="mt-2 text-sm font-bold text-white/50">Configuration rapide en 3 étapes</p>
         </div>
 
-        {/* Animated progress bar */}
-        <div className="mb-6 h-1.5 w-full overflow-hidden rounded-full bg-slate-200">
+        {/* Glass progress bar */}
+        <div className="mb-6 overflow-hidden rounded-full glass h-2">
           <div
             className="h-full rounded-full transition-all duration-700 ease-out"
             style={{ width: `${(step / 3) * 100}%`, backgroundColor: primaryColor }}
           />
         </div>
 
-        {/* Step indicator */}
+        {/* Step indicators */}
         <div className="mb-8 flex items-center justify-center gap-3">
           {[1, 2, 3].map((s) => (
             <div key={s} className="flex items-center gap-3">
               <div
-                className="flex h-9 w-9 items-center justify-center rounded-full text-sm font-black transition-all duration-300"
+                className="flex h-9 w-9 items-center justify-center rounded-full text-sm font-black transition-all duration-300 border border-white/20"
                 style={{
-                  backgroundColor: s <= step ? primaryColor : '#e2e8f0',
-                  color: s <= step ? 'white' : '#94a3b8',
+                  backgroundColor: s <= step ? primaryColor : 'rgba(255,255,255,0.05)',
+                  color: s <= step ? 'white' : 'rgba(255,255,255,0.3)',
                   transform: s === step ? 'scale(1.15)' : 'scale(1)',
                 }}
               >
@@ -246,7 +231,7 @@ export default function OnboardingPage() {
               {s < 3 && (
                 <div
                   className="h-0.5 w-8 rounded-full transition-all duration-500"
-                  style={{ backgroundColor: s < step ? primaryColor : '#e2e8f0' }}
+                  style={{ backgroundColor: s < step ? primaryColor : 'rgba(255,255,255,0.1)' }}
                 />
               )}
             </div>
@@ -254,7 +239,7 @@ export default function OnboardingPage() {
         </div>
 
         {message && (
-          <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-bold text-red-700">
+          <div className="mb-6 rounded-2xl border border-red-400/20 bg-red-500/10 p-4 text-sm font-bold text-red-300">
             {message}
           </div>
         )}
@@ -262,17 +247,17 @@ export default function OnboardingPage() {
         <div key={step} className="animate-slide-up">
           {/* Step 1 */}
           {step === 1 && (
-            <div className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm">
-              <h2 className="mb-2 text-2xl font-black text-slate-950">Quel type de commerce ?</h2>
-              <p className="mb-6 text-sm font-bold text-slate-500">CaissePro adaptera ses outils selon votre activité.</p>
+            <div className="glass rounded-[2rem] p-8 shadow-2xl glow-emerald">
+              <h2 className="mb-2 text-2xl font-black text-white">Quel type de commerce ?</h2>
+              <p className="mb-6 text-sm font-bold text-white/50">CaissePro adaptera ses outils selon votre activité.</p>
 
               <div className="mb-6">
-                <label className="mb-2 block text-sm font-black text-slate-700">Nom de la boutique</label>
+                <label className="mb-2 block text-sm font-black text-white/70">Nom de la boutique</label>
                 <input
                   required
                   value={businessName}
                   onChange={(e) => setBusinessName(e.target.value)}
-                  className="w-full rounded-2xl border border-slate-300 px-5 py-4 font-bold outline-none transition-colors focus:border-emerald-500"
+                  className="w-full rounded-2xl border border-white/20 bg-white/10 px-5 py-4 font-bold text-white placeholder-white/30 outline-none backdrop-blur-sm transition-all focus:border-emerald-400/60 focus:bg-white/15"
                   placeholder="Ex: Baba Tounde Pressing"
                 />
               </div>
@@ -288,20 +273,20 @@ export default function OnboardingPage() {
                         setBusinessType(type.value)
                         if (primaryColor === '#16a34a') setPrimaryColor(type.color)
                       }}
-                      className="flex flex-col items-center gap-3 rounded-2xl border p-4 text-center transition-all duration-200 hover:scale-105"
+                      className="flex flex-col items-center gap-3 rounded-2xl p-4 text-center transition-all duration-200 hover:scale-105"
                       style={{
-                        borderColor: selected ? type.color : '#e2e8f0',
-                        backgroundColor: selected ? type.color + '15' : 'white',
-                        boxShadow: selected ? `0 0 0 2px ${type.color}40` : 'none',
+                        border: `1px solid ${selected ? type.color + '60' : 'rgba(255,255,255,0.1)'}`,
+                        backgroundColor: selected ? type.color + '20' : 'rgba(255,255,255,0.05)',
+                        boxShadow: selected ? `0 0 20px ${type.color}30` : 'none',
                       }}
                     >
                       <div
                         className="flex h-12 w-12 items-center justify-center rounded-xl"
-                        style={{ backgroundColor: type.color + '20', color: type.color }}
+                        style={{ backgroundColor: type.color + '25', color: type.color }}
                       >
                         <Icon size={22} />
                       </div>
-                      <span className="text-xs font-black leading-tight text-slate-800">{type.label}</span>
+                      <span className="text-xs font-black leading-tight text-white/80">{type.label}</span>
                     </button>
                   )
                 })}
@@ -313,7 +298,7 @@ export default function OnboardingPage() {
                   setMessage('')
                   setStep(2)
                 }}
-                className="mt-8 flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-base font-black text-white shadow-xl transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+                className="mt-8 flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-base font-black text-white shadow-xl transition-all duration-200 hover:scale-[1.02] hover:opacity-90 active:scale-[0.98]"
                 style={{ backgroundColor: primaryColor }}
               >
                 Continuer <ArrowRight size={18} />
@@ -323,38 +308,38 @@ export default function OnboardingPage() {
 
           {/* Step 2 */}
           {step === 2 && (
-            <div className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm">
-              <h2 className="mb-2 text-2xl font-black text-slate-950">Ajoutez votre premier produit</h2>
-              <p className="mb-6 text-sm font-bold text-slate-500">Optionnel — vous pouvez ajouter des produits plus tard.</p>
+            <div className="glass rounded-[2rem] p-8 shadow-2xl">
+              <h2 className="mb-2 text-2xl font-black text-white">Ajoutez votre premier produit</h2>
+              <p className="mb-6 text-sm font-bold text-white/50">Optionnel — vous pouvez ajouter des produits plus tard.</p>
 
               <div className="grid gap-5">
                 <div>
-                  <label className="mb-2 block text-sm font-black text-slate-700">Nom du produit</label>
+                  <label className="mb-2 block text-sm font-black text-white/70">Nom du produit</label>
                   <input
                     value={product.name}
                     onChange={(e) => setProduct({ ...product, name: e.target.value })}
-                    className="w-full rounded-2xl border border-slate-300 px-5 py-4 font-bold outline-none transition-colors focus:border-emerald-500"
+                    className="w-full rounded-2xl border border-white/20 bg-white/10 px-5 py-4 font-bold text-white placeholder-white/30 outline-none backdrop-blur-sm transition-all focus:border-emerald-400/60 focus:bg-white/15"
                     placeholder="Ex: T-shirt premium"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="mb-2 block text-sm font-black text-slate-700">Prix (CFA)</label>
+                    <label className="mb-2 block text-sm font-black text-white/70">Prix (CFA)</label>
                     <input
                       type="number"
                       value={product.price}
                       onChange={(e) => setProduct({ ...product, price: e.target.value })}
-                      className="w-full rounded-2xl border border-slate-300 px-5 py-4 font-bold outline-none transition-colors focus:border-emerald-500"
+                      className="w-full rounded-2xl border border-white/20 bg-white/10 px-5 py-4 font-bold text-white placeholder-white/30 outline-none backdrop-blur-sm transition-all focus:border-emerald-400/60 focus:bg-white/15"
                       placeholder="5000"
                     />
                   </div>
                   <div>
-                    <label className="mb-2 block text-sm font-black text-slate-700">Stock</label>
+                    <label className="mb-2 block text-sm font-black text-white/70">Stock</label>
                     <input
                       type="number"
                       value={product.stock}
                       onChange={(e) => setProduct({ ...product, stock: e.target.value })}
-                      className="w-full rounded-2xl border border-slate-300 px-5 py-4 font-bold outline-none transition-colors focus:border-emerald-500"
+                      className="w-full rounded-2xl border border-white/20 bg-white/10 px-5 py-4 font-bold text-white placeholder-white/30 outline-none backdrop-blur-sm transition-all focus:border-emerald-400/60 focus:bg-white/15"
                       placeholder="10"
                     />
                   </div>
@@ -364,13 +349,13 @@ export default function OnboardingPage() {
               <div className="mt-8 flex gap-3">
                 <button
                   onClick={() => setStep(1)}
-                  className="flex items-center gap-2 rounded-2xl border border-slate-200 px-6 py-4 text-sm font-black text-slate-700 transition-all hover:scale-[1.02] hover:bg-slate-50"
+                  className="flex items-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-6 py-4 text-sm font-black text-white transition-all hover:scale-[1.02] hover:bg-white/20"
                 >
                   <ArrowLeft size={16} /> Retour
                 </button>
                 <button
                   onClick={() => { setMessage(''); setStep(3) }}
-                  className="flex flex-1 items-center justify-center gap-2 rounded-2xl py-4 text-base font-black text-white transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+                  className="flex flex-1 items-center justify-center gap-2 rounded-2xl py-4 text-base font-black text-white transition-all duration-200 hover:scale-[1.02] hover:opacity-90 active:scale-[0.98]"
                   style={{ backgroundColor: primaryColor }}
                 >
                   {product.name ? 'Continuer' : 'Passer'} <ArrowRight size={18} />
@@ -381,16 +366,16 @@ export default function OnboardingPage() {
 
           {/* Step 3 */}
           {step === 3 && (
-            <div className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm">
-              <h2 className="mb-2 text-2xl font-black text-slate-950">Personnalisez votre boutique</h2>
-              <p className="mb-6 text-sm font-bold text-slate-500">Optionnel — modifiable à tout moment dans les paramètres.</p>
+            <div className="glass rounded-[2rem] p-8 shadow-2xl">
+              <h2 className="mb-2 text-2xl font-black text-white">Personnalisez votre boutique</h2>
+              <p className="mb-6 text-sm font-bold text-white/50">Optionnel — modifiable à tout moment dans les paramètres.</p>
 
               <div className="mb-6">
-                <label className="mb-3 block text-sm font-black text-slate-700">Logo</label>
+                <label className="mb-3 block text-sm font-black text-white/70">Logo</label>
                 <input ref={logoRef} type="file" accept="image/*" className="hidden" onChange={handleLogo} />
                 <button
                   onClick={() => logoRef.current?.click()}
-                  className="flex h-28 w-28 flex-col items-center justify-center gap-2 overflow-hidden rounded-[1.5rem] border-2 border-dashed border-slate-300 bg-slate-50 text-slate-400 transition-all hover:scale-105 hover:border-emerald-400"
+                  className="flex h-28 w-28 flex-col items-center justify-center gap-2 overflow-hidden rounded-[1.5rem] border-2 border-dashed border-white/20 bg-white/5 text-white/40 transition-all hover:scale-105 hover:border-emerald-400/50 hover:bg-white/10"
                 >
                   {logoPreview ? (
                     <img src={logoPreview} alt="logo" className="h-full w-full object-cover" />
@@ -404,26 +389,26 @@ export default function OnboardingPage() {
               </div>
 
               <div>
-                <label className="mb-3 block text-sm font-black text-slate-700">Couleur principale</label>
+                <label className="mb-3 block text-sm font-black text-white/70">Couleur principale</label>
                 <div className="flex flex-wrap gap-3">
                   {PRESET_COLORS.map((color) => (
                     <button
                       key={color}
                       onClick={() => setPrimaryColor(color)}
                       className="h-10 w-10 rounded-full border-4 transition-all duration-200 hover:scale-110"
-                      style={{ backgroundColor: color, borderColor: primaryColor === color ? '#0f172a' : 'transparent' }}
+                      style={{ backgroundColor: color, borderColor: primaryColor === color ? 'white' : 'transparent' }}
                     />
                   ))}
-                  <label className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border-2 border-dashed border-slate-300 transition hover:border-slate-400">
+                  <label className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border-2 border-dashed border-white/20 transition hover:border-white/40">
                     <input type="color" value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} className="hidden" />
-                    <Palette size={16} className="text-slate-400" />
+                    <Palette size={16} className="text-white/40" />
                   </label>
                 </div>
                 <div
-                  className="mt-4 flex items-center gap-3 rounded-2xl p-4 transition-colors"
-                  style={{ backgroundColor: primaryColor + '15' }}
+                  className="mt-4 flex items-center gap-3 rounded-2xl border border-white/10 p-4 transition-colors"
+                  style={{ backgroundColor: primaryColor + '20' }}
                 >
-                  <div className="h-8 w-8 rounded-xl" style={{ backgroundColor: primaryColor }} />
+                  <div className="h-8 w-8 rounded-xl shadow-lg" style={{ backgroundColor: primaryColor }} />
                   <span className="text-sm font-black" style={{ color: primaryColor }}>{primaryColor}</span>
                 </div>
               </div>
@@ -431,14 +416,14 @@ export default function OnboardingPage() {
               <div className="mt-8 flex gap-3">
                 <button
                   onClick={() => setStep(2)}
-                  className="flex items-center gap-2 rounded-2xl border border-slate-200 px-6 py-4 text-sm font-black text-slate-700 transition-all hover:scale-[1.02] hover:bg-slate-50"
+                  className="flex items-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-6 py-4 text-sm font-black text-white transition-all hover:scale-[1.02] hover:bg-white/20"
                 >
                   <ArrowLeft size={16} /> Retour
                 </button>
                 <button
                   onClick={finish}
                   disabled={saving}
-                  className="flex flex-1 items-center justify-center gap-2 rounded-2xl py-4 text-base font-black text-white shadow-xl disabled:opacity-60 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+                  className="flex flex-1 items-center justify-center gap-2 rounded-2xl py-4 text-base font-black text-white shadow-xl disabled:opacity-60 transition-all duration-200 hover:scale-[1.02] hover:opacity-90 active:scale-[0.98]"
                   style={{ backgroundColor: primaryColor }}
                 >
                   {saving ? 'Configuration...' : <><Check size={18} /> Terminer</>}
