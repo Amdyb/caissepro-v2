@@ -6,6 +6,7 @@ import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { generateUniqueSlug } from '@/lib/generateUniqueSlug'
 import { supabase } from '@/lib/supabaseClient'
+import { Users } from 'lucide-react'
 
 
 const BUSINESS_TYPES = [
@@ -35,8 +36,19 @@ function RegisterForm() {
   const [checking, setChecking] = useState(true)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
+  const [agentCode, setAgentCode] = useState<string | null>(null)
 
   useEffect(() => {
+    // Capture agent code from URL or localStorage
+    const urlAgent = searchParams.get('agent')
+    if (urlAgent) {
+      localStorage.setItem('caissepro_agent_code', urlAgent)
+      setAgentCode(urlAgent)
+    } else {
+      const stored = localStorage.getItem('caissepro_agent_code')
+      if (stored) setAgentCode(stored)
+    }
+
     async function checkExistingMerchant() {
       const { data: userData } = await supabase.auth.getUser()
       const user = userData.user
@@ -58,7 +70,7 @@ function RegisterForm() {
     }
 
     checkExistingMerchant()
-  }, [router])
+  }, [router, searchParams])
 
   async function createBusinessAndMembership(userId: string): Promise<string | null> {
     const { data: existingMembership } = await supabase
@@ -162,6 +174,28 @@ function RegisterForm() {
         }
       }
 
+      // Track agent referral
+      const storedAgentCode = localStorage.getItem('caissepro_agent_code')
+      if (storedAgentCode && newBusinessId) {
+        const { data: agentRow } = await supabase
+          .from('agents')
+          .select('id')
+          .eq('invite_code', storedAgentCode)
+          .eq('status', 'active')
+          .maybeSingle()
+        if (agentRow) {
+          await supabase.from('agent_leads').insert({
+            agent_id: agentRow.id,
+            business_id: newBusinessId,
+            business_name: businessName,
+            email,
+            country: 'Sénégal',
+            status: 'registered',
+          })
+          localStorage.removeItem('caissepro_agent_code')
+        }
+      }
+
       router.push('/welcome')
     } catch (err: any) {
       setError(err.message || 'Erreur pendant la création du compte.')
@@ -188,6 +222,12 @@ function RegisterForm() {
         </div>
 
         <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-xl">
+          {agentCode && (
+            <div className="mb-5 flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+              <Users size={18} className="shrink-0 text-emerald-600" />
+              <p className="text-sm font-bold text-emerald-700">Vous avez été invité par un agent CaissePro</p>
+            </div>
+          )}
           {error && <div className="mb-5 rounded-2xl bg-red-50 p-4 text-sm font-bold text-red-700">{error}</div>}
           {message && <div className="mb-5 rounded-2xl bg-emerald-50 p-4 text-sm font-bold text-emerald-700">{message}</div>}
 

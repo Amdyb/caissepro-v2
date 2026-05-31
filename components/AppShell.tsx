@@ -946,6 +946,8 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
               <Link href="/legal" className="hover:text-slate-700 dark:hover:text-slate-300">Mentions legales</Link>
               <span>·</span>
               <Link href="/feedback" className="hover:text-slate-700 dark:hover:text-slate-300">Feedback</Link>
+              <span>·</span>
+              <Link href="/careers" className="hover:text-emerald-600 dark:hover:text-emerald-400">Carrieres</Link>
             </div>
           </div>
         </footer>

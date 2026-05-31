@@ -17,8 +17,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
   }
 
-  const { plan, amount, businessId, businessName, email } = body as {
-    plan: string; amount: number; businessId: string; businessName: string; email: string
+  const { plan, amount, businessId, businessName, email, country } = body as {
+    plan: string; amount: number; businessId: string; businessName: string; email: string; country?: string
   }
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://caissepro.app'
@@ -64,6 +64,7 @@ export async function POST(req: NextRequest) {
     invoice.addCustomData('business_id', businessId)
     invoice.addCustomData('business_name', businessName)
     invoice.addCustomData('email', email)
+    if (country) invoice.addCustomData('country', country)
 
     await invoice.create()
     console.log('[PayDunya] invoice created, url:', invoice.url)

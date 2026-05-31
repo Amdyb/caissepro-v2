@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import {
   ArrowRight,
+  Briefcase,
   CheckCircle2,
   LayoutGrid,
   MessageCircle,
@@ -10,6 +11,7 @@ import {
   Sparkles,
   Star,
   Store,
+  TrendingUp,
   Users,
   WifiOff,
   Zap,
@@ -370,6 +372,49 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Become an Agent */}
+      <section className="bg-slate-50 px-5 py-24">
+        <div className="mx-auto max-w-6xl">
+          <div className="grid items-center gap-12 lg:grid-cols-2">
+            <div>
+              <p className="text-sm font-black uppercase tracking-widest text-emerald-600">PROGRAMME AGENTS</p>
+              <h2 className="mt-3 text-4xl font-black leading-tight text-slate-950 md:text-5xl">
+                Devenez Agent CaissePro
+              </h2>
+              <p className="mt-5 text-lg font-semibold leading-relaxed text-slate-500">
+                Gagnez <strong className="text-slate-950">50 000 XOF par mois</strong> en recommandant CaissePro aux commerçants de votre région.
+              </p>
+              <div className="mt-8 flex flex-wrap gap-4">
+                <Link
+                  href="/agents"
+                  className="inline-flex items-center gap-2 rounded-2xl bg-emerald-600 px-6 py-3.5 font-black text-white shadow-xl shadow-emerald-600/20 hover:bg-emerald-700"
+                >
+                  Devenir Agent <ArrowRight size={18} />
+                </Link>
+              </div>
+              <p className="mt-4 text-sm font-bold text-slate-400">
+                Inscription gratuite · Disponible dans toute l'Afrique
+              </p>
+            </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+              {[
+                { icon: Briefcase, label: 'Gratuit', desc: 'Aucun frais pour rejoindre le programme', color: 'bg-emerald-50 text-emerald-700' },
+                { icon: TrendingUp, label: '50 000 XOF', desc: 'Commission mensuelle dès 20 abonnés', color: 'bg-blue-50 text-blue-700' },
+                { icon: Users, label: 'Toute l\'Afrique', desc: 'Recrutez partout sur le continent', color: 'bg-violet-50 text-violet-700' },
+              ].map(({ icon: Icon, label, desc, color }) => (
+                <div key={label} className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+                  <div className={`flex h-11 w-11 items-center justify-center rounded-2xl ${color}`}>
+                    <Icon size={20} />
+                  </div>
+                  <p className="mt-4 font-black text-slate-950">{label}</p>
+                  <p className="mt-1 text-xs font-semibold text-slate-500">{desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Final CTA */}
       <section className="mx-auto max-w-4xl px-5 pb-24 text-center">
         <div className="rounded-[2.5rem] bg-emerald-600 px-8 py-16 shadow-2xl shadow-emerald-600/20">
@@ -393,9 +438,10 @@ export default function LandingPage() {
             <span className="font-black text-slate-950">CaissePro</span>
             <span className="text-xs font-semibold text-slate-400">par Amdy Labs</span>
           </div>
-          <div className="flex gap-6 text-sm font-bold text-slate-400">
+          <div className="flex flex-wrap gap-6 text-sm font-bold text-slate-400">
             <Link href="/legal" className="hover:text-slate-700">Mentions légales</Link>
             <Link href="/help" className="hover:text-slate-700">Aide</Link>
+            <Link href="/careers" className="hover:text-emerald-700">Carrières</Link>
             <Link href="/login" className="hover:text-slate-700">Connexion</Link>
             <Link href="/register" className="hover:text-emerald-700">Inscription</Link>
           </div>

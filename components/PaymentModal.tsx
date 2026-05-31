@@ -2,7 +2,7 @@
 
 import { supabase } from '@/lib/supabaseClient'
 import { sendPaymentConfirmation } from '@/lib/whatsapp'
-import { CheckCircle2, CreditCard, Loader2, X } from 'lucide-react'
+import { CheckCircle2, ChevronDown, CreditCard, Loader2, X } from 'lucide-react'
 import { useState } from 'react'
 
 type Plan = { id: string; name: string; price: string; amount: number }
@@ -15,40 +15,63 @@ type Props = {
   onClose: () => void
 }
 
+type CountryConfig = {
+  label: string
+  methods: string[]
+  waveAvailable: boolean
+  orangeAvailable: boolean
+}
+
+const COUNTRIES: Record<string, CountryConfig> = {
+  'Sénégal':       { label: '🇸🇳 Sénégal',        methods: ['Wave', 'Orange Money', 'Free Money', 'Carte bancaire'], waveAvailable: true,  orangeAvailable: true  },
+  "Côte d'Ivoire": { label: "🇨🇮 Côte d'Ivoire",  methods: ['Orange Money', 'MTN', 'Moov', 'Carte bancaire'],       waveAvailable: false, orangeAvailable: true  },
+  'Mali':          { label: '🇲🇱 Mali',            methods: ['Orange Money', 'Moov', 'Carte bancaire'],               waveAvailable: false, orangeAvailable: true  },
+  'Burkina Faso':  { label: '🇧🇫 Burkina Faso',    methods: ['Orange Money', 'Moov', 'Carte bancaire'],               waveAvailable: false, orangeAvailable: true  },
+  'Togo':          { label: '🇹🇬 Togo',            methods: ['Flooz', 'T-Money', 'Carte bancaire'],                   waveAvailable: false, orangeAvailable: false },
+  'Bénin':         { label: '🇧🇯 Bénin',           methods: ['MTN', 'Moov', 'Carte bancaire'],                        waveAvailable: false, orangeAvailable: false },
+  'Niger':         { label: '🇳🇪 Niger',           methods: ['Orange Money', 'Carte bancaire'],                       waveAvailable: false, orangeAvailable: true  },
+  'Cameroun':      { label: '🇨🇲 Cameroun',        methods: ['Orange Money', 'MTN', 'Carte bancaire'],                waveAvailable: false, orangeAvailable: true  },
+  'Guinée':        { label: '🇬🇳 Guinée',          methods: ['Orange Money', 'Carte bancaire'],                       waveAvailable: false, orangeAvailable: true  },
+}
+
 export default function PaymentModal({ plan, businessId, businessName, userEmail, onClose }: Props) {
   const [done, setDone] = useState(false)
   const [loading, setLoading] = useState(false)
   const [onlineLoading, setOnlineLoading] = useState(false)
   const [error, setError] = useState('')
+  const [selectedCountry, setSelectedCountry] = useState('Sénégal')
+  const [showCountryPicker, setShowCountryPicker] = useState(false)
+
+  const countryConfig = COUNTRIES[selectedCountry] || COUNTRIES['Sénégal']
 
   async function payOnline() {
-    console.log('[PayDunya] payOnline clicked — businessId:', businessId, 'plan:', plan.name, 'amount:', plan.amount)
     if (!businessId) { setError('Boutique introuvable. Veuillez réessayer.'); return }
     setOnlineLoading(true)
     setError('')
 
     try {
-      console.log('[PayDunya] calling /api/paydunya/checkout...')
       const res = await fetch('/api/paydunya/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan: plan.name, amount: plan.amount, businessId, businessName, email: userEmail }),
+        body: JSON.stringify({
+          plan: plan.name,
+          amount: plan.amount,
+          businessId,
+          businessName,
+          email: userEmail,
+          country: selectedCountry,
+        }),
       })
       const data = await res.json()
-      console.log('[PayDunya] response:', res.status, data)
 
       if (!res.ok || !data.payment_url) {
-        const errMsg = data.error || "Erreur lors de l'initialisation du paiement."
-        console.error('[PayDunya] no payment_url:', errMsg)
-        setError(errMsg)
+        setError(data.error || "Erreur lors de l'initialisation du paiement.")
         setOnlineLoading(false)
         return
       }
 
-      console.log('[PayDunya] redirecting to:', data.payment_url)
       window.location.href = data.payment_url
     } catch (err) {
-      console.error('[PayDunya] fetch error:', err)
       setError('Erreur de connexion. Veuillez réessayer.')
       setOnlineLoading(false)
     }
@@ -104,6 +127,41 @@ export default function PaymentModal({ plan, businessId, businessName, userEmail
               </div>
             </div>
 
+            {/* Country selector */}
+            <div className="mb-4">
+              <label className="mb-2 block text-xs font-black uppercase tracking-wide text-slate-500">Votre pays</label>
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setShowCountryPicker(!showCountryPicker)}
+                  className="flex w-full items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3 font-bold text-slate-700 hover:bg-slate-50"
+                >
+                  <span>{countryConfig.label}</span>
+                  <ChevronDown size={16} className={`text-slate-400 transition-transform ${showCountryPicker ? 'rotate-180' : ''}`} />
+                </button>
+                {showCountryPicker && (
+                  <div className="absolute left-0 right-0 top-full z-10 mt-1 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
+                    {Object.entries(COUNTRIES).map(([key, cfg]) => (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => { setSelectedCountry(key); setShowCountryPicker(false) }}
+                        className={`flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-bold transition hover:bg-slate-50 ${selectedCountry === key ? 'bg-emerald-50 text-emerald-700' : 'text-slate-700'}`}
+                      >
+                        {cfg.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              {/* Available methods */}
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {countryConfig.methods.map((m) => (
+                  <span key={m} className="rounded-lg bg-slate-100 px-2 py-0.5 text-xs font-bold text-slate-600">{m}</span>
+                ))}
+              </div>
+            </div>
+
             {/* Online payment — PayDunya */}
             <button
               onClick={payOnline}
@@ -116,7 +174,7 @@ export default function PaymentModal({ plan, businessId, businessName, userEmail
               }
             </button>
             <p className="mb-5 text-center text-xs font-bold text-slate-400">
-              Wave, Orange Money, Carte bancaire — Activation automatique
+              {countryConfig.methods.join(', ')} — Activation automatique
             </p>
 
             {/* Divider */}
@@ -126,31 +184,53 @@ export default function PaymentModal({ plan, businessId, businessName, userEmail
               <div className="flex-1 border-t border-slate-200" />
             </div>
 
-            {/* Manual Mobile Money */}
+            {/* Manual Mobile Money — show Wave/Orange only for Senegal */}
             <p className="mb-3 text-center text-sm font-bold text-slate-500">
               Envoyez le montant au numéro de votre choix
             </p>
-            <div className="mb-5 grid grid-cols-2 gap-3">
-              <div className="rounded-2xl border-2 border-blue-200 bg-blue-50 p-4 text-center">
-                <p className="text-sm font-black text-blue-700">WAVE</p>
-                <img
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(`wave://pay?to=+221784581111&amount=${plan.amount}`)}`}
-                  alt="QR code Wave"
-                  className="mx-auto mt-3 h-36 w-36 rounded-lg"
-                />
-                <p className="mt-2 text-[10px] font-bold text-blue-600">Scanner avec Wave</p>
-                <p className="mt-1 text-sm font-black tracking-wide text-slate-950">+221 78 458 11 11</p>
-              </div>
-              <div className="rounded-2xl border-2 border-orange-200 bg-orange-50 p-4 text-center">
-                <p className="text-sm font-black text-orange-700">ORANGE MONEY</p>
-                <img
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(`orangemoney://pay?phone=+221789621111&amount=${plan.amount}`)}`}
-                  alt="QR code Orange Money"
-                  className="mx-auto mt-3 h-36 w-36 rounded-lg"
-                />
-                <p className="mt-2 text-[10px] font-bold text-orange-600">Scanner avec Orange Money</p>
-                <p className="mt-1 text-sm font-black tracking-wide text-slate-950">+221 78 962 11 11</p>
-              </div>
+            <div className={`mb-5 grid gap-3 ${countryConfig.waveAvailable && countryConfig.orangeAvailable ? 'grid-cols-2' : 'grid-cols-1'}`}>
+              {countryConfig.waveAvailable && (
+                <div className="rounded-2xl border-2 border-blue-200 bg-blue-50 p-4 text-center">
+                  <p className="text-sm font-black text-blue-700">WAVE</p>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(`wave://pay?to=+221784581111&amount=${plan.amount}`)}`}
+                    alt="QR code Wave"
+                    className="mx-auto mt-3 h-36 w-36 rounded-lg"
+                  />
+                  <p className="mt-2 text-[10px] font-bold text-blue-600">Scanner avec Wave</p>
+                  <p className="mt-1 text-sm font-black tracking-wide text-slate-950">+221 78 458 11 11</p>
+                </div>
+              )}
+              {countryConfig.orangeAvailable && (
+                <div className="rounded-2xl border-2 border-orange-200 bg-orange-50 p-4 text-center">
+                  <p className="text-sm font-black text-orange-700">ORANGE MONEY</p>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(`orangemoney://pay?phone=+221789621111&amount=${plan.amount}`)}`}
+                    alt="QR code Orange Money"
+                    className="mx-auto mt-3 h-36 w-36 rounded-lg"
+                  />
+                  <p className="mt-2 text-[10px] font-bold text-orange-600">Scanner avec Orange Money</p>
+                  <p className="mt-1 text-sm font-black tracking-wide text-slate-950">+221 78 962 11 11</p>
+                </div>
+              )}
+              {!countryConfig.waveAvailable && !countryConfig.orangeAvailable && (
+                <div className="rounded-2xl border-2 border-slate-200 bg-slate-50 p-4 text-center">
+                  <p className="text-sm font-black text-slate-600">PAIEMENT MANUEL</p>
+                  <p className="mt-3 text-sm font-semibold text-slate-500">
+                    Contactez-nous via WhatsApp pour un paiement manuel dans votre pays.
+                  </p>
+                  <a
+                    href={`https://wa.me/221784581111?text=${encodeURIComponent(`Je souhaite payer l'abonnement ${plan.name} - ${plan.price} XOF - Pays: ${selectedCountry}`)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-3 inline-block rounded-xl bg-emerald-600 px-4 py-2 text-sm font-black text-white hover:bg-emerald-700"
+                  >
+                    Contacter via WhatsApp
+                  </a>
+                </div>
+              )}
             </div>
 
             <p className="mb-4 text-center text-xs font-semibold text-slate-400">
