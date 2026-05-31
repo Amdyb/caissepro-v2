@@ -237,6 +237,19 @@ const PROFILE_SECTION: SectionConfig = {
   ],
 }
 
+const SUPER_ADMIN_SECTION: SectionConfig = {
+  key: 'super-admin',
+  title: 'SUPER ADMIN',
+  borderColor: 'border-slate-900',
+  bgColor: 'bg-slate-100 dark:bg-slate-700',
+  textColor: 'text-slate-950 dark:text-white',
+  headerColor: 'text-slate-700 dark:text-slate-300',
+  defaultOpen: false,
+  items: [
+    { label: 'Agents', href: '/super-admin/agents', icon: Users },
+  ],
+}
+
 const SECURITY_SECTION: SectionConfig = {
   key: 'securite',
   title: 'ZONE DE SECURITE',
@@ -608,11 +621,16 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
   const [ready, setReady] = useState(false)
   const [subscription, setSubscription] = useState<{ plan: string; expires_at: string | null } | null>(null)
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({})
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false)
 
   useEffect(() => {
     async function loadBranding() {
       const { data: userData } = await supabase.auth.getUser()
       if (!userData.user) { setReady(true); return }
+
+      if (userData.user.email === 'infos@dakarvapes.com') {
+        setIsSuperAdmin(true)
+      }
 
       const { data: membership } = await supabase
         .from('business_members')
@@ -698,13 +716,14 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
   const isManager = MANAGER_ROLES.includes(userRole)
   const isOwner = userRole === 'owner'
   const isEmployee = isStaff || isManager
-  const navSections = isStaff
+  const baseSections = isStaff
     ? [STAFF_SECTION, STAFF_PROFILE_SECTION]
     : isOwner
     ? getNavSections(businessType)
     : isManager
     ? getNavSections(businessType).filter(s => s.key !== 'securite')
     : getNavSections(businessType)
+  const navSections = isSuperAdmin ? [...baseSections, SUPER_ADMIN_SECTION] : baseSections
   const currentPlanLevel = PLAN_LEVELS[subscription?.plan || 'free'] ?? 0
 
   const sidebarContent = (
