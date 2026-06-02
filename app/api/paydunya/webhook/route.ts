@@ -51,16 +51,15 @@ export async function POST(req: NextRequest) {
   const expiresAt = new Date()
   expiresAt.setMonth(expiresAt.getMonth() + 2)
 
-  await supabase.from('subscriptions').upsert(
-    {
-      business_id: businessId,
-      plan,
-      status:     'active',
-      starts_at:  new Date().toISOString(),
-      expires_at: expiresAt.toISOString(),
-    },
-    { onConflict: 'business_id' }
-  )
+  await supabase.from('subscriptions').delete().eq('business_id', businessId)
+  await supabase.from('subscriptions').insert({
+    business_id: businessId,
+    plan,
+    status:     'active',
+    starts_at:  new Date().toISOString(),
+    started_at: new Date().toISOString(),
+    expires_at: expiresAt.toISOString(),
+  })
 
   // Update business plan
   await supabase.from('businesses').update({ plan }).eq('id', businessId)

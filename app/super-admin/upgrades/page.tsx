@@ -37,14 +37,18 @@ export default function SuperAdminUpgradesPage() {
     setActing(req.id)
     await supabase.from('upgrade_requests').update({ status: 'approved' }).eq('id', req.id)
     if (req.business_id) {
-      const expires = new Date()
-      expires.setMonth(expires.getMonth() + 2)
-      await supabase.from('subscriptions').upsert({
+      const now = new Date()
+      const expires = new Date(Date.now() + 2 * 30 * 24 * 60 * 60 * 1000)
+      await supabase.from('subscriptions').delete().eq('business_id', req.business_id)
+      await supabase.from('subscriptions').insert({
         business_id: req.business_id,
         plan: req.plan.toLowerCase(),
         status: 'active',
+        starts_at: now.toISOString(),
+        started_at: now.toISOString(),
         expires_at: expires.toISOString(),
-      }, { onConflict: 'business_id' })
+      })
+      await supabase.from('businesses').update({ plan: req.plan.toLowerCase() }).eq('id', req.business_id)
     }
     await fetch('/api/whatsapp/send', {
       method: 'POST',

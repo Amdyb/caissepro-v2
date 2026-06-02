@@ -94,24 +94,23 @@ export default function AdminUpgradeRequestsPage() {
     setApprovingId(request.id)
     setMessage(null)
 
-    const { error: subError } = await supabase
-      .from('subscriptions')
-      .upsert(
-        {
-          business_id: request.business_id,
-          plan: request.plan.toLowerCase(),
-          status: 'active',
-          started_at: now.toISOString(),
-          expires_at: expiresAt.toISOString(),
-        },
-        { onConflict: 'business_id' }
-      )
+    await supabase.from('subscriptions').delete().eq('business_id', request.business_id)
+    const { error: subError } = await supabase.from('subscriptions').insert({
+      business_id: request.business_id,
+      plan: request.plan.toLowerCase(),
+      status: 'active',
+      starts_at: now.toISOString(),
+      started_at: now.toISOString(),
+      expires_at: expiresAt.toISOString(),
+    })
 
     if (subError) {
       setMessage({ text: subError.message, ok: false })
       setApprovingId(null)
       return
     }
+
+    await supabase.from('businesses').update({ plan: request.plan.toLowerCase() }).eq('id', request.business_id)
 
     await supabase
       .from('upgrade_requests')

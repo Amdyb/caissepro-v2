@@ -88,12 +88,18 @@ export default function SuperAdminPage() {
     if (error) { flash(error.message); return }
 
     if (status === 'approved' && proof?.business_id) {
+      const now = new Date()
+      const expires = new Date(Date.now() + 2 * 30 * 24 * 60 * 60 * 1000)
+      await supabase.from('subscriptions').delete().eq('business_id', proof.business_id)
       await supabase.from('subscriptions').insert({
         business_id: proof.business_id,
         plan: proof.plan,
         status: 'active',
-        started_at: new Date().toISOString()
+        starts_at: now.toISOString(),
+        started_at: now.toISOString(),
+        expires_at: expires.toISOString(),
       })
+      await supabase.from('businesses').update({ plan: proof.plan }).eq('id', proof.business_id)
     }
 
     setProofs((prev) => prev.map((p) => p.id === id ? { ...p, status } : p))
