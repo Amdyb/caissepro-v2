@@ -798,7 +798,7 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
       <div className="px-4 pt-4">
         <Link
           href="/pos"
-          onClick={() => setMobileMenuOpen(false)}
+          onClick={() => { setMobileMenuOpen(false); window.dispatchEvent(new Event('play-navigation')) }}
           className="flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 py-4 text-base font-black text-white shadow-lg shadow-emerald-600/25 transition hover:bg-emerald-700 active:scale-95"
         >
           <ShoppingCart size={20} />
@@ -812,7 +812,7 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
           <p className="mb-1 px-3 text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">ACCUEIL</p>
           <Link
             href="/dashboard"
-            onClick={() => setMobileMenuOpen(false)}
+            onClick={() => { setMobileMenuOpen(false); window.dispatchEvent(new Event('play-navigation')) }}
             className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold transition-colors ${
               pathname === '/dashboard'
                 ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
@@ -864,7 +864,7 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
                         key={`${section.key}-${item.href}-${item.label}`}
                         href={isLocked ? '/upgrade' : item.href}
                         id={item.tourId}
-                        onClick={() => setMobileMenuOpen(false)}
+                        onClick={() => { setMobileMenuOpen(false); window.dispatchEvent(new Event('play-navigation')) }}
                         className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold transition-colors ${
                           active
                             ? `${section.bgColor} ${section.textColor}`
@@ -996,6 +996,7 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
               <Link
                 key={item.href}
                 href={item.href}
+                onClick={() => window.dispatchEvent(new Event('play-navigation'))}
                 className={`flex flex-col items-center justify-center gap-1 py-3 text-[10px] font-black transition-colors ${
                   active ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300'
                 }`}

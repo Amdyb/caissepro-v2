@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { useState } from 'react'
-import { supabase } from '@/lib/supabaseClient'
+import { supabasePublic } from '@/lib/supabasePublic'
 import {
   ArrowRight,
   Briefcase,
@@ -64,7 +64,7 @@ export default function AgentsPage() {
     setLoading(true)
 
     try {
-      const { error: dbError } = await supabase.from('agents').insert({
+      const { error: dbError } = await supabasePublic.from('agents').insert({
         full_name: form.full_name,
         email: form.email,
         phone: form.phone || null,
@@ -78,7 +78,7 @@ export default function AgentsPage() {
         if (dbError.code === '23505') {
           setError('Cet email est déjà enregistré. Connectez-vous à votre espace agent.')
         } else {
-          setError(dbError.message)
+          setError(`Erreur [${dbError.code}]: ${dbError.message}`)
         }
         setLoading(false)
         return

@@ -1,7 +1,6 @@
 'use client'
 
 import { supabase } from '@/lib/supabaseClient'
-import { sendPaymentConfirmation } from '@/lib/whatsapp'
 import { CheckCircle2, ChevronDown, CreditCard, Loader2, X } from 'lucide-react'
 import { useState } from 'react'
 
@@ -80,21 +79,39 @@ export default function PaymentModal({ plan, businessId, businessName, userEmail
   async function confirmManualPayment() {
     setLoading(true)
     setError('')
+
+    let requestId: string | null = null
+
     if (businessId) {
-      try {
-        await supabase.from('upgrade_requests').insert({
-          business_id: businessId,
-          business_name: businessName || 'Inconnu',
-          user_email: userEmail,
-          plan: plan.name,
-          price: `${plan.price} XOF/mois`,
-          status: 'pending',
-          whatsapp_sent: true,
-          duration_months: 2,
-        })
-      } catch { /* non-blocking */ }
+      const { data } = await supabase.from('upgrade_requests').insert({
+        business_id: businessId,
+        business_name: businessName || 'Inconnu',
+        user_email: userEmail,
+        plan: plan.name,
+        price: `${plan.price} XOF/mois`,
+        status: 'pending',
+        whatsapp_sent: false,
+      }).select('id').single()
+      requestId = data?.id ?? null
     }
-    await sendPaymentConfirmation(businessName, plan.name, plan.amount, userEmail)
+
+    const now = new Date()
+    const dateStr = now.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+
+    try {
+      await fetch('/api/whatsapp/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: '+221784581111',
+          body: `💰 NOUVEAU PAIEMENT CAISSEPRO\nBoutique: ${businessName}\nPlan: ${plan.name}\nMontant: ${plan.amount.toLocaleString('fr-FR')} XOF\nEmail: ${userEmail}\nDate: ${dateStr}`,
+        }),
+      })
+      if (requestId) {
+        await supabase.from('upgrade_requests').update({ whatsapp_sent: true }).eq('id', requestId)
+      }
+    } catch { /* non-blocking */ }
+
     setDone(true)
     setLoading(false)
   }
@@ -256,7 +273,7 @@ export default function PaymentModal({ plan, businessId, businessName, userEmail
             </div>
             <h3 className="text-xl font-black text-slate-950">Demande envoyée !</h3>
             <p className="mt-3 text-sm font-semibold leading-7 text-slate-500">
-              Votre demande est en cours de traitement. Vous serez contacté sous 24h.
+              Demande envoyée ! Vous serez contacté sous 24h via WhatsApp pour l'activation.
             </p>
             <button
               onClick={onClose}

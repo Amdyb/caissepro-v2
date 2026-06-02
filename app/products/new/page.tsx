@@ -3,10 +3,13 @@
 import AppShell from '@/components/AppShell'
 import { PLAN_LIMITS, PlanName, getNumericLimit } from '@/lib/plans'
 import { supabase } from '@/lib/supabaseClient'
-import { ArrowLeft, ImagePlus, PackagePlus, Save } from 'lucide-react'
+import { ArrowLeft, ImagePlus, PackagePlus, Save, ScanLine } from 'lucide-react'
+import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
+
+const BarcodeScanner = dynamic(() => import('@/components/BarcodeScanner'), { ssr: false })
 
 export default function NewProductPage() {
   const router = useRouter()
@@ -16,6 +19,7 @@ export default function NewProductPage() {
   const [productCount, setProductCount] = useState(0)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
+  const [showScanner, setShowScanner] = useState(false)
 
   const [form, setForm] = useState({
     name: '',
@@ -101,9 +105,11 @@ export default function NewProductPage() {
 
     if (error) {
       setMessage(error.message)
+      window.dispatchEvent(new Event('play-error'))
       return
     }
 
+    window.dispatchEvent(new Event('play-success'))
     router.push('/products')
   }
 
@@ -139,12 +145,21 @@ export default function NewProductPage() {
             </Link>
           </div>
 
+          {showScanner && (
+            <BarcodeScanner onScan={(code) => { setForm(f => ({ ...f, barcode: code })); setShowScanner(false) }} onClose={() => setShowScanner(false)} />
+          )}
+
           <form onSubmit={createProduct} className="space-y-5">
             <input required placeholder="Nom produit" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full rounded-2xl border border-slate-300 px-5 py-4 font-bold outline-none" />
 
             <div className="grid gap-5 md:grid-cols-2">
               <input placeholder="Catégorie" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="rounded-2xl border border-slate-300 px-5 py-4 font-bold outline-none" />
-              <input placeholder="Code-barres" value={form.barcode} onChange={(e) => setForm({ ...form, barcode: e.target.value })} className="rounded-2xl border border-slate-300 px-5 py-4 font-bold outline-none" />
+              <div className="flex gap-2">
+                <input placeholder="Code-barres" value={form.barcode} onChange={(e) => setForm({ ...form, barcode: e.target.value })} className="flex-1 rounded-2xl border border-slate-300 px-5 py-4 font-bold outline-none" />
+                <button type="button" onClick={() => setShowScanner(true)} className="flex items-center gap-1 rounded-2xl border border-slate-200 bg-slate-50 px-4 font-black text-slate-600 hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-700" title="Scanner un code-barres">
+                  <ScanLine size={18} />
+                </button>
+              </div>
             </div>
 
             <div className="grid gap-5 md:grid-cols-3">

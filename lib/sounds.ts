@@ -23,9 +23,11 @@ export function resumeContext(): void {
   }
 }
 
-function isEnabled(): boolean {
+function isEnabled(key?: string): boolean {
   try {
-    return localStorage.getItem('caissepro-sounds-enabled') !== '0'
+    if (localStorage.getItem('caissepro-sounds-enabled') === '0') return false
+    if (key) return localStorage.getItem(key) !== '0'
+    return true
   } catch {
     return true
   }
@@ -46,8 +48,9 @@ function play(fn: (ac: AudioContext) => void): void {
   }
 }
 
-// Cash register cha-ching: ascending C6 -> E6 -> G6
+// Cash register cha-ching: ascending C6 → E6 → G6
 export function playSale(): void {
+  if (!isEnabled('caissepro-sounds-sale')) return
   play((ac) => {
     const now = ac.currentTime
     const notes: [number, number][] = [
@@ -70,42 +73,43 @@ export function playSale(): void {
   })
 }
 
-// Descending sawtooth buzz
+// Short buzz: sawtooth 200hz 150ms
 export function playError(): void {
   play((ac) => {
     const now = ac.currentTime
     const osc = ac.createOscillator()
     const gain = ac.createGain()
     osc.type = 'sawtooth'
-    osc.frequency.setValueAtTime(220, now)
-    osc.frequency.exponentialRampToValueAtTime(80, now + 0.3)
-    gain.gain.setValueAtTime(0.3, now)
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3)
+    osc.frequency.setValueAtTime(200, now)
+    osc.frequency.exponentialRampToValueAtTime(100, now + 0.15)
+    gain.gain.setValueAtTime(0.22, now)
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15)
     osc.connect(gain)
     gain.connect(ac.destination)
     osc.start(now)
-    osc.stop(now + 0.3)
+    osc.stop(now + 0.15)
   })
 }
 
-// Short sine tap
+// Subtle soft tick: sine 800hz 50ms
 export function playClick(): void {
+  if (!isEnabled('caissepro-sounds-nav')) return
   play((ac) => {
     const now = ac.currentTime
     const osc = ac.createOscillator()
     const gain = ac.createGain()
     osc.type = 'sine'
-    osc.frequency.value = 1200
-    gain.gain.setValueAtTime(0.12, now)
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.03)
+    osc.frequency.value = 800
+    gain.gain.setValueAtTime(0.08, now)
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05)
     osc.connect(gain)
     gain.connect(ac.destination)
     osc.start(now)
-    osc.stop(now + 0.03)
+    osc.stop(now + 0.05)
   })
 }
 
-// Ascending chime: C5 -> E5 -> G5 -> C6
+// Pleasant chime: C5 → E5 → G5 ascending
 export function playSuccess(): void {
   play((ac) => {
     const now = ac.currentTime
@@ -113,19 +117,37 @@ export function playSuccess(): void {
       [523, 0],
       [659, 0.12],
       [784, 0.24],
-      [1047, 0.36],
     ]
     notes.forEach(([freq, delay]) => {
       const osc = ac.createOscillator()
       const gain = ac.createGain()
       osc.type = 'sine'
       osc.frequency.value = freq
-      gain.gain.setValueAtTime(0.2, now + delay)
+      gain.gain.setValueAtTime(0.18, now + delay)
       gain.gain.exponentialRampToValueAtTime(0.001, now + delay + 0.28)
       osc.connect(gain)
       gain.connect(ac.destination)
       osc.start(now + delay)
       osc.stop(now + delay + 0.28)
     })
+  })
+}
+
+// Very subtle whoosh: sine sweep 400 → 600hz 80ms
+export function playNavigation(): void {
+  if (!isEnabled('caissepro-sounds-nav')) return
+  play((ac) => {
+    const now = ac.currentTime
+    const osc = ac.createOscillator()
+    const gain = ac.createGain()
+    osc.type = 'sine'
+    osc.frequency.setValueAtTime(400, now)
+    osc.frequency.linearRampToValueAtTime(600, now + 0.08)
+    gain.gain.setValueAtTime(0.06, now)
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08)
+    osc.connect(gain)
+    gain.connect(ac.destination)
+    osc.start(now)
+    osc.stop(now + 0.08)
   })
 }

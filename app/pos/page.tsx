@@ -4,8 +4,9 @@ import AppShell from '@/components/AppShell'
 import dynamic from 'next/dynamic'
 
 const POSCheckoutDrawer = dynamic(() => import('@/components/POSCheckoutDrawer'), { ssr: false })
+const BarcodeScanner = dynamic(() => import('@/components/BarcodeScanner'), { ssr: false })
 import { supabase } from '@/lib/supabaseClient'
-import { ImageIcon, Lock, ReceiptText, ShoppingCart, Trash2, X, Zap } from 'lucide-react'
+import { ImageIcon, Lock, ReceiptText, ScanLine, ShoppingCart, Trash2, X, Zap } from 'lucide-react'
 function dispatch(event: string) { window.dispatchEvent(new Event(event)) }
 import { savePendingSale } from '@/lib/offlineStore'
 import { formatPhone, sendReceipt } from '@/lib/whatsapp'
@@ -49,6 +50,7 @@ export default function POSPage() {
   const [newCustomer, setNewCustomer] = useState({ full_name: '', phone: '' })
   const [plan, setPlan] = useState('free')
   const [showPlanLimit, setShowPlanLimit] = useState(false)
+  const [showScanner, setShowScanner] = useState(false)
 
   const filteredProducts = useMemo(() => {
     const q = search.toLowerCase().trim()
@@ -96,6 +98,7 @@ export default function POSPage() {
   }, [])
 
   function addToCart(product: Product) {
+    dispatch('play-click')
     setCart((prev: any[]) => {
       const existing = prev.find((i) => i.product.id === product.id)
       if (existing) {
@@ -111,7 +114,19 @@ export default function POSPage() {
   }
 
   function removeItem(productId: string) {
+    dispatch('play-click')
     setCart((prev: any[]) => prev.filter((i) => i.product.id !== productId))
+  }
+
+  function handleBarcodeScan(barcode: string) {
+    const found = products.find(p => p.barcode === barcode)
+    if (found) {
+      addToCart(found)
+      flash(`✓ ${found.name} ajouté au panier`)
+    } else {
+      setSearch(barcode)
+      flash(`Produit "${barcode}" introuvable — recherche manuelle activée`)
+    }
   }
 
   async function addCustomer() {
@@ -348,11 +363,22 @@ export default function POSPage() {
           </div>
         )}
 
+        {showScanner && (
+          <BarcodeScanner onScan={handleBarcodeScan} onClose={() => setShowScanner(false)} />
+        )}
+
         <div className="mb-5 flex gap-3 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800">
           <div className="relative flex-1">
             <Zap className="absolute left-4 top-3.5 text-emerald-600" size={20} />
             <input ref={barcodeInputRef} className="w-full rounded-2xl border border-slate-300 bg-white py-3 pl-12 pr-4 font-black text-slate-950 outline-none dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder:text-slate-400" placeholder="Rechercher produit..." value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
+          <button
+            onClick={() => setShowScanner(true)}
+            className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 font-black text-slate-700 transition hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-700 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300"
+            title="Scanner un code-barres"
+          >
+            <ScanLine size={20} />
+          </button>
         </div>
 
         <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">

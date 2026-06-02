@@ -45,6 +45,12 @@ const nextConfig = {
           { key: 'Cache-Control', value: 'no-cache' },
         ],
       },
+      {
+        source: '/(.*)',
+        headers: [
+          { key: 'Permissions-Policy', value: 'camera=*' },
+        ],
+      },
     ]
   },
 }

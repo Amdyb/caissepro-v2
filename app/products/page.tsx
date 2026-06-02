@@ -2,11 +2,14 @@
 
 import ProductBulkImporter from '@/components/ProductBulkImporter'
 import AppShell from '@/components/AppShell'
+import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Edit, Eye, FileSpreadsheet, PackagePlus, Plus, RefreshCw, Search, ShoppingBag, Trash2, Upload, X } from 'lucide-react'
+import { Edit, Eye, FileSpreadsheet, PackagePlus, Plus, RefreshCw, ScanLine, Search, ShoppingBag, Trash2, Upload, X } from 'lucide-react'
 import { supabase } from '@/lib/supabaseClient'
+
+const BarcodeScanner = dynamic(() => import('@/components/BarcodeScanner'), { ssr: false })
 
 type Product = {
   id: string
@@ -42,6 +45,7 @@ export default function ProductsPage() {
   const [restockProduct, setRestockProduct] = useState<Product | null>(null)
   const [restockQty, setRestockQty] = useState('')
   const [restockSaving, setRestockSaving] = useState(false)
+  const [showScanner, setShowScanner] = useState(false)
 
   const filteredProducts = useMemo(() => {
     const q = search.toLowerCase().trim()
@@ -107,10 +111,12 @@ export default function ProductsPage() {
       .eq('id', id)
 
     if (error) {
+      window.dispatchEvent(new Event('play-error'))
       alert(error.message)
       return
     }
 
+    window.dispatchEvent(new Event('play-error'))
     setProducts((prev) =>
       prev.map((p) =>
         p.id === id
@@ -243,8 +249,12 @@ export default function ProductsPage() {
           </div>
         )}
 
-        <div className="mb-6 flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-          <div className="relative w-full">
+        {showScanner && (
+          <BarcodeScanner onScan={(code) => { setSearch(code); setShowScanner(false) }} onClose={() => setShowScanner(false)} />
+        )}
+
+        <div className="mb-6 flex gap-3">
+          <div className="relative flex-1">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
             <input
               className="w-full rounded-2xl border border-slate-200 bg-white py-4 pl-12 pr-4 text-sm font-semibold text-slate-800 shadow-sm outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:placeholder:text-slate-500"
@@ -253,6 +263,13 @@ export default function ProductsPage() {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
+          <button
+            onClick={() => setShowScanner(true)}
+            className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 font-black text-slate-600 shadow-sm hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+            title="Scanner un code-barres"
+          >
+            <ScanLine size={20} />
+          </button>
         </div>
 
         {filteredProducts.length === 0 ? (

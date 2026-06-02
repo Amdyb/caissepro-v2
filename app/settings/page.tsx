@@ -75,19 +75,24 @@ export default function SettingsPage() {
   const [message, setMessage] = useState('')
   const [themePref, setThemePrefState] = useState<'auto' | 'light' | 'dark'>('auto')
   const [soundsEnabled, setSoundsEnabled] = useState(false)
+  const [soundNav, setSoundNav] = useState(true)
+  const [soundSale, setSoundSale] = useState(true)
 
   useEffect(() => {
     setThemePrefState((getThemePreference() as 'auto' | 'light' | 'dark') || 'auto')
     setSoundsEnabled(localStorage.getItem('caissepro-sounds-enabled') !== '0')
+    setSoundNav(localStorage.getItem('caissepro-sounds-nav') !== '0')
+    setSoundSale(localStorage.getItem('caissepro-sounds-sale') !== '0')
   }, [])
 
   function toggleSounds(on: boolean) {
     setSoundsEnabled(on)
-    if (on) {
-      localStorage.removeItem('caissepro-sounds-enabled')
-    } else {
-      localStorage.setItem('caissepro-sounds-enabled', '0')
-    }
+    localStorage.setItem('caissepro-sounds-enabled', on ? '1' : '0')
+  }
+
+  function toggleSubSound(key: string, setter: (v: boolean) => void, on: boolean) {
+    setter(on)
+    localStorage.setItem(key, on ? '1' : '0')
   }
 
   const [form, setForm] = useState({
@@ -277,12 +282,12 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        {/* Sound toggle */}
+        {/* Sound settings */}
         <div className="mb-8 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-xl font-black text-slate-950 dark:text-white">Sons de l'interface</h2>
-              <p className="mt-1 text-sm font-semibold text-slate-500 dark:text-slate-400">Sons lors des ventes, confirmations et erreurs</p>
+              <h2 className="text-xl font-black text-slate-950 dark:text-white">Sons de l'application</h2>
+              <p className="mt-1 text-sm font-semibold text-slate-500 dark:text-slate-400">Sons lors des ventes, navigation et interactions</p>
             </div>
             <button
               onClick={() => toggleSounds(!soundsEnabled)}
@@ -291,10 +296,31 @@ export default function SettingsPage() {
               <span className={`inline-block h-6 w-6 rounded-full bg-white shadow transition-transform ${soundsEnabled ? 'translate-x-7' : 'translate-x-1'}`} />
             </button>
           </div>
-          <div className="mt-4 flex items-center gap-2 text-sm font-bold text-slate-500 dark:text-slate-400">
+          <div className="mt-2 flex items-center gap-2 text-sm font-bold text-slate-500 dark:text-slate-400">
             {soundsEnabled ? <Volume2 size={16} className="text-emerald-600" /> : <VolumeX size={16} />}
             <span>{soundsEnabled ? 'Sons activés' : 'Sons désactivés'}</span>
           </div>
+          {soundsEnabled && (
+            <div className="mt-5 space-y-3 border-t border-slate-100 pt-5 dark:border-slate-700">
+              {[
+                { label: 'Sons de navigation', desc: 'Clic discret lors des changements de page', key: 'caissepro-sounds-nav', value: soundNav, setter: setSoundNav },
+                { label: 'Son de caisse (cha-ching)', desc: 'Son à chaque vente confirmée', key: 'caissepro-sounds-sale', value: soundSale, setter: setSoundSale },
+              ].map(({ label, desc, key, value, setter }) => (
+                <div key={key} className="flex items-center justify-between gap-4">
+                  <div>
+                    <p className="text-sm font-black text-slate-800 dark:text-slate-200">{label}</p>
+                    <p className="text-xs font-semibold text-slate-400">{desc}</p>
+                  </div>
+                  <button
+                    onClick={() => toggleSubSound(key, setter, !value)}
+                    className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors ${value ? 'bg-emerald-500' : 'bg-slate-200 dark:bg-slate-600'}`}
+                  >
+                    <span className={`inline-block h-5 w-5 rounded-full bg-white shadow transition-transform ${value ? 'translate-x-6' : 'translate-x-1'}`} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="grid gap-8 lg:grid-cols-[.9fr_1.1fr]">
