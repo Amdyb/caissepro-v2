@@ -3,6 +3,7 @@
 import AppShell from '@/components/AppShell'
 import { getBusinessTemplate } from '@/lib/businessTemplates'
 import { getDashboardCards } from '@/lib/dashboardCards'
+import { SkeletonDashboard } from '@/components/Skeleton'
 import { supabase } from '@/lib/supabaseClient'
 import {
   ArrowRight,
@@ -34,6 +35,23 @@ import {
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
+
+const CACHE_KEY = 'caissepro_dashboard_cache'
+const CACHE_TTL = 5 * 60 * 1000 // 5 minutes
+
+function readCache() {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY)
+    if (!raw) return null
+    const { data, ts } = JSON.parse(raw)
+    if (Date.now() - ts > CACHE_TTL) return null
+    return data
+  } catch { return null }
+}
+
+function writeCache(data: any) {
+  try { localStorage.setItem(CACHE_KEY, JSON.stringify({ data, ts: Date.now() })) } catch {}
+}
 
 type Product = { id: string; name: string; stock: number | null }
 
@@ -111,7 +129,34 @@ export default function DashboardPage() {
   const [pinnedSlugs, setPinnedSlugs] = useState<string[]>([])
 
   useEffect(() => {
+    // Prefetch frequently-visited pages
+    const prefetchLinks = ['/pos', '/products', '/sales']
+    prefetchLinks.forEach((href) => {
+      const link = document.createElement('link')
+      link.rel = 'prefetch'
+      link.href = href
+      document.head.appendChild(link)
+    })
+  }, [])
+
+  useEffect(() => {
     async function init() {
+      // Load from cache first for instant render
+      const cached = readCache()
+      if (cached) {
+        setBusinessType(cached.businessType || 'retail')
+        setBusiness(cached.business)
+        setPlan(cached.plan || 'free')
+        setExpiresAt(cached.expiresAt || null)
+        setTodayTotal(cached.todayTotal || 0)
+        setWeekTotal(cached.weekTotal || 0)
+        setTotalDebt(cached.totalDebt || 0)
+        setLowStockCount(cached.lowStockCount || 0)
+        setReferralCount(cached.referralCount || 0)
+        setRewardCount(cached.rewardCount || 0)
+        setLoading(false)
+      }
+
       const { data: userData } = await supabase.auth.getUser()
 
       if (!userData.user) {
@@ -246,9 +291,25 @@ export default function DashboardPage() {
       setTotalDebt(debtAmount)
       setLowStockCount(lowStock.length)
 
-      setPlan(subscriptionResult.data?.plan || 'free')
-      setExpiresAt(subscriptionResult.data?.expires_at || null)
+      const planVal = subscriptionResult.data?.plan || 'free'
+      const expiresVal = subscriptionResult.data?.expires_at || null
+      setPlan(planVal)
+      setExpiresAt(expiresVal)
       setProducts((productsResult.data || []) as Product[])
+
+      // Write fresh data to cache
+      writeCache({
+        businessType: (businessData as any)?.business_type || 'retail',
+        business: (businessData as BusinessInfo | null) || { id: businessId },
+        plan: planVal,
+        expiresAt: expiresVal,
+        todayTotal: todayAmount,
+        weekTotal: weekAmount,
+        totalDebt: debtAmount,
+        lowStockCount: lowStock.length,
+        referralCount: refs.length,
+        rewardCount: refs.filter((r: any) => r.reward_granted).length,
+      })
 
       setLoading(false)
     }
@@ -287,9 +348,9 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-slate-50">
-        <p className="font-bold text-slate-700">Chargement dashboard...</p>
-      </main>
+      <AppShell title="Tableau de bord">
+        <SkeletonDashboard />
+      </AppShell>
     )
   }
 

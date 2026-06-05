@@ -126,6 +126,20 @@ export default function SuperAdminAgentsPage() {
     await supabase.from('agents').update({ status, updated_at: new Date().toISOString() }).eq('id', agentId)
     setAgents((prev) => prev.map((a) => a.id === agentId ? { ...a, status } : a))
     flash(status === 'active' ? 'Agent approuvé.' : status === 'suspended' ? 'Agent suspendu.' : 'Statut mis à jour.')
+
+    if (status === 'active') {
+      const agent = agents.find((a) => a.id === agentId)
+      if (agent?.phone) {
+        await fetch('/api/whatsapp/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            to: agent.phone,
+            body: `Félicitations ${agent.full_name} ! Votre compte agent CaissePro a été approuvé. Votre code de parrainage : ${agent.invite_code || 'en cours d\'attribution'}. Commencez à recruter des commerçants et gagnez 50 000 XOF/mois !`,
+          }),
+        }).catch(() => null)
+      }
+    }
   }
 
   async function markCommissionPaid(commId: string) {
@@ -180,11 +194,14 @@ export default function SuperAdminAgentsPage() {
   }
 
   const filtered = useMemo(() => {
-    return agents.filter((a) => {
-      const matchSearch = !search || [a.full_name, a.email, a.city, a.country].some((v) => v?.toLowerCase().includes(search.toLowerCase()))
-      const matchStatus = statusFilter === 'all' || a.status === statusFilter
-      return matchSearch && matchStatus
-    })
+    const STATUS_ORDER: Record<string, number> = { pending: 0, active: 1, suspended: 2 }
+    return agents
+      .filter((a) => {
+        const matchSearch = !search || [a.full_name, a.email, a.city, a.country].some((v) => v?.toLowerCase().includes(search.toLowerCase()))
+        const matchStatus = statusFilter === 'all' || a.status === statusFilter
+        return matchSearch && matchStatus
+      })
+      .sort((a, b) => (STATUS_ORDER[a.status] ?? 9) - (STATUS_ORDER[b.status] ?? 9))
   }, [agents, search, statusFilter])
 
   const stats = useMemo(() => ({
