@@ -53,10 +53,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, method: contentSid ? 'template' : 'twilio', sid: msg.sid })
     } catch (err: any) {
       console.error(`[Twilio] error sending to ${phone}:`, err?.message || err)
-      return NextResponse.json(
-        { success: false, method: 'twilio_error', error: err?.message || 'Twilio error' },
-        { status: 502 }
-      )
+      // Always return 200 so callers never crash — Twilio failures are non-blocking
+      return NextResponse.json({ success: false, method: 'twilio_error', error: err?.message || 'Twilio error' })
     }
   }
 

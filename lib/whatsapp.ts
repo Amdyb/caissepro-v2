@@ -60,28 +60,21 @@ interface SendOptions {
   variables?: Record<string, string>
 }
 
-async function send(to: string, opts: SendOptions): Promise<void> {
+async function send(to: string, opts: SendOptions & { silent?: boolean }): Promise<void> {
   const phone = formatPhone(to)
-  console.log('[WhatsApp] send() called — to:', phone, '| template:', opts.template || 'none')
   try {
     const res = await fetch('/api/whatsapp/send', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ to: phone, body: opts.body, template: opts.template, variables: opts.variables }),
     })
-    const data = await res.json()
-    console.log('[WhatsApp] send() response:', data)
-    if (data.method === 'fallback' && data.url && typeof window !== 'undefined') {
-      console.log('[WhatsApp] opening wa.me fallback:', data.url)
+    const data = await res.json().catch(() => ({}))
+    // Only open wa.me fallback for user-facing sends (receipts), not silent admin notifications
+    if (!opts.silent && data.method === 'fallback' && data.url && typeof window !== 'undefined') {
       window.open(data.url, '_blank')
     }
-  } catch (err) {
-    console.error('[WhatsApp] send() error:', err)
-    if (typeof window !== 'undefined') {
-      const fallbackUrl = `https://wa.me/${phone.replace('+', '')}?text=${encodeURIComponent(opts.body)}`
-      console.log('[WhatsApp] catch fallback wa.me:', fallbackUrl)
-      window.open(fallbackUrl, '_blank')
-    }
+  } catch {
+    // WhatsApp failure is always non-blocking — app continues normally
   }
 }
 
@@ -146,6 +139,7 @@ export async function sendPaymentConfirmation(
 
   await send(adminPhone, {
     body,
+    silent: true,
     template: 'payment',
     variables: {
       '1': businessName,
@@ -180,6 +174,7 @@ export async function sendSubscriptionReminder(
 
   await send(phone, {
     body,
+    silent: true,
     template: 'reminder',
     variables: {
       '1': merchantName,
