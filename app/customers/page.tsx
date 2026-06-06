@@ -6,6 +6,8 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Eye, Phone, Plus, Search, Users } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
+import { useBusinessData } from '@/lib/hooks/useBusinessData'
+import { useCustomers } from '@/lib/hooks/useCustomers'
 
 type Customer = {
   id: string
@@ -23,50 +25,21 @@ function cfa(v: number) {
 
 export default function CustomersPage() {
   const router = useRouter()
-  const [businessId, setBusinessId] = useState<string | null>(null)
-  const [customers, setCustomers] = useState<Customer[]>([])
-  const [loading, setLoading] = useState(true)
+  const { businessId, loading: bdLoading } = useBusinessData()
+  const { customers, loading: customersLoading, mutate } = useCustomers(businessId)
+
+  const loading = bdLoading || customersLoading
+
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
   const [search, setSearch] = useState('')
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
 
+  // Redirect to login if no business found
   useEffect(() => {
-    async function init() {
-      const { data: userData } = await supabase.auth.getUser()
-      if (!userData.user) { router.push('/login'); return }
-
-      const { data: membership } = await supabase
-        .from('business_members')
-        .select('business_id')
-        .eq('user_id', userData.user.id)
-        .limit(1)
-        .maybeSingle()
-
-      if (!membership) {
-        setMessage('Aucune boutique trouvee.')
-        setLoading(false)
-        return
-      }
-
-      setBusinessId(membership.business_id)
-      await loadCustomers(membership.business_id)
-      setLoading(false)
-    }
-    init()
-  }, [router])
-
-  async function loadCustomers(id: string) {
-    const { data, error } = await supabase
-      .from('customers')
-      .select('*')
-      .eq('business_id', id)
-      .order('created_at', { ascending: false })
-
-    if (error) { setMessage(error.message); return }
-    setCustomers((data || []) as Customer[])
-  }
+    if (!bdLoading && !businessId) router.push('/login')
+  }, [bdLoading, businessId, router])
 
   async function addCustomer(e: React.FormEvent) {
     e.preventDefault()
@@ -86,7 +59,7 @@ export default function CustomersPage() {
     } else {
       setName('')
       setPhone('')
-      await loadCustomers(businessId)
+      await mutate()
       setMessage('Client ajoute avec succes.')
     }
     setSaving(false)

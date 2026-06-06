@@ -6,6 +6,8 @@ import dynamic from 'next/dynamic'
 const POSCheckoutDrawer = dynamic(() => import('@/components/POSCheckoutDrawer'), { ssr: false })
 const BarcodeScanner = dynamic(() => import('@/components/BarcodeScanner'), { ssr: false })
 import { supabase } from '@/lib/supabaseClient'
+import { useBusinessData } from '@/lib/hooks/useBusinessData'
+import useSWR from 'swr'
 import { ImageIcon, Lock, ReceiptText, ScanLine, ShoppingCart, Trash2, X, Zap } from 'lucide-react'
 function dispatch(event: string) { window.dispatchEvent(new Event(event)) }
 import { savePendingSale } from '@/lib/offlineStore'
@@ -27,10 +29,25 @@ type Product = {
 
 export default function POSPage() {
   const barcodeInputRef = useRef<HTMLInputElement | null>(null)
-  const [businessId, setBusinessId] = useState<string | null>(null)
-  const [businessName, setBusinessName] = useState('CaissePro')
-  const [businessPhone, setBusinessPhone] = useState<string | null>(null)
-  const [products, setProducts] = useState<Product[]>([])
+  const { businessId, businessName, businessPhone, plan } = useBusinessData()
+
+  // SWR for POS products — cached for instant repeat loads
+  const { data: posProductsData } = useSWR(
+    businessId ? `pos-products-${businessId}` : null,
+    async () => {
+      const { data } = await supabase
+        .from('products')
+        .select('id, business_id, name, category, barcode, sell_price, minimum_price, stock, image')
+        .eq('business_id', businessId!)
+        .not('is_active', 'is', false)
+        .not('archived', 'is', true)
+        .is('deleted_at', null)
+      return (data || []) as Product[]
+    },
+    { revalidateOnFocus: false, dedupingInterval: 60000 }
+  )
+  const products = posProductsData || []
+
   const [customers, setCustomers] = useState<any[]>([])
   const [cart, setCart] = useState<any[]>([])
   const [search, setSearch] = useState('')
@@ -48,9 +65,18 @@ export default function POSPage() {
   const [lastSaleId, setLastSaleId] = useState<string | null>(null)
   const [confirmedTotal, setConfirmedTotal] = useState(0)
   const [newCustomer, setNewCustomer] = useState({ full_name: '', phone: '' })
-  const [plan, setPlan] = useState('free')
   const [showPlanLimit, setShowPlanLimit] = useState(false)
   const [showScanner, setShowScanner] = useState(false)
+
+  // Fetch customers when businessId is known
+  useEffect(() => {
+    if (!businessId) return
+    supabase
+      .from('customers')
+      .select('id, full_name, phone')
+      .eq('business_id', businessId)
+      .then(({ data }) => setCustomers(data || []))
+  }, [businessId])
 
   const filteredProducts = useMemo(() => {
     const q = search.toLowerCase().trim()
@@ -64,38 +90,6 @@ export default function POSPage() {
 
   const total = cart.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 0)), 0)
   const totalItems = cart.reduce((sum, item) => sum + (item.quantity || 0), 0)
-
-  useEffect(() => {
-    async function init() {
-      const { data: userData } = await supabase.auth.getUser()
-      if (!userData.user) return
-
-      const { data: membership } = await supabase
-        .from('business_members')
-        .select('business_id, businesses(name, phone)')
-        .eq('user_id', userData.user.id)
-        .limit(1)
-        .maybeSingle()
-
-      if (!membership?.business_id) return
-
-      const member: any = membership
-      setBusinessId(member.business_id)
-      setBusinessName(member?.businesses?.name || 'CaissePro')
-      setBusinessPhone(member?.businesses?.phone || null)
-
-      const { data: productData } = await supabase.from('products').select('*').eq('business_id', member.business_id).not('is_active', 'is', false).not('archived', 'is', true).is('deleted_at', null)
-      const { data: customerData } = await supabase.from('customers').select('id,full_name,phone').eq('business_id', member.business_id)
-
-      const { data: subData } = await supabase.from('subscriptions').select('plan').eq('business_id', member.business_id).eq('status', 'active').order('created_at', { ascending: false }).limit(1).maybeSingle()
-      setPlan(subData?.plan || 'free')
-
-      setProducts((productData || []) as Product[])
-      setCustomers(customerData || [])
-    }
-
-    init()
-  }, [])
 
   function addToCart(product: Product) {
     dispatch('play-click')

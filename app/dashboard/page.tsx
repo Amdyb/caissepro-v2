@@ -5,6 +5,7 @@ import { getBusinessTemplate } from '@/lib/businessTemplates'
 import { getDashboardCards } from '@/lib/dashboardCards'
 import { SkeletonDashboard } from '@/components/Skeleton'
 import { supabase } from '@/lib/supabaseClient'
+import { useBusinessData } from '@/lib/hooks/useBusinessData'
 import {
   ArrowRight,
   Bell,
@@ -109,20 +110,30 @@ function getWeekStart() {
 export default function DashboardPage() {
   const router = useRouter()
   const [products, setProducts] = useState<Product[]>([])
-  const [plan, setPlan] = useState('free')
-  const [expiresAt, setExpiresAt] = useState<string | null>(null)
-  const [businessType, setBusinessType] = useState('retail')
-  const [business, setBusiness] = useState<BusinessInfo | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [statsLoading, setStatsLoading] = useState(true)
   const [message, setMessage] = useState('')
   const [todayTotal, setTodayTotal] = useState(0)
   const [weekTotal, setWeekTotal] = useState(0)
   const [totalDebt, setTotalDebt] = useState(0)
   const [lowStockCount, setLowStockCount] = useState(0)
-  const [userId, setUserId] = useState<string | null>(null)
   const [referralCount, setReferralCount] = useState(0)
   const [rewardCount, setRewardCount] = useState(0)
   const [copyDone, setCopyDone] = useState(false)
+
+  const {
+    userId,
+    businessId,
+    businessType,
+    business,
+    plan,
+    expiresAt,
+    isActive,
+    onboardingCompleted,
+    role,
+    loading: bdLoading,
+  } = useBusinessData()
+
+  const loading = bdLoading || statsLoading
 
   // Raccourcis state
   const [shortcutSearch, setShortcutSearch] = useState('')
@@ -139,81 +150,39 @@ export default function DashboardPage() {
     })
   }, [])
 
+  // Handle redirects once business data loads
   useEffect(() => {
-    async function init() {
-      // Load from cache first for instant render
-      const cached = readCache()
-      if (cached) {
-        setBusinessType(cached.businessType || 'retail')
-        setBusiness(cached.business)
-        setPlan(cached.plan || 'free')
-        setExpiresAt(cached.expiresAt || null)
-        setTodayTotal(cached.todayTotal || 0)
-        setWeekTotal(cached.weekTotal || 0)
-        setTotalDebt(cached.totalDebt || 0)
-        setLowStockCount(cached.lowStockCount || 0)
-        setReferralCount(cached.referralCount || 0)
-        setRewardCount(cached.rewardCount || 0)
-        setLoading(false)
-      }
+    if (bdLoading) return
+    if (!businessId) { router.push('/login'); return }
+    if (!isActive) {
+      supabase.auth.signOut().then(() => router.push('/login?error=deactivated'))
+      return
+    }
+    const STAFF_ROLES_CHECK = ['sales', 'staff', 'cashier', 'employee']
+    if (!onboardingCompleted && !STAFF_ROLES_CHECK.includes(role)) {
+      router.push('/onboarding')
+    }
+  }, [bdLoading, businessId, isActive, onboardingCompleted, role, router])
 
-      const { data: userData } = await supabase.auth.getUser()
+  // Fetch stats once businessId is known
+  useEffect(() => {
+    if (!businessId || bdLoading) return
 
-      if (!userData.user) {
-        router.push('/login')
-        return
-      }
+    // Load from cache first for instant render
+    const cached = readCache()
+    if (cached) {
+      setTodayTotal(cached.todayTotal || 0)
+      setWeekTotal(cached.weekTotal || 0)
+      setTotalDebt(cached.totalDebt || 0)
+      setLowStockCount(cached.lowStockCount || 0)
+      setReferralCount(cached.referralCount || 0)
+      setRewardCount(cached.rewardCount || 0)
+      setStatsLoading(false)
+    }
 
-      setUserId(userData.user.id)
-
-      // Step 1: get memberships without nested join to avoid RLS recursion
-      const { data: memberships, error } = await supabase
-        .from('business_members')
-        .select('business_id, role, is_active')
-        .eq('user_id', userData.user.id)
-
-      if (error || !memberships || memberships.length === 0) {
-        router.push('/onboarding')
-        return
-      }
-
-      const sorted = (memberships as any[]).sort((a, b) => {
-        const p: Record<string, number> = { owner: 0, admin: 1 }
-        return (p[a.role] ?? 2) - (p[b.role] ?? 2)
-      })
-
-      const member: any = sorted[0]
-
-      // Block deactivated accounts immediately
-      if (member.is_active === false) {
-        await supabase.auth.signOut()
-        router.push('/login?error=deactivated')
-        return
-      }
-
-      const businessId = member.business_id
-      const memberRole: string = member.role || 'staff'
-
-      // Step 2: get business info separately
-      const { data: businessData } = await supabase
-        .from('businesses')
-        .select('*')
-        .eq('id', businessId)
-        .maybeSingle()
-
-      // Staff (sales/cashier/employee/staff) go straight to dashboard — no onboarding needed
-      const STAFF_ROLES_CHECK = ['sales', 'staff', 'cashier', 'employee']
-      if (!STAFF_ROLES_CHECK.includes(memberRole) && !businessData?.onboarding_completed) {
-        router.push('/onboarding')
-        return
-      }
-
-      setBusinessType((businessData as any)?.business_type || 'retail')
-      setBusiness((businessData as BusinessInfo | null) || { id: businessId })
-
+    async function fetchStats() {
       const today = new Date()
       today.setHours(0, 0, 0, 0)
-
       const weekStart = getWeekStart()
 
       const [
@@ -221,8 +190,7 @@ export default function DashboardPage() {
         weekSalesResult,
         productsResult,
         debtsResult,
-        subscriptionResult,
-        referralsResult
+        referralsResult,
       ] = await Promise.all([
         supabase
           .from('sales')
@@ -238,7 +206,7 @@ export default function DashboardPage() {
 
         supabase
           .from('products')
-          .select('id,name,stock')
+          .select('id, name, stock')
           .eq('business_id', businessId)
           .not('archived', 'is', true)
           .not('is_active', 'is', false),
@@ -249,60 +217,34 @@ export default function DashboardPage() {
           .eq('business_id', businessId),
 
         supabase
-          .from('subscriptions')
-          .select('plan,status,expires_at')
-          .eq('business_id', businessId)
-          .eq('status', 'active')
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle(),
-
-        supabase
           .from('referrals')
-          .select('id,reward_granted')
-          .eq('referrer_business_id', businessId)
+          .select('id, reward_granted')
+          .eq('referrer_business_id', businessId),
       ])
 
       const todayAmount = (todaySalesResult.data || []).reduce(
-        (sum: number, sale: any) => sum + Number(sale.total || 0),
-        0
+        (sum: number, sale: any) => sum + Number(sale.total || 0), 0
       )
-
       const weekAmount = (weekSalesResult.data || []).reduce(
-        (sum: number, sale: any) => sum + Number(sale.total || 0),
-        0
+        (sum: number, sale: any) => sum + Number(sale.total || 0), 0
       )
-
       const debtAmount = (debtsResult.data || []).reduce(
-        (sum: number, customer: any) => sum + Number(customer.debt_balance || 0),
-        0
+        (sum: number, customer: any) => sum + Number(customer.debt_balance || 0), 0
       )
-
       const lowStock = (productsResult.data || []).filter(
-        (product: any) => product.stock !== null && Number(product.stock) <= 5
+        (p: any) => p.stock !== null && Number(p.stock) <= 5
       )
-
       const refs = referralsResult.data || []
-      setReferralCount(refs.length)
-      setRewardCount(refs.filter((r: any) => r.reward_granted).length)
 
       setTodayTotal(todayAmount)
       setWeekTotal(weekAmount)
       setTotalDebt(debtAmount)
       setLowStockCount(lowStock.length)
-
-      const planVal = subscriptionResult.data?.plan || 'free'
-      const expiresVal = subscriptionResult.data?.expires_at || null
-      setPlan(planVal)
-      setExpiresAt(expiresVal)
+      setReferralCount(refs.length)
+      setRewardCount(refs.filter((r: any) => r.reward_granted).length)
       setProducts((productsResult.data || []) as Product[])
 
-      // Write fresh data to cache
       writeCache({
-        businessType: (businessData as any)?.business_type || 'retail',
-        business: (businessData as BusinessInfo | null) || { id: businessId },
-        plan: planVal,
-        expiresAt: expiresVal,
         todayTotal: todayAmount,
         weekTotal: weekAmount,
         totalDebt: debtAmount,
@@ -311,11 +253,11 @@ export default function DashboardPage() {
         rewardCount: refs.filter((r: any) => r.reward_granted).length,
       })
 
-      setLoading(false)
+      setStatsLoading(false)
     }
 
-    init()
-  }, [router])
+    fetchStats()
+  }, [businessId, bdLoading])
 
   // Load pinned shortcuts from localStorage once userId is known
   useEffect(() => {

@@ -4,10 +4,11 @@ import ProductBulkImporter from '@/components/ProductBulkImporter'
 import AppShell from '@/components/AppShell'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
-import { useEffect, useMemo, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useMemo, useState } from 'react'
 import { Edit, Eye, FileSpreadsheet, PackagePlus, Plus, RefreshCw, ScanLine, Search, ShoppingBag, Trash2, Upload, X } from 'lucide-react'
 import { supabase } from '@/lib/supabaseClient'
+import { useBusinessData } from '@/lib/hooks/useBusinessData'
+import { useProducts } from '@/lib/hooks/useProducts'
 
 const BarcodeScanner = dynamic(() => import('@/components/BarcodeScanner'), { ssr: false })
 
@@ -35,13 +36,11 @@ function stockStatus(stockValue: number) {
 }
 
 export default function ProductsPage() {
-  const router = useRouter()
-  const [businessId, setBusinessId] = useState<string | null>(null)
-  const [products, setProducts] = useState<Product[]>([])
-  const [loading, setLoading] = useState(true)
+  const { businessId, role: userRole } = useBusinessData()
+  const { products, loading, mutate } = useProducts(businessId)
+
   const [search, setSearch] = useState('')
   const [showImporter, setShowImporter] = useState(false)
-  const [userRole, setUserRole] = useState('owner')
   const [restockProduct, setRestockProduct] = useState<Product | null>(null)
   const [restockQty, setRestockQty] = useState('')
   const [restockSaving, setRestockSaving] = useState(false)
@@ -50,52 +49,12 @@ export default function ProductsPage() {
   const filteredProducts = useMemo(() => {
     const q = search.toLowerCase().trim()
 
-    return products.filter((product) => {
+    return (products as Product[]).filter((product) => {
       const visible = !product.deleted_at && product.archived !== true && product.is_active !== false
       const matches = product.name.toLowerCase().includes(q) || (product.category || '').toLowerCase().includes(q) || (product.barcode || '').toLowerCase().includes(q)
       return visible && matches
     })
   }, [products, search])
-
-  useEffect(() => {
-    async function init() {
-      const { data: userData } = await supabase.auth.getUser()
-
-      if (!userData.user) {
-        router.push('/login')
-        return
-      }
-
-      const { data: membership } = await supabase
-        .from('business_members')
-        .select('business_id, role')
-        .eq('user_id', userData.user.id)
-        .limit(1)
-        .maybeSingle()
-
-      if (!membership?.business_id) {
-        setLoading(false)
-        return
-      }
-
-      setBusinessId(membership.business_id)
-      setUserRole(membership.role || 'owner')
-      await loadProducts(membership.business_id)
-      setLoading(false)
-    }
-
-    init()
-  }, [router])
-
-  async function loadProducts(id: string) {
-    const { data } = await supabase
-      .from('products')
-      .select('*')
-      .eq('business_id', id)
-      .order('created_at', { ascending: false })
-
-    setProducts((data || []) as Product[])
-  }
 
   async function deleteProduct(id: string) {
     const confirmed = confirm('Supprimer ce produit ?')
@@ -117,17 +76,11 @@ export default function ProductsPage() {
     }
 
     window.dispatchEvent(new Event('play-error'))
-    setProducts((prev) =>
-      prev.map((p) =>
-        p.id === id
-          ? {
-              ...p,
-              is_active: false,
-              archived: true,
-              deleted_at: new Date().toISOString()
-            }
-          : p
-      )
+    mutate(
+      (prev: any[] = []) => prev.map((p) =>
+        p.id === id ? { ...p, is_active: false, archived: true, deleted_at: new Date().toISOString() } : p
+      ),
+      { revalidate: false }
     )
   }
 
@@ -141,7 +94,10 @@ export default function ProductsPage() {
       .eq('id', restockProduct.id)
     setRestockSaving(false)
     if (error) { alert(error.message); return }
-    setProducts((prev) => prev.map((p) => p.id === restockProduct.id ? { ...p, stock: newStock } : p))
+    mutate(
+      (prev: any[] = []) => prev.map((p) => p.id === restockProduct.id ? { ...p, stock: newStock } : p),
+      { revalidate: false }
+    )
     setRestockProduct(null)
     setRestockQty('')
   }
@@ -245,7 +201,7 @@ export default function ProductsPage() {
 
         {showImporter && businessId && (
           <div className="mb-5 overflow-hidden rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
-            <ProductBulkImporter businessId={businessId} onImported={() => loadProducts(businessId)} />
+            <ProductBulkImporter businessId={businessId} onImported={() => mutate()} />
           </div>
         )}
 

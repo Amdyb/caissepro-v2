@@ -1,11 +1,11 @@
 'use client'
 
 import AppShell from '@/components/AppShell'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { CreditCard, Eye, HandCoins, ReceiptText, Search, Wallet } from 'lucide-react'
-import { supabase } from '@/lib/supabaseClient'
+import { useBusinessData } from '@/lib/hooks/useBusinessData'
+import { useSales } from '@/lib/hooks/useSales'
 
 type Sale = {
   id: string
@@ -46,12 +46,11 @@ function paymentBadge(method: string | null) {
 }
 
 export default function SalesPage() {
-  const router = useRouter()
-  const [businessId, setBusinessId] = useState<string | null>(null)
-  const [sales, setSales] = useState<Sale[]>([])
+  const { businessId } = useBusinessData()
+  const { sales, loading, mutate } = useSales(businessId)
+
   const [search, setSearch] = useState('')
   const [period, setPeriod] = useState<'today' | 'week' | 'month' | 'all'>('today')
-  const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState('')
 
   const filteredSales = useMemo(() => {
@@ -84,48 +83,10 @@ export default function SalesPage() {
   const totalRemaining = filteredSales.reduce((sum, s) => sum + Number(s.remaining_amount || 0), 0)
   const averageSale = filteredSales.length > 0 ? totalRevenue / filteredSales.length : 0
 
-  useEffect(() => {
-    async function init() {
-      const { data: userData } = await supabase.auth.getUser()
-      if (!userData.user) { router.push('/login'); return }
-
-      const { data: membership, error } = await supabase
-        .from('business_members')
-        .select('business_id')
-        .eq('user_id', userData.user.id)
-        .limit(1)
-        .maybeSingle()
-
-      if (error || !membership) {
-        setMessage('Aucune boutique trouvée.')
-        setLoading(false)
-        return
-      }
-
-      setBusinessId(membership.business_id)
-      await loadSales(membership.business_id)
-      setLoading(false)
-    }
-
-    init()
-  }, [router])
-
-  async function loadSales(id: string) {
-    const { data, error } = await supabase
-      .from('sales')
-      .select('id,business_id,customer_id,total,paid_amount,remaining_amount,payment_method,status,created_at,customers(full_name,phone)')
-      .eq('business_id', id)
-      .order('created_at', { ascending: false })
-      .limit(500)
-
-    if (error) { setMessage(error.message); return }
-    setSales((data || []) as unknown as Sale[])
-  }
-
   const action = (
     <div className="flex gap-3">
       <button
-        onClick={() => businessId && loadSales(businessId)}
+        onClick={() => mutate()}
         className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-700 shadow-sm hover:bg-slate-50"
       >
         Actualiser

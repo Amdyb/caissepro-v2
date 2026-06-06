@@ -5,6 +5,7 @@ import DarkModeProvider from '@/components/DarkModeProvider'
 import InstallAppPrompt from '@/components/InstallAppPrompt'
 import NetworkStatusBanner from '@/components/NetworkStatusBanner'
 import ServiceWorkerRegister from '@/components/ServiceWorkerRegister'
+import SWRProvider from '@/components/SWRProvider'
 
 export const viewport: Viewport = {
   themeColor: '#16a34a',
@@ -45,11 +46,13 @@ export default function RootLayout({
       </head>
 
       <body>
-        <DarkModeProvider />
-        <NetworkStatusBanner />
-        <ServiceWorkerRegister />
-        {children}
-        <InstallAppPrompt />
+        <SWRProvider>
+          <DarkModeProvider />
+          <NetworkStatusBanner />
+          <ServiceWorkerRegister />
+          {children}
+          <InstallAppPrompt />
+        </SWRProvider>
       </body>
       <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID!} />
     </html>

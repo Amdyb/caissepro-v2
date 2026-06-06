@@ -7,6 +7,8 @@ import LanguageSwitcher from '@/components/LanguageSwitcher'
 import NetworkStatusBanner from '@/components/NetworkStatusBanner'
 import SoundManager from '@/components/SoundManager'
 import { supabase } from '@/lib/supabaseClient'
+import { useBusinessData } from '@/lib/hooks/useBusinessData'
+import { mutate as globalMutate } from 'swr'
 import {
   AlertTriangle,
   ChevronDown,
@@ -613,66 +615,29 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
   const pathname = usePathname()
   const router = useRouter()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [businessName, setBusinessName] = useState('CaissePro')
-  const [businessLogo, setBusinessLogo] = useState<string | null>(null)
-  const [businessType, setBusinessType] = useState('retail')
-  const [userRole, setUserRole] = useState('owner')
-  const [userName, setUserName] = useState('')
-  const [ready, setReady] = useState(false)
-  const [subscription, setSubscription] = useState<{ plan: string; expires_at: string | null } | null>(null)
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({})
-  const [isSuperAdmin, setIsSuperAdmin] = useState(false)
+
+  const {
+    businessName,
+    businessLogo,
+    businessType,
+    role: userRole,
+    fullName: userName,
+    plan,
+    expiresAt,
+    isSuperAdmin,
+    loading,
+  } = useBusinessData()
 
   useEffect(() => {
-    async function loadBranding() {
-      const { data: userData } = await supabase.auth.getUser()
-      if (!userData.user) { setReady(true); return }
-
-      if (userData.user.email === 'infos@dakarvapes.com') {
-        setIsSuperAdmin(true)
-      }
-
-      const { data: membership } = await supabase
-        .from('business_members')
-        .select('business_id, role, full_name, businesses(name, logo_url, business_type)')
-        .eq('user_id', userData.user.id)
-        .limit(1)
-        .maybeSingle()
-
-      const member: any = membership
-      if (member?.businesses) {
-        setBusinessName(member.businesses.name || 'CaissePro')
-        setBusinessLogo(member.businesses.logo_url || null)
-        setBusinessType(member.businesses.business_type || 'retail')
-      }
-      setUserRole(member?.role || 'owner')
-      setUserName(member?.full_name || userData.user.email?.split('@')[0] || '')
-
-      if (member?.business_id) {
-        const { data: sub } = await supabase
-          .from('subscriptions')
-          .select('plan, expires_at')
-          .eq('business_id', member.business_id)
-          .eq('status', 'active')
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle()
-        if (sub) setSubscription({ plan: sub.plan, expires_at: sub.expires_at })
-      }
-
-      setReady(true)
-    }
-    loadBranding()
-
     if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js').catch(() => {})
     }
   }, [])
 
   useEffect(() => {
-    function onBusinessTypeChanged(e: Event) {
-      const detail = (e as CustomEvent).detail
-      if (detail?.businessType) setBusinessType(detail.businessType)
+    function onBusinessTypeChanged() {
+      globalMutate('business-data')
     }
     window.addEventListener('business-type-changed', onBusinessTypeChanged)
     return () => window.removeEventListener('business-type-changed', onBusinessTypeChanged)
@@ -680,7 +645,7 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
 
   // Block staff from restricted pages
   useEffect(() => {
-    if (!ready) return
+    if (loading) return
     if (STAFF_ROLES.includes(userRole)) {
       const allowed =
         pathname === '/products' ||
@@ -693,7 +658,7 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
       if (!allowed) router.replace('/dashboard')
     }
     // owner has unrestricted access
-  }, [ready, userRole, pathname, router])
+  }, [loading, userRole, pathname, router])
 
   function toggleSection(key: string) {
     setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }))
@@ -704,7 +669,7 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
     router.push('/login')
   }
 
-  if (!ready) {
+  if (loading) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-900">
         <p className="font-black text-slate-600 dark:text-slate-400">Chargement...</p>
@@ -724,7 +689,7 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
     ? getNavSections(businessType).filter(s => s.key !== 'securite')
     : getNavSections(businessType)
   const navSections = isSuperAdmin ? [...baseSections, SUPER_ADMIN_SECTION] : baseSections
-  const currentPlanLevel = PLAN_LEVELS[subscription?.plan || 'free'] ?? 0
+  const currentPlanLevel = PLAN_LEVELS[plan || 'free'] ?? 0
 
   const sidebarContent = (
     <div className="flex h-full flex-col">
@@ -757,8 +722,8 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
       {/* Subscription status — hidden for employees and managers */}
       {!isEmployee && <div className="px-4 pt-3">
         {(() => {
-          const planName = subscription?.plan
-          const exp = subscription?.expires_at
+          const planName = plan
+          const exp = expiresAt
           const days = exp ? Math.ceil((new Date(exp).getTime() - Date.now()) / 86400000) : null
           const isActive = !!planName && planName !== 'free'
           const color = !isActive ? 'neutral' : days !== null && days > 30 ? 'green' : days !== null && days > 0 ? 'amber' : 'red'
