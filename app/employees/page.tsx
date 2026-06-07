@@ -167,21 +167,34 @@ export default function EmployeesPage() {
   }
 
   async function confirmDeactivate() {
-    if (!deactivateTarget?.id) return
+    if (!deactivateTarget?.id || !businessId) return
     setDeactivating(true)
     const reason = deactivateReason === 'Autre'
       ? (deactivateCustom.trim() || 'Autre')
       : deactivateReason
 
-    const { data, error } = await supabase.rpc('deactivate_employee', {
-      p_member_id: deactivateTarget.id,
-      p_reason: reason,
-    })
+    const { data: updated, error } = await supabase
+      .from('business_members')
+      .update({
+        is_active: false,
+        deactivated_at: new Date().toISOString(),
+        deactivation_reason: reason,
+      })
+      .eq('id', deactivateTarget.id)
+      .eq('business_id', businessId)
+      .select()
 
     setDeactivating(false)
-    const result = data as { success: boolean; error?: string } | null
-    if (error || !result?.success) {
-      setMessage(result?.error || error?.message || 'Erreur lors de la désactivation.')
+
+    if (error) {
+      setMessage(`Erreur: ${error.message}`)
+      setIsError(true)
+      setDeactivateTarget(null)
+      return
+    }
+
+    if (!updated || updated.length === 0) {
+      setMessage('Employé introuvable dans cette boutique.')
       setIsError(true)
       setDeactivateTarget(null)
       return
@@ -193,18 +206,32 @@ export default function EmployeesPage() {
     setMessage(`${name} a été désactivé.`)
     setIsError(false)
 
-    // WhatsApp notification to admin
     notifyDeactivationWhatsApp(name, reason)
   }
 
   async function reactivateEmployee(member: Member) {
-    if (!member.id) return
+    if (!member.id || !businessId) return
     if (!confirm(`Réactiver ${member.full_name || member.email} ?`)) return
 
-    const { data, error } = await supabase.rpc('reactivate_employee', { p_member_id: member.id })
-    const result = data as { success: boolean } | null
-    if (error || !result?.success) {
-      setMessage(error?.message || 'Erreur lors de la réactivation.')
+    const { data: updated, error } = await supabase
+      .from('business_members')
+      .update({
+        is_active: true,
+        deactivated_at: null,
+        deactivation_reason: null,
+      })
+      .eq('id', member.id)
+      .eq('business_id', businessId)
+      .select()
+
+    if (error) {
+      setMessage(`Erreur: ${error.message}`)
+      setIsError(true)
+      return
+    }
+
+    if (!updated || updated.length === 0) {
+      setMessage('Employé introuvable dans cette boutique.')
       setIsError(true)
       return
     }

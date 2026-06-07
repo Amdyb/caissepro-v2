@@ -36,6 +36,7 @@ import {
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import { mutate } from 'swr'
 
 const CACHE_KEY = 'caissepro_dashboard_cache'
 const CACHE_TTL = 5 * 60 * 1000 // 5 minutes
@@ -130,8 +131,15 @@ export default function DashboardPage() {
     isActive,
     onboardingCompleted,
     role,
+    allBusinesses,
     loading: bdLoading,
   } = useBusinessData()
+
+  function switchBusiness(id: string) {
+    localStorage.setItem('caissepro_selected_business_id', id)
+    localStorage.removeItem(CACHE_KEY)
+    mutate('business-data')
+  }
 
   const loading = bdLoading || statsLoading
 
@@ -325,6 +333,23 @@ export default function DashboardPage() {
       {message && (
         <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-bold text-red-700">
           {message}
+        </div>
+      )}
+
+      {/* Business switcher — shown only when user manages multiple businesses */}
+      {allBusinesses.length > 1 && (
+        <div className="mb-4 flex items-center gap-3 rounded-[2rem] border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+          <Store size={18} className="shrink-0 text-emerald-600" />
+          <p className="text-sm font-black text-slate-700 dark:text-slate-200 shrink-0">Boutique active :</p>
+          <select
+            value={businessId || ''}
+            onChange={(e) => switchBusiness(e.target.value)}
+            className="flex-1 rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-black text-slate-950 outline-none focus:border-emerald-600 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+          >
+            {allBusinesses.map((b) => (
+              <option key={b.id} value={b.id}>{b.name}</option>
+            ))}
+          </select>
         </div>
       )}
 

@@ -2,20 +2,30 @@ import useSWR from 'swr'
 import { supabase } from '@/lib/supabaseClient'
 
 const SUPER_ADMIN_EMAILS = ['infos@dakarvapes.com', 'azzideejay@gmail.com']
+const SELECTED_BIZ_KEY = 'caissepro_selected_business_id'
 
 async function fetchBusinessData() {
   const { data: userData } = await supabase.auth.getUser()
   if (!userData.user) return null
 
-  const { data: membership } = await supabase
+  const { data: memberships } = await supabase
     .from('business_members')
-    .select('business_id, role, full_name, is_active, businesses(id, name, logo_url, business_type, onboarding_completed, slug, slogan, banner_url, phone)')
+    .select('id, business_id, role, full_name, is_active, businesses(id, name, logo_url, business_type, onboarding_completed, slug, slogan, banner_url, phone)')
     .eq('user_id', userData.user.id)
-    .limit(1)
-    .maybeSingle()
 
-  if (!membership) return null
-  const member = membership as any
+  if (!memberships || memberships.length === 0) return null
+
+  // Respect user-selected business (multi-boutique)
+  let selectedMembership: any = memberships[0]
+  if (typeof window !== 'undefined') {
+    const savedId = localStorage.getItem(SELECTED_BIZ_KEY)
+    if (savedId) {
+      const found = memberships.find((m: any) => m.business_id === savedId)
+      if (found) selectedMembership = found
+    }
+  }
+
+  const member = selectedMembership as any
   const biz = member.businesses || {}
 
   const { data: sub } = await supabase
@@ -26,6 +36,13 @@ async function fetchBusinessData() {
     .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle()
+
+  const allBusinesses = (memberships as any[]).map((m: any) => ({
+    id: m.business_id as string,
+    name: (m.businesses as any)?.name || 'Boutique',
+    business_type: (m.businesses as any)?.business_type || 'retail',
+    slug: (m.businesses as any)?.slug || '',
+  }))
 
   return {
     userId: userData.user.id as string,
@@ -52,6 +69,7 @@ async function fetchBusinessData() {
     plan: (sub?.plan || 'free') as string,
     expiresAt: (sub?.expires_at || null) as string | null,
     isSuperAdmin: SUPER_ADMIN_EMAILS.includes(userData.user.email || ''),
+    allBusinesses,
   }
 }
 
@@ -77,6 +95,7 @@ export function useBusinessData() {
     plan: data?.plan ?? 'free',
     expiresAt: data?.expiresAt ?? null,
     isSuperAdmin: data?.isSuperAdmin ?? false,
+    allBusinesses: data?.allBusinesses ?? [],
     loading: isLoading,
     error,
   }

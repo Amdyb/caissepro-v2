@@ -46,16 +46,27 @@ export default function SuperAdminBusinessesPage() {
     setLoading(false)
   }
 
+  function showMessage(msg: string) {
+    setMessage(msg)
+    setTimeout(() => setMessage(''), 5000)
+  }
+
   async function toggleStatus(business: any) {
     const nextStatus = business.status === 'suspended' ? 'active' : 'suspended'
 
-    const { error } = await supabase
+    const { data: updated, error } = await supabase
       .from('businesses')
       .update({ status: nextStatus })
       .eq('id', business.id)
+      .select()
 
     if (error) {
-      setMessage(error.message)
+      showMessage(`Erreur: ${error.message}`)
+      return
+    }
+
+    if (!updated || updated.length === 0) {
+      showMessage('Mise à jour refusée — permissions insuffisantes.')
       return
     }
 
@@ -67,10 +78,10 @@ export default function SuperAdminBusinessesPage() {
       )
     )
 
-    setMessage(
+    showMessage(
       nextStatus === 'suspended'
-        ? 'Boutique suspendue.'
-        : 'Boutique réactivée.'
+        ? 'Boutique suspendue avec succès.'
+        : 'Boutique réactivée avec succès.'
     )
   }
 

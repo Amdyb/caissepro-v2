@@ -29,7 +29,7 @@ type Product = {
 
 export default function POSPage() {
   const barcodeInputRef = useRef<HTMLInputElement | null>(null)
-  const { businessId, businessName, businessPhone, plan } = useBusinessData()
+  const { businessId, businessName, businessPhone, plan, userId } = useBusinessData()
 
   // SWR for POS products — cached for instant repeat loads
   const { data: posProductsData } = useSWR(
@@ -67,6 +67,7 @@ export default function POSPage() {
   const [newCustomer, setNewCustomer] = useState({ full_name: '', phone: '' })
   const [showPlanLimit, setShowPlanLimit] = useState(false)
   const [showScanner, setShowScanner] = useState(false)
+  const [drawerMessage, setDrawerMessage] = useState('')
 
   // Fetch customers when businessId is known
   useEffect(() => {
@@ -124,27 +125,37 @@ export default function POSPage() {
   }
 
   async function addCustomer() {
-    if (!businessId) return
+    if (!businessId) {
+      setDrawerMessage('Boutique introuvable — rechargez la page.')
+      return
+    }
+    if (!newCustomer.full_name.trim()) {
+      setDrawerMessage('Le nom du client est requis.')
+      return
+    }
 
+    setDrawerMessage('')
     const { data, error } = await supabase
       .from('customers')
       .insert({
         business_id: businessId,
-        full_name: newCustomer.full_name,
-        phone: newCustomer.phone
+        full_name: newCustomer.full_name.trim(),
+        phone: newCustomer.phone.trim() || null,
       })
       .select()
       .single()
 
     if (error) {
-      setMessage(error.message)
+      console.error('[POS] addCustomer error:', error)
+      setDrawerMessage(error.message)
       return
     }
 
-    setCustomers([data, ...customers])
+    setCustomers((prev) => [data, ...prev])
     setSelectedCustomerId(data.id)
     setNewCustomer({ full_name: '', phone: '' })
-    flash('Client ajouté avec succès.')
+    setDrawerMessage('Client ajouté avec succès.')
+    setTimeout(() => setDrawerMessage(''), 4000)
   }
 
   async function checkout() {
@@ -215,6 +226,7 @@ export default function POSPage() {
         .from('sales')
         .insert({
           business_id: businessId,
+          cashier_id: userId,
           total,
           paid_amount: isCredit ? 0 : total,
           remaining_amount: isCredit ? total : 0,
@@ -234,8 +246,7 @@ export default function POSPage() {
         product_image: item.product.image || null,
         unit_price: item.price,
         quantity: item.quantity,
-        price: item.price,
-        total: item.quantity * item.price
+        subtotal: item.quantity * item.price,
       }))
 
       const { error: itemError } = await supabase
@@ -243,7 +254,8 @@ export default function POSPage() {
         .insert(saleItems)
 
       if (itemError) {
-        flash(`Erreur enregistrement lignes vente: ${itemError.message}`)
+        console.error('[POS] sale_items insert error:', itemError)
+        flash(`Erreur lignes vente: ${itemError.message}`)
       }
 
       for (const item of cart) {
@@ -282,7 +294,7 @@ export default function POSPage() {
               product_name: item.product_name || '',
               quantity: item.quantity,
               price: item.unit_price,
-              total: item.total,
+              total: item.subtotal,
             })),
             created_at: new Date().toISOString(),
           },
@@ -296,8 +308,9 @@ export default function POSPage() {
         console.log('[POS] no customer phone — skipping WhatsApp auto-send')
       }
     } catch (err: any) {
+      console.error('[POS] checkout error:', err)
       dispatch('play-error')
-      setMessage(err?.message || 'Erreur lors du paiement')
+      setDrawerMessage(err?.message || 'Erreur lors du paiement — réessayez.')
     }
 
     setCheckoutLoading(false)
@@ -435,7 +448,7 @@ export default function POSPage() {
 
         <POSCheckoutDrawer
           open={checkoutOpen}
-          onClose={() => { setCheckoutOpen(false); setLastSaleId(null) }}
+          onClose={() => { setCheckoutOpen(false); setLastSaleId(null); setDrawerMessage('') }}
           total={lastSaleId ? confirmedTotal : total}
           customers={customers}
           selectedCustomerId={selectedCustomerId}
@@ -449,6 +462,7 @@ export default function POSPage() {
           checkoutLoading={checkoutLoading}
           sendWhatsAppReceipt={sendWhatsAppReceipt}
           completedSaleId={lastSaleId}
+          drawerMessage={drawerMessage}
         />
       </div>
     </AppShell>

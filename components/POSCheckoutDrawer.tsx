@@ -18,7 +18,8 @@ export default function POSCheckoutDrawer({
   checkout,
   checkoutLoading,
   sendWhatsAppReceipt,
-  completedSaleId
+  completedSaleId,
+  drawerMessage,
 }: any) {
   if (!open) return null
 
@@ -102,6 +103,12 @@ export default function POSCheckoutDrawer({
         </div>
 
         <div className="p-6">
+          {drawerMessage && (
+            <div className={`mb-4 rounded-2xl px-4 py-3 text-sm font-black ${drawerMessage.includes('succès') ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
+              {drawerMessage}
+            </div>
+          )}
+
           <div className="rounded-[2rem] bg-slate-950 p-6 text-white shadow-2xl">
             <p className="text-sm font-bold text-slate-300">Total</p>
             <p className="mt-2 text-5xl font-black">{Number(total || 0).toLocaleString('fr-FR')} CFA</p>
