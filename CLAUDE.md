@@ -133,6 +133,32 @@ npm run dev
 - `next.config.js` has `optimizePackageImports: ['lucide-react']` and `compress: true`
 - SWR installed for future data fetching optimization
 
+## Database / RLS Conventions (MANDATORY — added 2026-06-10 security+perf hardening)
+When writing any new RLS policy or SECURITY DEFINER function, follow these rules. Breaking
+them re-introduces the exact advisor findings we just cleared.
+- **Wrap auth calls in a subselect** so they evaluate once per statement, not once per row:
+  use `(select auth.uid())`, `(select auth.email())`, `(select get_my_business_id())` —
+  never bare `auth.uid()` / `auth.email()` inside `USING`/`WITH CHECK`.
+- **One policy per (table, action, role).** Do not add a second permissive policy for the
+  same action; fold the extra condition into the existing policy with `OR`.
+- **Business scoping pattern:** `business_id IN (SELECT bm.business_id FROM business_members
+  bm WHERE bm.user_id = (select auth.uid()))` (multi-boutique safe). Single-business helper
+  `business_id = (select get_my_business_id())` is also fine for newer tables.
+- **Never query `business_members` from inside a `business_members` policy** (infinite
+  recursion) — use the SECURITY DEFINER helpers `get_my_business_id()`,
+  `is_business_owner_or_manager()` instead.
+- **Every new table with RLS enabled MUST get a policy** in the same migration, or it is
+  fully locked.
+- **SECURITY DEFINER functions:** always `SET search_path = public, pg_temp`; `REVOKE
+  EXECUTE ... FROM PUBLIC, anon` (keep `authenticated` only if the app actually calls it;
+  trigger-only functions revoke from authenticated too); and add an internal authorization
+  guard (e.g. `is_business_owner_or_manager(...)`) since the function bypasses RLS.
+- **Rollback reference:** `backups/pre-security-fix/`. **Unused-index review:**
+  `docs/unused-indexes.md`. After any migration run `NOTIFY pgrst, 'reload schema';`.
+- **Manual (Supabase dashboard, cannot be done in SQL):** enable Auth → Policies → "Leaked
+  password protection". `pg_net` is intentionally left in the public schema (a DB function
+  depends on it; moving it risks breakage).
+
 ## Current Pending Items
 - /appointments — full calendar/booking system
 - /prescriptions — pharmacy prescription management
