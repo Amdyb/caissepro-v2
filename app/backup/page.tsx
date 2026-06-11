@@ -2,254 +2,244 @@
 
 import AppShell from '@/components/AppShell'
 import { supabase } from '@/lib/supabaseClient'
-import { Archive, CalendarClock, Cloud, Database, Download, FileSpreadsheet, History, RefreshCcw, ShieldCheck } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { Archive, FileSpreadsheet, Download, Mail, ShieldCheck, Users, Receipt, Package } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import Papa from 'papaparse'
+import JSZip from 'jszip'
 
-type Backup = {
-  id: string
-  business_id: string | null
-  backup_type: string | null
-  storage_path: string | null
-  file_size: number | null
-  status: string | null
-  created_by: string | null
-  created_at: string
-}
+type Row = Record<string, string | number | null>
 
-function formatDate(value: string) {
-  return new Date(value).toLocaleString('fr-FR', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
-}
+const DATASETS = [
+  { key: 'products', title: 'Produits', description: 'Inventaire, prix et stock.', icon: Package },
+  { key: 'sales', title: 'Ventes', description: 'Reçus, montants et paiements.', icon: Receipt },
+  { key: 'customers', title: 'Clients', description: 'Contacts, dettes et historique.', icon: Users },
+  { key: 'expenses', title: 'Dépenses', description: 'Charges et catégories.', icon: FileSpreadsheet },
+] as const
 
-function formatBytes(bytes?: number | null) {
-  if (!bytes) return '—'
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
-}
-
-const exportOptions = [
-  { key: 'products', title: 'Produits & Stock', description: 'Exporter inventaire, prix, catégories et quantités.', icon: FileSpreadsheet },
-  { key: 'sales', title: 'Ventes', description: 'Exporter ventes, reçus, paiements et remboursements.', icon: Download },
-  { key: 'customers', title: 'Clients', description: 'Exporter clients, téléphones, dettes et historique.', icon: Archive },
-  { key: 'debts', title: 'Client Doit', description: 'Exporter soldes impayés et remboursements.', icon: ShieldCheck },
-  { key: 'laundry', title: 'Pressing / Tickets', description: 'Exporter tickets, statuts, dates de retrait et paiements.', icon: History },
-  { key: 'full', title: 'Backup complet', description: 'Préparer une sauvegarde complète du commerce.', icon: Database }
-]
+type DatasetKey = (typeof DATASETS)[number]['key']
 
 export default function BackupPage() {
   const [businessId, setBusinessId] = useState<string | null>(null)
-  const [backups, setBackups] = useState<Backup[]>([])
+  const [businessName, setBusinessName] = useState('')
+  const [userEmail, setUserEmail] = useState('')
   const [loading, setLoading] = useState(true)
-  const [creating, setCreating] = useState(false)
+  const [busy, setBusy] = useState<string | null>(null)
   const [message, setMessage] = useState('')
+  const [error, setError] = useState('')
+
+  function flash(msg: string, isError = false) {
+    if (isError) { setError(msg); setMessage(''); setTimeout(() => setError(''), 6000) }
+    else { setMessage(msg); setError(''); setTimeout(() => setMessage(''), 6000) }
+  }
 
   useEffect(() => {
     async function init() {
       const { data: userData } = await supabase.auth.getUser()
-      if (!userData.user) return
+      if (!userData.user) { setLoading(false); return }
+      setUserEmail(userData.user.email || '')
 
       const { data: membership } = await supabase
         .from('business_members')
-        .select('business_id')
+        .select('business_id, businesses(name)')
         .eq('user_id', userData.user.id)
         .limit(1)
         .maybeSingle()
 
-      if (!membership?.business_id) {
-        setMessage('Aucune boutique trouvée pour ce compte.')
-        setLoading(false)
-        return
-      }
-
+      if (!membership?.business_id) { flash('Aucune boutique trouvée pour ce compte.', true); setLoading(false); return }
       setBusinessId(membership.business_id)
-
-      const { data, error } = await supabase
-        .from('business_backups')
-        .select('*')
-        .eq('business_id', membership.business_id)
-        .order('created_at', { ascending: false })
-        .limit(100)
-
-      if (error) setMessage(error.message)
-      setBackups((data || []) as Backup[])
+      setBusinessName(((membership.businesses as any)?.name as string) || '')
       setLoading(false)
     }
-
     init()
   }, [])
 
-  async function createManualBackup() {
+  async function fetchRows(key: DatasetKey, bId: string): Promise<Row[]> {
+    if (key === 'products') {
+      const { data } = await supabase.from('products')
+        .select('name, category, barcode, stock, cost_price, sell_price, created_at')
+        .eq('business_id', bId).is('deleted_at', null).order('name')
+      return (data || []).map((p: any) => ({
+        Produit: p.name, Categorie: p.category ?? '', 'Code-barres': p.barcode ?? '',
+        Stock: p.stock ?? 0, 'Prix achat': p.cost_price ?? 0, 'Prix vente': p.sell_price ?? 0,
+        'Créé le': p.created_at ? new Date(p.created_at).toLocaleString('fr-FR') : '',
+      }))
+    }
+    if (key === 'sales') {
+      const { data } = await supabase.from('sales')
+        .select('receipt_number, total, paid_amount, remaining_amount, payment_method, status, created_at')
+        .eq('business_id', bId).order('created_at', { ascending: false })
+      return (data || []).map((s: any) => ({
+        Reçu: s.receipt_number ?? '', Total: s.total ?? 0, Payé: s.paid_amount ?? 0,
+        Restant: s.remaining_amount ?? 0, Paiement: s.payment_method ?? '', Statut: s.status ?? '',
+        Date: s.created_at ? new Date(s.created_at).toLocaleString('fr-FR') : '',
+      }))
+    }
+    if (key === 'customers') {
+      const { data } = await supabase.from('customers')
+        .select('full_name, phone, email, total_spent, debt_balance, created_at')
+        .eq('business_id', bId).order('full_name')
+      return (data || []).map((c: any) => ({
+        Nom: c.full_name ?? '', Téléphone: c.phone ?? '', Email: c.email ?? '',
+        'Total dépensé': c.total_spent ?? 0, Dette: c.debt_balance ?? 0,
+        'Créé le': c.created_at ? new Date(c.created_at).toLocaleString('fr-FR') : '',
+      }))
+    }
+    // expenses
+    const { data } = await supabase.from('expenses')
+      .select('title, category, amount, note, expense_date, created_at')
+      .eq('business_id', bId).order('created_at', { ascending: false })
+    return (data || []).map((e: any) => ({
+      Titre: e.title ?? '', Categorie: e.category ?? '', Montant: e.amount ?? 0,
+      Note: e.note ?? '', 'Date dépense': e.expense_date ?? '',
+      'Créé le': e.created_at ? new Date(e.created_at).toLocaleString('fr-FR') : '',
+    }))
+  }
+
+  function csvFor(rows: Row[]): string {
+    return Papa.unparse(rows.length ? rows : [{ info: 'Aucune donnée' }])
+  }
+
+  function triggerDownload(filename: string, content: BlobPart, mime: string) {
+    const blob = new Blob([content], { type: mime })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    URL.revokeObjectURL(url)
+  }
+
+  const slug = (businessName || 'caissepro').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'boutique'
+  const stamp = new Date().toISOString().slice(0, 10)
+
+  async function downloadOne(key: DatasetKey) {
     if (!businessId) return
-    setCreating(true)
-    setMessage('')
+    setBusy(key)
+    try {
+      const rows = await fetchRows(key, businessId)
+      triggerDownload(`${slug}-${key}-${stamp}.csv`, '﻿' + csvFor(rows), 'text/csv;charset=utf-8;')
+      flash(`Export ${key} téléchargé (${rows.length} ligne${rows.length > 1 ? 's' : ''}).`)
+    } catch (e: any) {
+      flash(e?.message || 'Erreur export', true)
+    } finally {
+      setBusy(null)
+    }
+  }
 
-    const { data: userData } = await supabase.auth.getUser()
+  async function buildAllCsvs(): Promise<{ filename: string; content: string }[]> {
+    if (!businessId) return []
+    const out: { filename: string; content: string }[] = []
+    for (const d of DATASETS) {
+      const rows = await fetchRows(d.key, businessId)
+      out.push({ filename: `${slug}-${d.key}-${stamp}.csv`, content: '﻿' + csvFor(rows) })
+    }
+    return out
+  }
 
-    const { data, error } = await supabase
-      .from('business_backups')
-      .insert({
-        business_id: businessId,
-        backup_type: 'manual',
-        storage_path: null,
-        file_size: null,
-        status: 'queued',
-        created_by: userData.user?.id || null
+  async function downloadZip() {
+    if (!businessId) return
+    setBusy('zip')
+    try {
+      const files = await buildAllCsvs()
+      const zip = new JSZip()
+      files.forEach((f) => zip.file(f.filename, f.content))
+      const blob = await zip.generateAsync({ type: 'blob' })
+      triggerDownload(`${slug}-export-complet-${stamp}.zip`, blob, 'application/zip')
+      flash('Export complet (ZIP) téléchargé.')
+    } catch (e: any) {
+      flash(e?.message || 'Erreur ZIP', true)
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  async function emailExport() {
+    if (!businessId || !userEmail) return
+    setBusy('email')
+    try {
+      const files = await buildAllCsvs()
+      const payload = files.map((f) => ({
+        filename: f.filename,
+        contentBase64: typeof window !== 'undefined' ? btoa(unescape(encodeURIComponent(f.content))) : '',
+      }))
+      const res = await fetch('/api/backup/email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ to: userEmail, businessName, files: payload }),
       })
-      .select('*')
-      .single()
-
-    setCreating(false)
-
-    if (error) {
-      setMessage(error.message)
-      return
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.error || 'Échec envoi email')
+      flash(`Export envoyé à ${userEmail}.`)
+    } catch (e: any) {
+      flash(e?.message || 'Erreur envoi email', true)
+    } finally {
+      setBusy(null)
     }
-
-    setBackups((prev) => [data as Backup, ...prev])
-    setMessage('Sauvegarde manuelle demandée. Le système de génération automatique sera connecté ensuite.')
   }
-
-  async function requestExport(type: string) {
-    if (!businessId) return
-    setMessage('')
-    const { data: userData } = await supabase.auth.getUser()
-
-    const { error } = await supabase.from('business_backups').insert({
-      business_id: businessId,
-      backup_type: `export_${type}`,
-      status: 'queued',
-      created_by: userData.user?.id || null
-    })
-
-    if (error) {
-      setMessage(error.message)
-      return
-    }
-
-    setMessage(`Export ${type} demandé. Le fichier sera généré par le worker d’export.`)
-  }
-
-  const stats = useMemo(() => {
-    const completed = backups.filter((backup) => backup.status === 'completed').length
-    const queued = backups.filter((backup) => backup.status === 'queued').length
-    const failed = backups.filter((backup) => backup.status === 'failed').length
-    return { completed, queued, failed }
-  }, [backups])
 
   return (
-    <AppShell title="Sauvegarde & Export" subtitle="Sécurisez et exportez les données de votre commerce.">
-      <div className="mx-auto max-w-7xl">
-        {message && (
-          <div className={`mb-6 rounded-2xl p-4 text-sm font-bold ${message.includes('demand') || message.includes('Sauvegarde') ? 'border border-emerald-200 bg-emerald-50 text-emerald-700' : 'border border-red-200 bg-red-50 text-red-700'}`}>
-            {message}
-          </div>
-        )}
+    <AppShell title="Sauvegarde & Export" subtitle="Téléchargez ou recevez par email une copie de vos données.">
+      <div className="mx-auto max-w-5xl">
+        {message && <div className="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-black text-emerald-700">{message}</div>}
+        {error && <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-black text-red-700">{error}</div>}
 
-        <div className="mb-8 rounded-[2rem] border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-8">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-xs font-black uppercase tracking-widest text-white">
-                <ShieldCheck size={15} /> Centre de confiance
-              </div>
-              <h1 className="text-5xl font-black tracking-tight text-slate-950">Vos données restent protégées.</h1>
-              <p className="mt-4 max-w-3xl text-lg font-semibold leading-8 text-slate-600">
-                Préparez les sauvegardes, exports Excel/CSV et futures restaurations de votre commerce.
-              </p>
-            </div>
-            <button
-              onClick={createManualBackup}
-              disabled={creating}
-              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-950 px-7 py-5 text-sm font-black text-white shadow-xl disabled:opacity-60"
-            >
-              <Cloud size={20} />
-              {creating ? 'Demande...' : 'Créer sauvegarde manuelle'}
-            </button>
+        <div className="mb-6 flex items-start gap-3 rounded-[2rem] border border-emerald-200 bg-emerald-50 p-5 dark:border-emerald-900 dark:bg-emerald-950/30">
+          <ShieldCheck className="mt-0.5 h-6 w-6 shrink-0 text-emerald-600" />
+          <div>
+            <h2 className="font-black text-slate-900 dark:text-white">Téléchargez mes données</h2>
+            <p className="mt-1 text-sm font-bold text-slate-600 dark:text-slate-300">
+              Exportez vos données au format CSV (Excel / Google Sheets). Gardez toujours une copie de sauvegarde.
+            </p>
           </div>
         </div>
 
-        <div className="mb-8 grid gap-5 md:grid-cols-4">
-          <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
-            <Database className="text-emerald-600" />
-            <p className="mt-5 text-sm font-bold text-slate-500">Sauvegardes</p>
-            <p className="mt-2 text-4xl font-black text-slate-950">{backups.length}</p>
+        {loading ? (
+          <div className="grid gap-3 sm:grid-cols-2">
+            {[...Array(4)].map((_, i) => <div key={i} className="h-28 animate-pulse rounded-[2rem] bg-slate-100 dark:bg-slate-800" />)}
           </div>
-          <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
-            <ShieldCheck className="text-green-600" />
-            <p className="mt-5 text-sm font-bold text-slate-500">Terminés</p>
-            <p className="mt-2 text-4xl font-black text-green-700">{stats.completed}</p>
-          </div>
-          <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
-            <RefreshCcw className="text-amber-600" />
-            <p className="mt-5 text-sm font-bold text-slate-500">En attente</p>
-            <p className="mt-2 text-4xl font-black text-amber-700">{stats.queued}</p>
-          </div>
-          <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
-            <CalendarClock className="text-sky-600" />
-            <p className="mt-5 text-sm font-bold text-slate-500">Planifié</p>
-            <p className="mt-2 text-4xl font-black text-sky-700">Bientôt</p>
-          </div>
-        </div>
-
-        <div className="mb-8 rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-2xl font-black text-slate-950">Exports disponibles</h2>
-          <p className="mt-2 text-sm font-semibold text-slate-500">Demandez un export. Le worker générera les fichiers téléchargeables dans la prochaine phase.</p>
-          <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {exportOptions.map((option) => {
-              const Icon = option.icon
-              return (
-                <div key={option.key} className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
-                  <div className="mb-5 inline-flex rounded-2xl bg-white p-4 text-emerald-700 shadow-sm"><Icon size={24} /></div>
-                  <h3 className="text-xl font-black text-slate-950">{option.title}</h3>
-                  <p className="mt-2 min-h-[44px] text-sm font-semibold text-slate-500">{option.description}</p>
-                  <button onClick={() => requestExport(option.key)} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-5 py-4 text-sm font-black text-white">
-                    <Download size={17} /> Demander export
-                  </button>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-
-        <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="mb-5 flex items-center justify-between">
-            <h2 className="text-2xl font-black text-slate-950">Historique sauvegardes & exports</h2>
-            <span className="rounded-full bg-slate-100 px-4 py-2 text-xs font-black text-slate-500">{backups.length} élément(s)</span>
-          </div>
-
-          {loading ? (
-            <div className="rounded-2xl bg-slate-50 p-10 text-center font-black text-slate-500">Chargement sauvegardes...</div>
-          ) : backups.length === 0 ? (
-            <div className="rounded-2xl bg-slate-50 p-12 text-center">
-              <Archive className="mx-auto text-slate-300" size={60} />
-              <h3 className="mt-4 text-2xl font-black text-slate-950">Aucun backup encore</h3>
-              <p className="mt-2 text-sm font-semibold text-slate-500">Créez un backup manuel ou demandez un export pour commencer.</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {backups.map((backup) => (
-                <div key={backup.id} className="flex flex-col gap-4 rounded-3xl border border-slate-200 bg-slate-50 p-5 lg:flex-row lg:items-center lg:justify-between">
-                  <div>
-                    <div className="flex flex-wrap items-center gap-3">
-                      <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-slate-600 shadow-sm">{backup.backup_type || 'backup'}</span>
-                      <span className={`rounded-full px-3 py-1 text-xs font-black ${backup.status === 'completed' ? 'bg-green-100 text-green-700' : backup.status === 'failed' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>{backup.status || 'unknown'}</span>
+        ) : (
+          <>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {DATASETS.map((d) => {
+                const Icon = d.icon
+                return (
+                  <div key={d.key} className="flex items-center justify-between gap-3 rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2"><Icon className="h-4 w-4 text-emerald-600" /><p className="font-black text-slate-900 dark:text-white">{d.title}</p></div>
+                      <p className="mt-1 text-xs font-bold text-slate-400">{d.description}</p>
                     </div>
-                    <p className="mt-3 text-sm font-semibold text-slate-500">{formatDate(backup.created_at)} · Taille: {formatBytes(backup.file_size)}</p>
-                    {backup.storage_path && <p className="mt-1 break-all text-xs font-bold text-slate-400">{backup.storage_path}</p>}
+                    <button
+                      onClick={() => downloadOne(d.key)}
+                      disabled={!!busy}
+                      className="flex shrink-0 items-center gap-1.5 rounded-2xl bg-emerald-600 px-4 py-2.5 text-sm font-black text-white transition hover:bg-emerald-700 disabled:opacity-50"
+                    >
+                      <Download className="h-4 w-4" /> {busy === d.key ? '...' : 'CSV'}
+                    </button>
                   </div>
-                  <button disabled={!backup.storage_path} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 py-4 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-40">
-                    <Download size={17} /> Télécharger
-                  </button>
-                </div>
-              ))}
+                )
+              })}
             </div>
-          )}
-        </div>
+
+            <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+              <button
+                onClick={downloadZip}
+                disabled={!!busy}
+                className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-slate-900 px-5 py-4 text-sm font-black text-white transition hover:bg-slate-800 disabled:opacity-50 dark:bg-white dark:text-slate-900"
+              >
+                <Archive className="h-5 w-5" /> {busy === 'zip' ? 'Préparation...' : 'Tout exporter (ZIP)'}
+              </button>
+              <button
+                onClick={emailExport}
+                disabled={!!busy || !userEmail}
+                className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-4 text-sm font-black text-slate-900 transition hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+              >
+                <Mail className="h-5 w-5 text-emerald-600" /> {busy === 'email' ? 'Envoi...' : `Envoyer par email${userEmail ? ` (${userEmail})` : ''}`}
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </AppShell>
   )

@@ -14,6 +14,7 @@ import {
   CreditCard,
   DollarSign,
   Globe,
+  Lock,
   Package,
   Plus,
   Receipt,
@@ -352,6 +353,25 @@ export default function DashboardPage() {
           </select>
         </div>
       )}
+
+      {/* Multi-shop: create a new business (Premium feature) */}
+      <div className="mb-4">
+        {plan === 'premium' ? (
+          <a
+            href="/create-business"
+            className="flex items-center justify-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-3 text-sm font-black text-emerald-700 transition hover:bg-emerald-100 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-300"
+          >
+            <Plus size={18} /> Créer une nouvelle boutique
+          </a>
+        ) : (
+          <a
+            href="/upgrade"
+            className="flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-5 py-3 text-sm font-black text-slate-400 transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800"
+          >
+            <Lock size={16} /> Créer une nouvelle boutique — Premium requis
+          </a>
+        )}
+      </div>
 
       {/* 1. Hero banner - flush edge to edge */}
       <section className="-mx-5 -mt-8 relative overflow-hidden bg-slate-950">
