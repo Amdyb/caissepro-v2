@@ -11,6 +11,7 @@ type StaffMember = {
   business_id: string
   user_id: string
   role: string
+  can_approve_subscriptions?: boolean
   created_at: string
   profiles?: {
     full_name: string | null
@@ -32,6 +33,7 @@ export default function StaffPage() {
   const [members, setMembers] = useState<StaffMember[]>([])
   const [email, setEmail] = useState('')
   const [role, setRole] = useState('cashier')
+  const [myRole, setMyRole] = useState('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
@@ -60,6 +62,7 @@ export default function StaffPage() {
 
       const member: any = membership
       setBusinessId(member.business_id)
+      setMyRole(member.role || '')
       setBusinessName(member.businesses?.name || 'Ma Boutique')
       await loadMembers(member.business_id)
       setLoading(false)
@@ -71,7 +74,7 @@ export default function StaffPage() {
   async function loadMembers(id: string) {
     const { data, error } = await supabase
       .from('business_members')
-      .select('id, business_id, user_id, role, created_at, profiles(full_name, phone)')
+      .select('id, business_id, user_id, role, can_approve_subscriptions, created_at, profiles(full_name, phone)')
       .eq('business_id', id)
       .order('created_at', { ascending: true })
 
@@ -125,6 +128,17 @@ export default function StaffPage() {
     }
 
     await loadMembers(businessId)
+  }
+
+  async function toggleApproval(member: StaffMember) {
+    const next = !member.can_approve_subscriptions
+    const { error } = await supabase
+      .from('business_members')
+      .update({ can_approve_subscriptions: next })
+      .eq('id', member.id)
+    if (error) { setMessage(error.message); return }
+    setMembers((prev) => prev.map((m) => (m.id === member.id ? { ...m, can_approve_subscriptions: next } : m)))
+    setMessage(next ? "Permission d'approbation des abonnements accordée." : "Permission d'approbation retirée.")
   }
 
   async function removeMember(memberId: string) {
@@ -292,6 +306,22 @@ export default function StaffPage() {
                       </button>
                     </div>
                   </div>
+
+                  {(myRole === 'owner' || myRole === 'proprietaire' || myRole === 'admin') &&
+                    (member.role === 'manager' || member.role === 'admin') && (
+                      <div className="mt-4 flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <ShieldCheck size={16} className="text-emerald-600" />
+                          <span className="text-sm font-black text-slate-700">Peut approuver les abonnements</span>
+                        </div>
+                        <button
+                          onClick={() => toggleApproval(member)}
+                          className={`rounded-full px-4 py-2 text-xs font-black ${member.can_approve_subscriptions ? 'bg-emerald-600 text-white' : 'border border-slate-300 text-slate-600 hover:bg-slate-100'}`}
+                        >
+                          {member.can_approve_subscriptions ? 'Activé' : 'Désactivé'}
+                        </button>
+                      </div>
+                    )}
                 </div>
               ))}
             </div>

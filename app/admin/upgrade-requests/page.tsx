@@ -60,7 +60,17 @@ export default function AdminUpgradeRequestsPage() {
     async function init() {
       const { data: userData } = await supabase.auth.getUser()
       if (!userData.user) { router.push('/login'); return }
-      if (!ADMIN_EMAILS.includes(userData.user.email || '')) { router.push('/dashboard'); return }
+      if (!ADMIN_EMAILS.includes(userData.user.email || '')) {
+        // Allow managers explicitly granted the subscription-approval permission
+        const { data: perm } = await supabase
+          .from('business_members')
+          .select('id')
+          .eq('user_id', userData.user.id)
+          .eq('can_approve_subscriptions', true)
+          .limit(1)
+          .maybeSingle()
+        if (!perm) { router.push('/dashboard'); return }
+      }
       await loadRequests()
     }
     init()

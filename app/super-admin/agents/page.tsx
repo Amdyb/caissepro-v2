@@ -14,10 +14,11 @@ function statusBadge(status: string) {
   const map: Record<string, string> = {
     active: 'bg-emerald-100 text-emerald-700',
     pending: 'bg-amber-100 text-amber-700',
-    suspended: 'bg-red-100 text-red-700',
+    suspended: 'bg-orange-100 text-orange-700',
+    rejected: 'bg-red-100 text-red-700',
   }
   const label: Record<string, string> = {
-    active: 'Actif', pending: 'En attente', suspended: 'Suspendu',
+    active: 'Actif', pending: 'En attente', suspended: 'Suspendu', rejected: 'Rejeté',
   }
   return (
     <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-black ${map[status] || 'bg-slate-100 text-slate-600'}`}>
@@ -69,6 +70,8 @@ export default function SuperAdminAgentsPage() {
   const [showCreate, setShowCreate] = useState(false)
   const [viewLeadsAgent, setViewLeadsAgent] = useState<string | null>(null)
   const [agentLeads, setAgentLeads] = useState<any[]>([])
+  const [confirmChange, setConfirmChange] = useState<{ agent: Agent; status: string; label: string } | null>(null)
+  const [applyingChange, setApplyingChange] = useState(false)
 
   const currentMonth = new Date().toISOString().slice(0, 7)
 
@@ -122,24 +125,41 @@ export default function SuperAdminAgentsPage() {
     setLeadsCountMap(map)
   }
 
-  async function updateStatus(agentId: string, status: string) {
-    await supabase.from('agents').update({ status, updated_at: new Date().toISOString() }).eq('id', agentId)
-    setAgents((prev) => prev.map((a) => a.id === agentId ? { ...a, status } : a))
-    flash(status === 'active' ? 'Agent approuvé.' : status === 'suspended' ? 'Agent suspendu.' : 'Statut mis à jour.')
+  async function applyStatusChange() {
+    if (!confirmChange) return
+    const { agent, status } = confirmChange
+    setApplyingChange(true)
+    await supabase.from('agents').update({ status, updated_at: new Date().toISOString() }).eq('id', agent.id)
+    setAgents((prev) => prev.map((a) => a.id === agent.id ? { ...a, status } : a))
 
-    if (status === 'active') {
-      const agent = agents.find((a) => a.id === agentId)
-      if (agent?.phone) {
+    const messages: Record<string, string> = {
+      active: 'Agent activé.', suspended: 'Agent suspendu.', rejected: 'Agent rejeté.', pending: 'Statut mis à jour.',
+    }
+    flash(messages[status] || 'Statut mis à jour.')
+
+    // WhatsApp notifications (non-blocking)
+    if (agent.phone) {
+      let body: string | null = null
+      if (status === 'active') {
+        body = `Félicitations ${agent.full_name} ! Votre compte agent CaissePro a été activé. Votre code de parrainage : ${agent.invite_code || 'en cours d\'attribution'}. Commencez à recruter des commerçants et gagnez 50 000 XOF/mois !`
+      } else if (status === 'suspended') {
+        body = `Bonjour ${agent.full_name}, votre compte agent CaissePro a été suspendu. Contactez l'équipe CaissePro pour plus d'informations.`
+      }
+      if (body) {
         await fetch('/api/whatsapp/send', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            to: agent.phone,
-            body: `Félicitations ${agent.full_name} ! Votre compte agent CaissePro a été approuvé. Votre code de parrainage : ${agent.invite_code || 'en cours d\'attribution'}. Commencez à recruter des commerçants et gagnez 50 000 XOF/mois !`,
-          }),
+          body: JSON.stringify({ to: agent.phone, body }),
         }).catch(() => null)
       }
     }
+
+    setApplyingChange(false)
+    setConfirmChange(null)
+  }
+
+  function requestStatusChange(agent: Agent, status: string, label: string) {
+    setConfirmChange({ agent, status, label })
   }
 
   async function markCommissionPaid(commId: string) {
@@ -267,16 +287,25 @@ export default function SuperAdminAgentsPage() {
               className="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-10 pr-4 font-semibold outline-none focus:border-emerald-500"
             />
           </div>
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="rounded-2xl border border-slate-200 bg-white px-4 py-3 font-semibold outline-none focus:border-emerald-500"
-          >
-            <option value="all">Tous les statuts</option>
-            <option value="active">Actifs</option>
-            <option value="pending">En attente</option>
-            <option value="suspended">Suspendus</option>
-          </select>
+        </div>
+
+        {/* Status tabs */}
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          {[
+            { key: 'all', label: 'Tous' },
+            { key: 'pending', label: 'En attente' },
+            { key: 'active', label: 'Actifs' },
+            { key: 'suspended', label: 'Suspendus' },
+            { key: 'rejected', label: 'Rejetés' },
+          ].map((t) => (
+            <button
+              key={t.key}
+              onClick={() => setStatusFilter(t.key)}
+              className={`shrink-0 rounded-full px-4 py-2 text-sm font-black transition ${statusFilter === t.key ? 'bg-emerald-600 text-white' : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'}`}
+            >
+              {t.label}
+            </button>
+          ))}
         </div>
 
         {/* Agents list */}
@@ -313,28 +342,52 @@ export default function SuperAdminAgentsPage() {
                         />
                       </div>
                     </div>
-                    <div className="flex gap-2">
-                      {agent.status !== 'active' && (
+                    <div className="flex flex-wrap gap-2">
+                      {agent.status === 'pending' && (
+                        <>
+                          <button
+                            onClick={() => requestStatusChange(agent, 'active', 'Activer')}
+                            className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-black text-white hover:bg-emerald-700"
+                          >
+                            <CheckCircle2 size={13} /> Activer
+                          </button>
+                          <button
+                            onClick={() => requestStatusChange(agent, 'rejected', 'Rejeter')}
+                            className="flex items-center gap-1.5 rounded-xl border border-red-200 px-3 py-2 text-xs font-black text-red-600 hover:bg-red-50"
+                          >
+                            Rejeter
+                          </button>
+                        </>
+                      )}
+                      {agent.status === 'suspended' && (
                         <button
-                          onClick={() => updateStatus(agent.id, 'active')}
+                          onClick={() => requestStatusChange(agent, 'active', 'Réactiver')}
                           className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-black text-white hover:bg-emerald-700"
                         >
-                          <CheckCircle2 size={13} /> Approuver
+                          <CheckCircle2 size={13} /> Réactiver
                         </button>
                       )}
-                      {agent.status !== 'suspended' && (
+                      {agent.status === 'active' && (
                         <button
-                          onClick={() => updateStatus(agent.id, 'suspended')}
-                          className="flex items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-2 text-xs font-black text-slate-600 hover:bg-slate-50"
+                          onClick={() => requestStatusChange(agent, 'suspended', 'Suspendre')}
+                          className="flex items-center gap-1.5 rounded-xl border border-orange-200 px-3 py-2 text-xs font-black text-orange-600 hover:bg-orange-50"
                         >
                           <PauseCircle size={13} /> Suspendre
+                        </button>
+                      )}
+                      {agent.status === 'rejected' && (
+                        <button
+                          onClick={() => requestStatusChange(agent, 'active', 'Activer')}
+                          className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-black text-white hover:bg-emerald-700"
+                        >
+                          <CheckCircle2 size={13} /> Activer
                         </button>
                       )}
                       <button
                         onClick={() => viewLeads(agent.id)}
                         className="flex items-center gap-1.5 rounded-xl bg-blue-600 px-3 py-2 text-xs font-black text-white hover:bg-blue-700"
                       >
-                        <Users size={13} /> Voir leads
+                        <Users size={13} /> Voir détails
                       </button>
                     </div>
                   </div>
@@ -492,6 +545,35 @@ export default function SuperAdminAgentsPage() {
                 </table>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Confirm status change */}
+      {confirmChange && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm" onClick={() => !applyingChange && setConfirmChange(null)}>
+          <div className="w-full max-w-sm rounded-[2rem] bg-white p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-xl font-black text-slate-950">{confirmChange.label} cet agent ?</h2>
+            <p className="mt-2 text-sm font-bold text-slate-500">
+              {confirmChange.agent.full_name} ({confirmChange.agent.email})
+              {confirmChange.agent.phone ? ' sera notifié par WhatsApp.' : '.'}
+            </p>
+            <div className="mt-5 flex gap-3">
+              <button
+                onClick={applyStatusChange}
+                disabled={applyingChange}
+                className="flex-1 rounded-2xl bg-emerald-600 py-3 font-black text-white hover:bg-emerald-700 disabled:opacity-60"
+              >
+                {applyingChange ? 'Application...' : `Confirmer : ${confirmChange.label}`}
+              </button>
+              <button
+                onClick={() => setConfirmChange(null)}
+                disabled={applyingChange}
+                className="flex-1 rounded-2xl border border-slate-200 py-3 font-black text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+              >
+                Annuler
+              </button>
+            </div>
           </div>
         </div>
       )}
