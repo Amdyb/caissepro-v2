@@ -1,0 +1,40 @@
+-- Phase 3: add covering indexes for the 37 unindexed foreign keys.
+-- All target tables are tiny (<=48 rows, most empty), so a plain CREATE INDEX is instant
+-- and CONCURRENTLY is unnecessary (and cannot run inside the migration transaction).
+CREATE INDEX IF NOT EXISTS idx_agents_created_by ON public.agents(created_by);
+CREATE INDEX IF NOT EXISTS idx_business_members_deactivated_by ON public.business_members(deactivated_by);
+CREATE INDEX IF NOT EXISTS idx_businesses_secondary_admin_id ON public.businesses(secondary_admin_id);
+CREATE INDEX IF NOT EXISTS idx_cash_register_shifts_closed_by ON public.cash_register_shifts(closed_by);
+CREATE INDEX IF NOT EXISTS idx_cash_register_shifts_opened_by ON public.cash_register_shifts(opened_by);
+CREATE INDEX IF NOT EXISTS idx_customer_profiles_business_id ON public.customer_profiles(business_id);
+CREATE INDEX IF NOT EXISTS idx_customer_transactions_business_id ON public.customer_transactions(business_id);
+CREATE INDEX IF NOT EXISTS idx_customer_transactions_customer_id ON public.customer_transactions(customer_id);
+CREATE INDEX IF NOT EXISTS idx_debt_payments_created_by ON public.debt_payments(created_by);
+CREATE INDEX IF NOT EXISTS idx_debt_reminders_created_by ON public.debt_reminders(created_by);
+CREATE INDEX IF NOT EXISTS idx_debt_reminders_customer_id ON public.debt_reminders(customer_id);
+CREATE INDEX IF NOT EXISTS idx_expenses_created_by ON public.expenses(created_by);
+CREATE INDEX IF NOT EXISTS idx_online_orders_product_id ON public.online_orders(product_id);
+CREATE INDEX IF NOT EXISTS idx_payment_links_customer_id ON public.payment_links(customer_id);
+CREATE INDEX IF NOT EXISTS idx_properties_business_id ON public.properties(business_id);
+CREATE INDEX IF NOT EXISTS idx_purchase_items_product_id ON public.purchase_items(product_id);
+CREATE INDEX IF NOT EXISTS idx_purchase_orders_created_by ON public.purchase_orders(created_by);
+CREATE INDEX IF NOT EXISTS idx_referrals_referred_business_id ON public.referrals(referred_business_id);
+CREATE INDEX IF NOT EXISTS idx_referrals_referrer_business_id ON public.referrals(referrer_business_id);
+CREATE INDEX IF NOT EXISTS idx_rent_payments_business_id ON public.rent_payments(business_id);
+CREATE INDEX IF NOT EXISTS idx_rent_payments_property_id ON public.rent_payments(property_id);
+CREATE INDEX IF NOT EXISTS idx_rent_payments_tenant_id ON public.rent_payments(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_restock_orders_business_id ON public.restock_orders(business_id);
+CREATE INDEX IF NOT EXISTS idx_restock_orders_product_id ON public.restock_orders(product_id);
+CREATE INDEX IF NOT EXISTS idx_restock_orders_supplier_id ON public.restock_orders(supplier_id);
+CREATE INDEX IF NOT EXISTS idx_sales_customer_id ON public.sales(customer_id);
+CREATE INDEX IF NOT EXISTS idx_stock_movements_created_by ON public.stock_movements(created_by);
+CREATE INDEX IF NOT EXISTS idx_supplier_payments_created_by ON public.supplier_payments(created_by);
+CREATE INDEX IF NOT EXISTS idx_tenants_business_id ON public.tenants(business_id);
+CREATE INDEX IF NOT EXISTS idx_tenants_property_id ON public.tenants(property_id);
+CREATE INDEX IF NOT EXISTS idx_tontine_contributions_business_id ON public.tontine_contributions(business_id);
+CREATE INDEX IF NOT EXISTS idx_tontine_contributions_participant_id ON public.tontine_contributions(participant_id);
+CREATE INDEX IF NOT EXISTS idx_tontine_participants_business_id ON public.tontine_participants(business_id);
+CREATE INDEX IF NOT EXISTS idx_tontine_winners_business_id ON public.tontine_winners(business_id);
+CREATE INDEX IF NOT EXISTS idx_tontine_winners_group_id ON public.tontine_winners(group_id);
+CREATE INDEX IF NOT EXISTS idx_tontine_winners_participant_id ON public.tontine_winners(participant_id);
+CREATE INDEX IF NOT EXISTS idx_upgrade_requests_user_id ON public.upgrade_requests(user_id);
