@@ -2,6 +2,7 @@
 
 import { supabase } from '@/lib/supabaseClient'
 import { getAdminContext } from '@/lib/superAdmin'
+import { refreshPlatformSettings } from '@/lib/platformSettings'
 import { Settings, Save, Percent, CreditCard, MessageCircle, Wrench, Megaphone, Lock } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
@@ -65,11 +66,14 @@ export default function SuperAdminSettingsPage() {
       updated_at: new Date().toISOString(),
     }))
     const { error } = await supabase.from('platform_settings').upsert(rows, { onConflict: 'key' })
-    setSaving(false)
     if (error) {
+      setSaving(false)
       flash(`Erreur: ${error.message}`)
       return
     }
+    // Bust the cache so the change propagates instantly instead of after the 5min TTL.
+    await refreshPlatformSettings()
+    setSaving(false)
     flash('Paramètres enregistrés.')
   }
 

@@ -1,4 +1,4 @@
-import useSWR from 'swr'
+import useSWR, { mutate as globalMutate } from 'swr'
 import { supabasePublic } from '@/lib/supabasePublic'
 
 export type PlatformSettings = {
@@ -90,6 +90,24 @@ export async function fetchPlatformSettings(force = false): Promise<PlatformSett
   } catch {
     return PLATFORM_DEFAULTS
   }
+}
+
+export function clearPlatformSettingsCache() {
+  if (typeof window === 'undefined') return
+  try {
+    window.localStorage.removeItem(CACHE_KEY)
+  } catch {
+    /* ignore */
+  }
+}
+
+// Call after saving settings: drop the cache, re-read fresh, and push into any
+// mounted usePlatformSettings() so the change propagates instantly (no 5min wait).
+export async function refreshPlatformSettings(): Promise<PlatformSettings> {
+  clearPlatformSettingsCache()
+  const fresh = await fetchPlatformSettings(true)
+  await globalMutate('platform-settings', fresh, { revalidate: false })
+  return fresh
 }
 
 // Client hook. Returns defaults until loaded; cached value is used as immediate fallback.
