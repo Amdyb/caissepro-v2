@@ -3,8 +3,9 @@
 import AppShell from '@/components/AppShell'
 import PaymentModal from '@/components/PaymentModal'
 import { supabase } from '@/lib/supabaseClient'
+import { usePlatformSettings } from '@/lib/platformSettings'
 import { CheckCircle2, Crown, Gift, Rocket, ShieldCheck, Sparkles } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 const PLAN_LABELS: Record<string, string> = {
   free: 'Gratuit',
@@ -29,12 +30,11 @@ const FREE_PLAN = {
   ],
 }
 
-const PLANS = [
+// Static metadata; prices come from platform_settings at render time.
+const PLAN_META = [
   {
     id: 'starter',
     name: 'Starter',
-    price: '5 000',
-    amount: 5000,
     icon: Rocket,
     features: [
       'POS complet',
@@ -49,8 +49,6 @@ const PLANS = [
   {
     id: 'business',
     name: 'Business',
-    price: '15 000',
-    amount: 15000,
     icon: ShieldCheck,
     features: [
       'Tout Starter +',
@@ -66,8 +64,6 @@ const PLANS = [
   {
     id: 'premium',
     name: 'Premium',
-    price: '35 000',
-    amount: 35000,
     icon: Crown,
     features: [
       'Tout Business +',
@@ -82,12 +78,27 @@ const PLANS = [
   },
 ]
 
+type PlanCard = (typeof PLAN_META)[number] & { price: string; amount: number }
+
 export default function UpgradePage() {
+  const settings = usePlatformSettings()
   const [business, setBusiness] = useState<any>(null)
   const [currentPlan, setCurrentPlan] = useState<string>('free')
   const [userEmail, setUserEmail] = useState('')
   const [loading, setLoading] = useState(true)
-  const [selectedPlan, setSelectedPlan] = useState<typeof PLANS[0] | null>(null)
+  const [selectedPlan, setSelectedPlan] = useState<PlanCard | null>(null)
+
+  const PLANS = useMemo<PlanCard[]>(() => {
+    const amounts: Record<string, number> = {
+      starter: settings.plan_price_starter,
+      business: settings.plan_price_business,
+      premium: settings.plan_price_premium,
+    }
+    return PLAN_META.map((meta) => {
+      const amount = amounts[meta.id] ?? 0
+      return { ...meta, amount, price: amount.toLocaleString('fr-FR') }
+    })
+  }, [settings])
 
   useEffect(() => {
     async function init() {

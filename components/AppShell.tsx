@@ -8,6 +8,7 @@ import NetworkStatusBanner from '@/components/NetworkStatusBanner'
 import SoundManager from '@/components/SoundManager'
 import { supabase } from '@/lib/supabaseClient'
 import { useBusinessData } from '@/lib/hooks/useBusinessData'
+import { usePlatformSettings } from '@/lib/platformSettings'
 import { mutate as globalMutate } from 'swr'
 import {
   AlertTriangle,
@@ -47,6 +48,7 @@ import {
   HardHat,
   Home,
   Lock,
+  Megaphone,
   Wrench,
   X,
 } from 'lucide-react'
@@ -638,6 +640,8 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
     loading,
   } = useBusinessData()
 
+  const platformSettings = usePlatformSettings()
+
   useEffect(() => {
     if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js').catch(() => {})
@@ -682,6 +686,27 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
     return (
       <main className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-900">
         <p className="font-black text-slate-600 dark:text-slate-400">Chargement...</p>
+      </main>
+    )
+  }
+
+  // Maintenance mode locks merchants out; super-admins keep access to fix things.
+  if (platformSettings.maintenance_mode && !isSuperAdmin) {
+    return (
+      <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-slate-50 px-6 text-center dark:bg-slate-900">
+        <div className="flex h-16 w-16 items-center justify-center rounded-[2rem] bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400">
+          <Wrench size={30} />
+        </div>
+        <h1 className="text-3xl font-black text-slate-950 dark:text-white">Maintenance en cours</h1>
+        <p className="max-w-md text-sm font-semibold text-slate-500 dark:text-slate-400">
+          CaissePro est temporairement indisponible pour une mise à jour. Merci de réessayer dans quelques minutes.
+        </p>
+        <button
+          onClick={() => router.refresh()}
+          className="mt-2 rounded-2xl bg-emerald-600 px-6 py-3 font-black text-white hover:bg-emerald-700"
+        >
+          Réessayer
+        </button>
       </main>
     )
   }
@@ -906,6 +931,12 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
 
       {/* Main content */}
       <section className="lg:pl-72">
+        {platformSettings.announcement_banner?.trim() && (
+          <div className="flex items-center justify-center gap-2 bg-emerald-600 px-5 py-2.5 text-center text-sm font-black text-white">
+            <Megaphone size={16} className="shrink-0" />
+            <span>{platformSettings.announcement_banner}</span>
+          </div>
+        )}
         <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/90 backdrop-blur dark:border-slate-700 dark:bg-slate-900/90">
           <div className="flex items-center justify-between gap-4 px-5 py-5">
             <div className="flex items-center gap-4">

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import twilio from 'twilio'
+import { fetchPlatformSettings } from '@/lib/platformSettings'
 
 function normalizePhone(raw: string): string {
   const digits = raw.replace(/\D/g, '')
@@ -24,6 +25,13 @@ export async function POST(req: NextRequest) {
     body?: string
     template?: string
     variables?: Record<string, string>
+  }
+
+  // Global kill switch — admins can disable all WhatsApp sends from /super-admin/settings.
+  const settings = await fetchPlatformSettings()
+  if (!settings.whatsapp_notifications_enabled) {
+    console.log('[WhatsApp] notifications disabled via platform settings — skipping send')
+    return NextResponse.json({ success: true, method: 'disabled' })
   }
 
   const phone = normalizePhone(to)

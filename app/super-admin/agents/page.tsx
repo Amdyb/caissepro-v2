@@ -2,6 +2,7 @@
 
 import { supabase } from '@/lib/supabaseClient'
 import { getAdminContext } from '@/lib/superAdmin'
+import { usePlatformSettings } from '@/lib/platformSettings'
 import { CheckCircle2, Loader2, PauseCircle, Plus, Search, Users } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
@@ -53,6 +54,8 @@ type Commission = {
 }
 
 export default function SuperAdminAgentsPage() {
+  const settings = usePlatformSettings()
+  const target = settings.commission_target_signups
   const [loading, setLoading] = useState(true)
   const [allowed, setAllowed] = useState(false)
   const [agents, setAgents] = useState<Agent[]>([])
@@ -131,7 +134,7 @@ export default function SuperAdminAgentsPage() {
     if (agent.phone) {
       let body: string | null = null
       if (status === 'active') {
-        body = `Félicitations ${agent.full_name} ! Votre compte agent CaissePro a été activé. Votre code de parrainage : ${agent.invite_code || 'en cours d\'attribution'}. Commencez à recruter des commerçants et gagnez 50 000 XOF/mois !`
+        body = `Félicitations ${agent.full_name} ! Votre compte agent CaissePro a été activé. Votre code de parrainage : ${agent.invite_code || 'en cours d\'attribution'}. Commencez à recruter des commerçants et gagnez ${settings.commission_amount_xof.toLocaleString('fr-FR')} XOF/mois !`
       } else if (status === 'suspended') {
         body = `Bonjour ${agent.full_name}, votre compte agent CaissePro a été suspendu. Contactez l'équipe CaissePro pour plus d'informations.`
       }
@@ -324,11 +327,11 @@ export default function SuperAdminAgentsPage() {
                   </div>
                   <div className="flex flex-col items-end gap-3 sm:items-end">
                     <div className="text-right">
-                      <p className="text-sm font-black text-slate-950">{thisMonth}/20 ce mois</p>
+                      <p className="text-sm font-black text-slate-950">{thisMonth}/{target} ce mois</p>
                       <div className="mt-1 h-1.5 w-24 overflow-hidden rounded-full bg-slate-100">
                         <div
-                          className={`h-full rounded-full ${thisMonth >= 20 ? 'bg-emerald-500' : 'bg-blue-400'}`}
-                          style={{ width: `${Math.min(100, (thisMonth / 20) * 100)}%` }}
+                          className={`h-full rounded-full ${thisMonth >= target ? 'bg-emerald-500' : 'bg-blue-400'}`}
+                          style={{ width: `${Math.min(100, (thisMonth / target) * 100)}%` }}
                         />
                       </div>
                     </div>
