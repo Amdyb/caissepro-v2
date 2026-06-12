@@ -230,9 +230,7 @@ export default function PublicShopPage() {
 
         <div className="relative px-4 pb-10 pt-5 md:px-8 md:pb-14 md:pt-10">
           <div className="mb-8 flex items-center justify-between">
-            <div className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-black/40 px-3 py-1.5 backdrop-blur-xl">
-              <Image src="/amdy-labs-logo.png" alt="Amdy Labs" width={80} height={24} className="object-contain opacity-90" />
-            </div>
+            <div />
             <button onClick={shareShop} className="rounded-full border border-white/10 bg-white/10 p-4 backdrop-blur-xl">
               <Share2 size={18} />
             </button>
