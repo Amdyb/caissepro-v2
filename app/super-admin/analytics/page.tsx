@@ -1,15 +1,10 @@
 'use client'
 
-import AppShell from '@/components/AppShell'
 import { supabase } from '@/lib/supabaseClient'
 import { BarChart3, CreditCard, Store, TrendingUp, Users } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
-import { useRouter } from 'next/navigation'
-
-const SUPER_ADMIN_EMAILS = ['infos@dakarvapes.com']
 
 export default function SuperAdminAnalyticsPage() {
-  const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [businesses, setBusinesses] = useState<any[]>([])
   const [sales, setSales] = useState<any[]>([])
@@ -20,18 +15,6 @@ export default function SuperAdminAnalyticsPage() {
   }, [])
 
   async function init() {
-    const { data: userData } = await supabase.auth.getUser()
-
-    if (!userData.user) {
-      router.push('/login')
-      return
-    }
-
-    if (!SUPER_ADMIN_EMAILS.includes(userData.user.email || '')) {
-      router.push('/dashboard')
-      return
-    }
-
     const [businessResult, salesResult, subscriptionsResult] = await Promise.all([
       supabase.from('businesses').select('*').limit(500),
       supabase.from('sales').select('*').limit(5000),
@@ -56,7 +39,7 @@ export default function SuperAdminAnalyticsPage() {
   }, [businesses, sales, subscriptions])
 
   if (loading) {
-    return <main className="flex min-h-screen items-center justify-center bg-slate-50"><p className="font-black text-slate-600">Chargement statistiques...</p></main>
+    return <div className="px-5 py-10 font-black text-white/70">Chargement statistiques...</div>
   }
 
   const cards = [
@@ -67,45 +50,53 @@ export default function SuperAdminAnalyticsPage() {
   ]
 
   return (
-    <AppShell title="Statistiques" subtitle="Vue globale de la plateforme.">
-      <div className="mx-auto max-w-7xl pb-20">
-        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-          {cards.map((card) => {
-            const Icon = card.icon
-            return (
-              <div key={card.title} className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
-                <Icon className="text-emerald-600" />
-                <p className="mt-5 text-sm font-black uppercase text-slate-500">{card.title}</p>
-                <p className="mt-2 text-4xl font-black text-slate-950">{card.value}</p>
-              </div>
-            )
-          })}
+    <div className="mx-auto max-w-6xl px-5 py-8">
+      <div className="mb-8 flex items-center gap-3">
+        <div className="rounded-2xl bg-emerald-500/15 p-3">
+          <BarChart3 className="text-emerald-300" size={26} />
         </div>
-
-        <div className="mt-8 rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="flex items-center gap-3">
-            <BarChart3 className="text-emerald-600" />
-            <h2 className="text-3xl font-black text-slate-950">Top Boutiques</h2>
-          </div>
-
-          <div className="mt-6 space-y-4">
-            {businesses.slice(0, 10).map((business) => (
-              <div key={business.id} className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-lg font-black text-slate-950">{business.name}</p>
-                    <p className="text-sm font-bold text-slate-500">/{business.slug || 'no-slug'}</p>
-                  </div>
-
-                  <div className="rounded-2xl bg-emerald-100 px-4 py-2 text-sm font-black text-emerald-700">
-                    {business.status || 'active'}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+        <div>
+          <h1 className="text-3xl font-black">Statistiques</h1>
+          <p className="text-sm font-semibold text-white/50">Vue globale de la plateforme.</p>
         </div>
       </div>
-    </AppShell>
+
+      <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+        {cards.map((card) => {
+          const Icon = card.icon
+          return (
+            <div key={card.title} className="rounded-[2rem] border border-white/10 bg-white/5 p-6">
+              <Icon className="text-emerald-300" />
+              <p className="mt-5 text-sm font-black uppercase text-white/50">{card.title}</p>
+              <p className="mt-2 text-4xl font-black text-white">{card.value}</p>
+            </div>
+          )
+        })}
+      </div>
+
+      <div className="mt-8 rounded-[2rem] border border-white/10 bg-white/5 p-6">
+        <div className="flex items-center gap-3">
+          <BarChart3 className="text-emerald-300" />
+          <h2 className="text-3xl font-black text-white">Top Boutiques</h2>
+        </div>
+
+        <div className="mt-6 space-y-4">
+          {businesses.slice(0, 10).map((business) => (
+            <div key={business.id} className="rounded-3xl border border-white/10 bg-slate-900 p-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-lg font-black text-white">{business.name}</p>
+                  <p className="text-sm font-bold text-white/50">/{business.slug || 'no-slug'}</p>
+                </div>
+
+                <div className="rounded-2xl bg-emerald-400/15 px-4 py-2 text-sm font-black text-emerald-300">
+                  {business.status || 'active'}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
   )
 }

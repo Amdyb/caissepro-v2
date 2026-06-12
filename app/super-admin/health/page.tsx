@@ -1,6 +1,7 @@
 'use client'
 
 import { supabase } from '@/lib/supabaseClient'
+import { getAdminContext } from '@/lib/superAdmin'
 import { Activity, AlertTriangle, Building2, CheckCircle2, Clock3, HeartPulse, Search, Shield, Store, TrendingUp, Users } from 'lucide-react'
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
@@ -65,20 +66,8 @@ export default function MerchantHealthPage() {
 
   useEffect(() => {
     async function init() {
-      const { data: userData } = await supabase.auth.getUser()
-      if (!userData.user) {
-        setLoading(false)
-        return
-      }
-
-      const { data: admin } = await supabase
-        .from('platform_admins')
-        .select('role,status')
-        .eq('user_id', userData.user.id)
-        .eq('status', 'active')
-        .maybeSingle()
-
-      if (!admin) {
+      const ctx = await getAdminContext()
+      if (!ctx?.allowed) {
         setAllowed(false)
         setLoading(false)
         return

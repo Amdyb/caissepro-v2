@@ -1,10 +1,9 @@
 'use client'
 
 import { supabase } from '@/lib/supabaseClient'
+import { getAdminContext } from '@/lib/superAdmin'
 import { CheckCircle2, Loader2, PauseCircle, Plus, Search, Users } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
-
-const FOUNDER_EMAILS = ['infos@dakarvapes.com', 'azzideejay@gmail.com']
 
 function cfa(n: number) {
   return `${Number(n || 0).toLocaleString('fr-FR')} XOF`
@@ -82,17 +81,8 @@ export default function SuperAdminAgentsPage() {
 
   useEffect(() => {
     async function init() {
-      const { data: userData } = await supabase.auth.getUser()
-      if (!userData.user) { setLoading(false); return }
-      if (!FOUNDER_EMAILS.includes(userData.user.email || '')) {
-        const { data: admin } = await supabase
-          .from('platform_admins')
-          .select('id')
-          .eq('user_id', userData.user.id)
-          .eq('status', 'active')
-          .maybeSingle()
-        if (!admin) { setLoading(false); return }
-      }
+      const ctx = await getAdminContext()
+      if (!ctx?.allowed) { setLoading(false); return }
       setAllowed(true)
       await loadAll()
       setLoading(false)

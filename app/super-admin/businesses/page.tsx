@@ -1,13 +1,10 @@
 'use client'
 
-import AppShell from '@/components/AppShell'
 import { supabase } from '@/lib/supabaseClient'
-import { AlertTriangle, ArrowLeft, Building2, Crown, Search, ShieldCheck, Store, Trash2 } from 'lucide-react'
+import { AlertTriangle, Crown, Search, ShieldCheck, Store, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
-import { useRouter } from 'next/navigation'
 
-const SUPER_ADMIN_EMAILS = ['infos@dakarvapes.com', 'azzideejay@gmail.com']
 const PLANS = ['free', 'starter', 'business', 'premium']
 
 function fmtDate(v?: string | null) {
@@ -16,7 +13,6 @@ function fmtDate(v?: string | null) {
 }
 
 export default function SuperAdminBusinessesPage() {
-  const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [businesses, setBusinesses] = useState<any[]>([])
   const [search, setSearch] = useState('')
@@ -25,13 +21,9 @@ export default function SuperAdminBusinessesPage() {
   const [confirmDelete, setConfirmDelete] = useState<any | null>(null)
   const [working, setWorking] = useState(false)
 
-  useEffect(() => { init() }, [])
+  useEffect(() => { load() }, [])
 
-  async function init() {
-    const { data: userData } = await supabase.auth.getUser()
-    if (!userData.user) { router.push('/login'); return }
-    if (!SUPER_ADMIN_EMAILS.includes(userData.user.email || '')) { router.push('/dashboard'); return }
-
+  async function load() {
     const { data } = await supabase
       .from('businesses')
       .select('*')
@@ -77,11 +69,9 @@ export default function SuperAdminBusinessesPage() {
 
   async function changePlan(business: any, plan: string) {
     if (plan === (business.plan || 'free')) return
-    // Update the businesses row
     const { error } = await supabase.from('businesses').update({ plan }).eq('id', business.id)
     if (error) { showMessage(`Erreur: ${error.message}`); return }
 
-    // Reflect the change as an active subscription (replace any existing active one)
     if (plan === 'free') {
       await supabase.from('subscriptions').delete().eq('business_id', business.id)
     } else {
@@ -126,106 +116,110 @@ export default function SuperAdminBusinessesPage() {
   }, [businesses, search, tab])
 
   if (loading) {
-    return <main className="flex min-h-screen items-center justify-center bg-slate-950 text-white"><p className="font-black">Chargement boutiques...</p></main>
+    return <div className="px-5 py-10 font-black text-white/70">Chargement boutiques...</div>
   }
 
   return (
-    <AppShell title="Super Admin — Boutiques" subtitle="Gestion globale des boutiques.">
-      <div className="mx-auto max-w-7xl pb-20">
-        <button onClick={() => router.back()} className="mb-6 inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-700 shadow-sm">
-          <ArrowLeft size={18} /> Retour
-        </button>
-
-        {message && <div className="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-black text-emerald-700">{message}</div>}
-
-        <div className="mb-6 grid gap-4 md:grid-cols-4">
-          {[
-            { icon: Store, label: 'Total', value: counts.total, color: 'text-slate-950' },
-            { icon: ShieldCheck, label: 'Actives', value: counts.active, color: 'text-emerald-600' },
-            { icon: AlertTriangle, label: 'Inactives', value: counts.inactive, color: 'text-orange-500' },
-            { icon: Crown, label: 'Premium', value: counts.premium, color: 'text-amber-500' },
-          ].map(({ icon: Icon, label, value, color }) => (
-            <div key={label} className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
-              <Icon className={color} />
-              <p className="mt-3 text-xs font-black uppercase text-slate-500">{label}</p>
-              <p className={`mt-1 text-3xl font-black ${color}`}>{value}</p>
-            </div>
-          ))}
+    <div className="mx-auto max-w-6xl px-5 py-8">
+      <div className="mb-8 flex items-center gap-3">
+        <div className="rounded-2xl bg-emerald-500/15 p-3">
+          <Store className="text-emerald-300" size={26} />
         </div>
-
-        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
-          <div className="relative flex-1">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Nom, slug, email..." className="w-full rounded-2xl border border-slate-300 bg-white py-3 pl-11 pr-4 font-bold outline-none focus:border-emerald-500" />
-          </div>
-          <div className="flex gap-2 overflow-x-auto">
-            {([['all', 'Tous'], ['active', 'Actifs'], ['inactive', 'Inactifs'], ['premium', 'Premium']] as const).map(([key, label]) => (
-              <button key={key} onClick={() => setTab(key)} className={`shrink-0 rounded-full px-4 py-2 text-sm font-black ${tab === key ? 'bg-emerald-600 text-white' : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'}`}>{label}</button>
-            ))}
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          {filtered.map((business) => {
-            const plan = business.plan || 'free'
-            const status = business.status || 'active'
-            return (
-              <div key={business.id} className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="text-xl font-black text-slate-950">{business.name || 'Sans nom'}</p>
-                      <span className={`rounded-full px-3 py-1 text-xs font-black ${status === 'deleted' ? 'bg-slate-200 text-slate-600' : status === 'suspended' ? 'bg-orange-100 text-orange-700' : 'bg-emerald-100 text-emerald-700'}`}>
-                        {status === 'deleted' ? 'ARCHIVÉ' : status === 'suspended' ? 'SUSPENDU' : 'ACTIF'}
-                      </span>
-                      <span className={`rounded-full px-3 py-1 text-xs font-black ${plan === 'premium' ? 'bg-amber-100 text-amber-700' : plan === 'free' ? 'bg-slate-100 text-slate-500' : 'bg-sky-100 text-sky-700'}`}>{plan.toUpperCase()}</span>
-                    </div>
-                    <p className="mt-1 text-sm font-bold text-slate-500">/{business.slug || 'no-slug'} · {business.business_type || 'retail'}</p>
-                    <div className="mt-1 flex flex-wrap gap-3 text-xs font-bold text-slate-400">
-                      {business.email && <span>{business.email}</span>}
-                      <span>Créée le {fmtDate(business.created_at)}</span>
-                      {business.subscription_status && <span>Abo: {business.subscription_status}</span>}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-wrap items-center gap-2">
-                    <select
-                      value={plan}
-                      onChange={(e) => changePlan(business, e.target.value)}
-                      className="rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-black text-slate-700 outline-none focus:border-emerald-500"
-                    >
-                      {PLANS.map((p) => <option key={p} value={p}>{p}</option>)}
-                    </select>
-                    <Link href={`/store/${business.slug}`} className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-black text-slate-700 hover:bg-slate-50">Voir boutique</Link>
-                    <button onClick={() => toggleStatus(business)} className={`rounded-2xl px-4 py-2.5 text-sm font-black text-white ${status === 'suspended' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-orange-500 hover:bg-orange-600'}`}>
-                      {status === 'suspended' ? 'Activer' : 'Désactiver'}
-                    </button>
-                    <button onClick={() => setConfirmDelete(business)} className="rounded-2xl border border-red-200 p-2.5 text-red-500 hover:bg-red-50"><Trash2 size={18} /></button>
-                  </div>
-                </div>
-              </div>
-            )
-          })}
-          {filtered.length === 0 && (
-            <div className="rounded-3xl border border-slate-200 bg-white py-12 text-center"><p className="font-bold text-slate-400">Aucune boutique.</p></div>
-          )}
+        <div>
+          <h1 className="text-3xl font-black">Boutiques</h1>
+          <p className="text-sm font-semibold text-white/50">Gestion globale des boutiques.</p>
         </div>
       </div>
 
+      {message && <div className="mb-6 rounded-2xl border border-emerald-400/20 bg-emerald-400/10 p-4 text-sm font-black text-emerald-200">{message}</div>}
+
+      <div className="mb-6 grid gap-4 md:grid-cols-4">
+        {[
+          { icon: Store, label: 'Total', value: counts.total, color: 'text-white' },
+          { icon: ShieldCheck, label: 'Actives', value: counts.active, color: 'text-emerald-300' },
+          { icon: AlertTriangle, label: 'Inactives', value: counts.inactive, color: 'text-orange-300' },
+          { icon: Crown, label: 'Premium', value: counts.premium, color: 'text-amber-300' },
+        ].map(({ icon: Icon, label, value, color }) => (
+          <div key={label} className="rounded-[2rem] border border-white/10 bg-white/5 p-5">
+            <Icon className={color} />
+            <p className="mt-3 text-xs font-black uppercase text-white/50">{label}</p>
+            <p className={`mt-1 text-3xl font-black ${color}`}>{value}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="relative flex-1">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30" size={18} />
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Nom, slug, email..." className="w-full rounded-2xl border border-white/10 bg-white/5 py-3 pl-11 pr-4 font-bold text-white outline-none placeholder:text-white/20 focus:border-emerald-400/50" />
+        </div>
+        <div className="flex gap-2 overflow-x-auto">
+          {([['all', 'Tous'], ['active', 'Actifs'], ['inactive', 'Inactifs'], ['premium', 'Premium']] as const).map(([key, label]) => (
+            <button key={key} onClick={() => setTab(key)} className={`shrink-0 rounded-full px-4 py-2 text-sm font-black ${tab === key ? 'bg-emerald-600 text-white' : 'border border-white/10 bg-white/5 text-white/60 hover:bg-white/10'}`}>{label}</button>
+          ))}
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        {filtered.map((business) => {
+          const plan = business.plan || 'free'
+          const status = business.status || 'active'
+          return (
+            <div key={business.id} className="rounded-3xl border border-white/10 bg-white/5 p-5">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Link href={`/super-admin/businesses/${business.id}`} className="text-xl font-black text-white hover:text-emerald-300">{business.name || 'Sans nom'}</Link>
+                    <span className={`rounded-full px-3 py-1 text-xs font-black ${status === 'deleted' ? 'bg-white/10 text-white/50' : status === 'suspended' ? 'bg-orange-400/20 text-orange-300' : 'bg-emerald-400/20 text-emerald-300'}`}>
+                      {status === 'deleted' ? 'ARCHIVÉ' : status === 'suspended' ? 'SUSPENDU' : 'ACTIF'}
+                    </span>
+                    <span className={`rounded-full px-3 py-1 text-xs font-black ${plan === 'premium' ? 'bg-amber-400/20 text-amber-300' : plan === 'free' ? 'bg-white/10 text-white/50' : 'bg-sky-400/20 text-sky-300'}`}>{plan.toUpperCase()}</span>
+                  </div>
+                  <p className="mt-1 text-sm font-bold text-white/50">/{business.slug || 'no-slug'} · {business.business_type || 'retail'}</p>
+                  <div className="mt-1 flex flex-wrap gap-3 text-xs font-bold text-white/30">
+                    {business.email && <span>{business.email}</span>}
+                    <span>Créée le {fmtDate(business.created_at)}</span>
+                    {business.subscription_status && <span>Abo: {business.subscription_status}</span>}
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <select
+                    value={plan}
+                    onChange={(e) => changePlan(business, e.target.value)}
+                    className="rounded-2xl border border-white/10 bg-slate-900 px-3 py-2.5 text-sm font-black text-white outline-none focus:border-emerald-400/50"
+                  >
+                    {PLANS.map((p) => <option key={p} value={p}>{p}</option>)}
+                  </select>
+                  <Link href={`/store/${business.slug}`} className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-black text-white/70 hover:bg-white/10">Voir boutique</Link>
+                  <button onClick={() => toggleStatus(business)} className={`rounded-2xl px-4 py-2.5 text-sm font-black text-white ${status === 'suspended' ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-orange-500 hover:bg-orange-600'}`}>
+                    {status === 'suspended' ? 'Activer' : 'Désactiver'}
+                  </button>
+                  <button onClick={() => setConfirmDelete(business)} className="rounded-2xl border border-red-400/30 p-2.5 text-red-300 hover:bg-red-500/10"><Trash2 size={18} /></button>
+                </div>
+              </div>
+            </div>
+          )
+        })}
+        {filtered.length === 0 && (
+          <div className="rounded-3xl border border-white/10 bg-white/5 py-12 text-center"><p className="font-bold text-white/40">Aucune boutique.</p></div>
+        )}
+      </div>
+
       {confirmDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm" onClick={() => !working && setConfirmDelete(null)}>
-          <div className="w-full max-w-sm rounded-[2rem] bg-white p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center gap-2 text-red-600"><AlertTriangle size={20} /><h2 className="text-lg font-black">Archiver cette boutique ?</h2></div>
-            <p className="mt-2 text-sm font-bold text-slate-500">
-              "{confirmDelete.name}" sera archivée (statut «supprimé»). Action réversible — les données ne sont pas effacées.
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={() => !working && setConfirmDelete(null)}>
+          <div className="w-full max-w-sm rounded-[2rem] border border-white/10 bg-slate-900 p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-2 text-red-300"><AlertTriangle size={20} /><h2 className="text-lg font-black">Archiver cette boutique ?</h2></div>
+            <p className="mt-2 text-sm font-bold text-white/50">
+              &quot;{confirmDelete.name}&quot; sera archivée (statut «supprimé»). Action réversible — les données ne sont pas effacées.
             </p>
             <div className="mt-5 flex gap-3">
-              <button onClick={doDelete} disabled={working} className="flex-1 rounded-2xl bg-red-600 py-3 font-black text-white hover:bg-red-700 disabled:opacity-60">{working ? '...' : 'Archiver'}</button>
-              <button onClick={() => setConfirmDelete(null)} disabled={working} className="flex-1 rounded-2xl border border-slate-200 py-3 font-black text-slate-700 hover:bg-slate-50">Annuler</button>
+              <button onClick={doDelete} disabled={working} className="flex-1 rounded-2xl bg-red-600 py-3 font-black text-white hover:bg-red-500 disabled:opacity-60">{working ? '...' : 'Archiver'}</button>
+              <button onClick={() => setConfirmDelete(null)} disabled={working} className="flex-1 rounded-2xl border border-white/10 py-3 font-black text-white/70 hover:bg-white/5">Annuler</button>
             </div>
           </div>
         </div>
       )}
-    </AppShell>
+    </div>
   )
 }
