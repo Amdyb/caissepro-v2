@@ -2,7 +2,7 @@
 
 import { supabase } from '@/lib/supabaseClient'
 import { getAdminContext } from '@/lib/superAdmin'
-import { refreshPlatformSettings } from '@/lib/platformSettings'
+import { refreshPlatformSettings } from '@/lib/usePlatformSettings'
 import { Settings, Save, Percent, CreditCard, MessageCircle, Wrench, Megaphone, Lock } from 'lucide-react'
 import { useEffect, useState } from 'react'
 

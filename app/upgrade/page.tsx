@@ -3,7 +3,7 @@
 import AppShell from '@/components/AppShell'
 import PaymentModal from '@/components/PaymentModal'
 import { supabase } from '@/lib/supabaseClient'
-import { usePlatformSettings } from '@/lib/platformSettings'
+import { usePlatformSettings } from '@/lib/usePlatformSettings'
 import { CheckCircle2, Crown, Gift, Rocket, ShieldCheck, Sparkles } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 

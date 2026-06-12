@@ -8,7 +8,7 @@ import NetworkStatusBanner from '@/components/NetworkStatusBanner'
 import SoundManager from '@/components/SoundManager'
 import { supabase } from '@/lib/supabaseClient'
 import { useBusinessData } from '@/lib/hooks/useBusinessData'
-import { usePlatformSettings } from '@/lib/platformSettings'
+import { usePlatformSettings } from '@/lib/usePlatformSettings'
 import { mutate as globalMutate } from 'swr'
 import {
   AlertTriangle,

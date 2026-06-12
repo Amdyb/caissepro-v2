@@ -2,7 +2,7 @@
 
 import { supabase } from '@/lib/supabaseClient'
 import { getAdminContext } from '@/lib/superAdmin'
-import { usePlatformSettings } from '@/lib/platformSettings'
+import { usePlatformSettings } from '@/lib/usePlatformSettings'
 import { CheckCircle2, Loader2, PauseCircle, Plus, Search, Users } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
@@ -12,16 +12,16 @@ function cfa(n: number) {
 
 function statusBadge(status: string) {
   const map: Record<string, string> = {
-    active: 'bg-emerald-100 text-emerald-700',
-    pending: 'bg-amber-100 text-amber-700',
-    suspended: 'bg-orange-100 text-orange-700',
-    rejected: 'bg-red-100 text-red-700',
+    active: 'bg-emerald-400/20 text-emerald-300',
+    pending: 'bg-amber-400/20 text-amber-300',
+    suspended: 'bg-orange-400/20 text-orange-300',
+    rejected: 'bg-red-400/20 text-red-300',
   }
   const label: Record<string, string> = {
     active: 'Actif', pending: 'En attente', suspended: 'Suspendu', rejected: 'Rejeté',
   }
   return (
-    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-black ${map[status] || 'bg-slate-100 text-slate-600'}`}>
+    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-black ${map[status] || 'bg-white/10 text-white/60'}`}>
       {label[status] || status}
     </span>
   )
@@ -225,244 +225,246 @@ export default function SuperAdminAgentsPage() {
   }), [agents])
 
   if (loading) {
-    return <main className="flex min-h-screen items-center justify-center"><p className="font-bold text-slate-500">Chargement...</p></main>
+    return <div className="px-5 py-10 font-black text-white/70">Chargement...</div>
   }
 
   if (!allowed) {
-    return <main className="flex min-h-screen items-center justify-center"><p className="font-bold text-red-500">Accès non autorisé.</p></main>
+    return <div className="px-5 py-10 font-black text-red-300">Accès non autorisé.</div>
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-950">
-      <div className="mx-auto max-w-7xl space-y-8 px-5 py-8">
+    <div className="mx-auto max-w-6xl space-y-8 px-5 py-8">
 
-        {/* Header */}
-        <div className="flex items-center justify-between">
+      {/* Header */}
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="rounded-2xl bg-emerald-500/15 p-3">
+            <Users className="text-emerald-300" size={26} />
+          </div>
           <div>
-            <p className="text-xs font-black uppercase tracking-widest text-emerald-600">SUPER ADMIN</p>
-            <h1 className="text-3xl font-black text-slate-950">Gestion des Agents</h1>
+            <h1 className="text-3xl font-black">Gestion des Agents</h1>
+            <p className="text-sm font-semibold text-white/50">Recrutement et commissions des agents.</p>
           </div>
+        </div>
+        <button
+          onClick={() => setShowCreate(true)}
+          className="flex items-center gap-2 rounded-2xl bg-emerald-600 px-5 py-3 font-black text-white hover:bg-emerald-500"
+        >
+          <Plus size={18} /> Nouvel agent
+        </button>
+      </div>
+
+      {message && (
+        <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/10 p-4 text-sm font-black text-emerald-200">{message}</div>
+      )}
+
+      {/* Stats */}
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {[
+          { label: 'Total agents', value: stats.total, color: 'text-white' },
+          { label: 'Actifs', value: stats.active, color: 'text-emerald-300' },
+          { label: 'En attente', value: stats.pending, color: 'text-amber-300' },
+          { label: 'Commissions payées', value: cfa(stats.totalPaid), color: 'text-sky-300' },
+        ].map(({ label, value, color }) => (
+          <div key={label} className="rounded-[2rem] border border-white/10 bg-white/5 p-5">
+            <p className="text-xs font-black uppercase tracking-wider text-white/40">{label}</p>
+            <p className={`mt-3 text-2xl font-black ${color}`}>{value}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <div className="relative flex-1">
+          <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Rechercher par nom, email, pays..."
+            className="w-full rounded-2xl border border-white/10 bg-white/5 py-3 pl-10 pr-4 font-semibold text-white outline-none placeholder:text-white/20 focus:border-emerald-400/50"
+          />
+        </div>
+      </div>
+
+      {/* Status tabs */}
+      <div className="flex gap-2 overflow-x-auto pb-1">
+        {[
+          { key: 'all', label: 'Tous' },
+          { key: 'pending', label: 'En attente' },
+          { key: 'active', label: 'Actifs' },
+          { key: 'suspended', label: 'Suspendus' },
+          { key: 'rejected', label: 'Rejetés' },
+        ].map((t) => (
           <button
-            onClick={() => setShowCreate(true)}
-            className="flex items-center gap-2 rounded-2xl bg-emerald-600 px-5 py-3 font-black text-white shadow hover:bg-emerald-700"
+            key={t.key}
+            onClick={() => setStatusFilter(t.key)}
+            className={`shrink-0 rounded-full px-4 py-2 text-sm font-black transition ${statusFilter === t.key ? 'bg-emerald-600 text-white' : 'border border-white/10 bg-white/5 text-white/60 hover:bg-white/10'}`}
           >
-            <Plus size={18} /> Nouvel agent
+            {t.label}
           </button>
-        </div>
+        ))}
+      </div>
 
-        {message && (
-          <div className="rounded-2xl bg-emerald-50 p-4 text-sm font-bold text-emerald-700">{message}</div>
-        )}
-
-        {/* Stats */}
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {[
-            { label: 'Total agents', value: stats.total, color: 'text-slate-950' },
-            { label: 'Actifs', value: stats.active, color: 'text-emerald-700' },
-            { label: 'En attente', value: stats.pending, color: 'text-amber-600' },
-            { label: 'Commissions payées', value: cfa(stats.totalPaid), color: 'text-blue-700' },
-          ].map(({ label, value, color }) => (
-            <div key={label} className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
-              <p className="text-xs font-black uppercase tracking-wider text-slate-400">{label}</p>
-              <p className={`mt-3 text-2xl font-black ${color}`}>{value}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* Filters */}
-        <div className="flex flex-col gap-3 sm:flex-row">
-          <div className="relative flex-1">
-            <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Rechercher par nom, email, pays..."
-              className="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-10 pr-4 font-semibold outline-none focus:border-emerald-500"
-            />
-          </div>
-        </div>
-
-        {/* Status tabs */}
-        <div className="flex gap-2 overflow-x-auto pb-1">
-          {[
-            { key: 'all', label: 'Tous' },
-            { key: 'pending', label: 'En attente' },
-            { key: 'active', label: 'Actifs' },
-            { key: 'suspended', label: 'Suspendus' },
-            { key: 'rejected', label: 'Rejetés' },
-          ].map((t) => (
-            <button
-              key={t.key}
-              onClick={() => setStatusFilter(t.key)}
-              className={`shrink-0 rounded-full px-4 py-2 text-sm font-black transition ${statusFilter === t.key ? 'bg-emerald-600 text-white' : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'}`}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Agents list */}
-        <div className="space-y-3">
-          {filtered.map((agent) => {
-            const thisMonth = leadsCountMap[agent.id] || 0
-            return (
-              <div key={agent.id} className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex items-start gap-4">
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-lg font-black text-emerald-700">
-                      {agent.full_name[0].toUpperCase()}
+      {/* Agents list */}
+      <div className="space-y-3">
+        {filtered.map((agent) => {
+          const thisMonth = leadsCountMap[agent.id] || 0
+          return (
+            <div key={agent.id} className="rounded-[2rem] border border-white/10 bg-white/5 p-5">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-start gap-4">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-500/15 text-lg font-black text-emerald-300">
+                    {agent.full_name[0].toUpperCase()}
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-3">
+                      <p className="font-black text-white">{agent.full_name}</p>
+                      {statusBadge(agent.status)}
                     </div>
-                    <div>
-                      <div className="flex items-center gap-3">
-                        <p className="font-black text-slate-950">{agent.full_name}</p>
-                        {statusBadge(agent.status)}
-                      </div>
-                      <p className="mt-0.5 text-sm text-slate-500">{agent.email}</p>
-                      <div className="mt-1 flex flex-wrap gap-3 text-xs font-bold text-slate-400">
-                        {agent.city && <span>{agent.city}</span>}
-                        {agent.country && <span>{agent.country}</span>}
-                        <span className="rounded-lg bg-slate-100 px-2 py-0.5 font-black text-slate-600">{agent.invite_code}</span>
-                      </div>
+                    <p className="mt-0.5 text-sm text-white/50">{agent.email}</p>
+                    <div className="mt-1 flex flex-wrap gap-3 text-xs font-bold text-white/30">
+                      {agent.city && <span>{agent.city}</span>}
+                      {agent.country && <span>{agent.country}</span>}
+                      <span className="rounded-lg bg-white/10 px-2 py-0.5 font-black text-white/60">{agent.invite_code}</span>
                     </div>
                   </div>
-                  <div className="flex flex-col items-end gap-3 sm:items-end">
-                    <div className="text-right">
-                      <p className="text-sm font-black text-slate-950">{thisMonth}/{target} ce mois</p>
-                      <div className="mt-1 h-1.5 w-24 overflow-hidden rounded-full bg-slate-100">
-                        <div
-                          className={`h-full rounded-full ${thisMonth >= target ? 'bg-emerald-500' : 'bg-blue-400'}`}
-                          style={{ width: `${Math.min(100, (thisMonth / target) * 100)}%` }}
-                        />
-                      </div>
+                </div>
+                <div className="flex flex-col items-end gap-3 sm:items-end">
+                  <div className="text-right">
+                    <p className="text-sm font-black text-white">{thisMonth}/{target} ce mois</p>
+                    <div className="mt-1 h-1.5 w-24 overflow-hidden rounded-full bg-white/10">
+                      <div
+                        className={`h-full rounded-full ${thisMonth >= target ? 'bg-emerald-500' : 'bg-sky-400'}`}
+                        style={{ width: `${Math.min(100, (thisMonth / target) * 100)}%` }}
+                      />
                     </div>
-                    <div className="flex flex-wrap gap-2">
-                      {agent.status === 'pending' && (
-                        <>
-                          <button
-                            onClick={() => requestStatusChange(agent, 'active', 'Activer')}
-                            className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-black text-white hover:bg-emerald-700"
-                          >
-                            <CheckCircle2 size={13} /> Activer
-                          </button>
-                          <button
-                            onClick={() => requestStatusChange(agent, 'rejected', 'Rejeter')}
-                            className="flex items-center gap-1.5 rounded-xl border border-red-200 px-3 py-2 text-xs font-black text-red-600 hover:bg-red-50"
-                          >
-                            Rejeter
-                          </button>
-                        </>
-                      )}
-                      {agent.status === 'suspended' && (
-                        <button
-                          onClick={() => requestStatusChange(agent, 'active', 'Réactiver')}
-                          className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-black text-white hover:bg-emerald-700"
-                        >
-                          <CheckCircle2 size={13} /> Réactiver
-                        </button>
-                      )}
-                      {agent.status === 'active' && (
-                        <button
-                          onClick={() => requestStatusChange(agent, 'suspended', 'Suspendre')}
-                          className="flex items-center gap-1.5 rounded-xl border border-orange-200 px-3 py-2 text-xs font-black text-orange-600 hover:bg-orange-50"
-                        >
-                          <PauseCircle size={13} /> Suspendre
-                        </button>
-                      )}
-                      {agent.status === 'rejected' && (
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {agent.status === 'pending' && (
+                      <>
                         <button
                           onClick={() => requestStatusChange(agent, 'active', 'Activer')}
-                          className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-black text-white hover:bg-emerald-700"
+                          className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-black text-white hover:bg-emerald-500"
                         >
                           <CheckCircle2 size={13} /> Activer
                         </button>
-                      )}
+                        <button
+                          onClick={() => requestStatusChange(agent, 'rejected', 'Rejeter')}
+                          className="flex items-center gap-1.5 rounded-xl border border-red-400/30 px-3 py-2 text-xs font-black text-red-300 hover:bg-red-500/10"
+                        >
+                          Rejeter
+                        </button>
+                      </>
+                    )}
+                    {agent.status === 'suspended' && (
                       <button
-                        onClick={() => viewLeads(agent.id)}
-                        className="flex items-center gap-1.5 rounded-xl bg-blue-600 px-3 py-2 text-xs font-black text-white hover:bg-blue-700"
+                        onClick={() => requestStatusChange(agent, 'active', 'Réactiver')}
+                        className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-black text-white hover:bg-emerald-500"
                       >
-                        <Users size={13} /> Voir détails
+                        <CheckCircle2 size={13} /> Réactiver
                       </button>
-                    </div>
+                    )}
+                    {agent.status === 'active' && (
+                      <button
+                        onClick={() => requestStatusChange(agent, 'suspended', 'Suspendre')}
+                        className="flex items-center gap-1.5 rounded-xl border border-orange-400/30 px-3 py-2 text-xs font-black text-orange-300 hover:bg-orange-500/10"
+                      >
+                        <PauseCircle size={13} /> Suspendre
+                      </button>
+                    )}
+                    {agent.status === 'rejected' && (
+                      <button
+                        onClick={() => requestStatusChange(agent, 'active', 'Activer')}
+                        className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-black text-white hover:bg-emerald-500"
+                      >
+                        <CheckCircle2 size={13} /> Activer
+                      </button>
+                    )}
+                    <button
+                      onClick={() => viewLeads(agent.id)}
+                      className="flex items-center gap-1.5 rounded-xl bg-sky-600 px-3 py-2 text-xs font-black text-white hover:bg-sky-500"
+                    >
+                      <Users size={13} /> Voir détails
+                    </button>
                   </div>
                 </div>
               </div>
-            )
-          })}
-          {filtered.length === 0 && (
-            <div className="rounded-[1.5rem] border border-slate-200 bg-white py-12 text-center">
-              <p className="font-bold text-slate-400">Aucun agent trouvé.</p>
             </div>
-          )}
-        </div>
-
-        {/* Pending Commissions */}
-        {commissions.length > 0 && (
-          <div className="rounded-[2rem] border border-amber-200 bg-white p-6 shadow-sm">
-            <h2 className="mb-5 text-xl font-black text-slate-950">Commissions en attente ({commissions.length})</h2>
-            <div className="space-y-3">
-              {commissions.map((c) => (
-                <div key={c.id} className="rounded-2xl border border-slate-100 p-4">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <p className="font-black text-slate-950">{c.agents?.full_name || '—'}</p>
-                      <p className="text-sm text-slate-500">{c.agents?.email} · {c.month}</p>
-                      <p className="mt-1 text-sm font-bold text-slate-700">
-                        {c.signups_count} inscriptions · <span className="text-emerald-700">{cfa(c.amount)}</span>
-                      </p>
-                    </div>
-                    {payingId === c.id ? (
-                      <div className="flex items-center gap-2">
-                        <input
-                          value={payMethod}
-                          onChange={(e) => setPayMethod(e.target.value)}
-                          placeholder="Méthode (Wave, Orange...)"
-                          className="rounded-xl border border-slate-300 px-3 py-2 text-sm font-semibold outline-none focus:border-emerald-500"
-                        />
-                        <input
-                          value={payRef}
-                          onChange={(e) => setPayRef(e.target.value)}
-                          placeholder="Référence (opt.)"
-                          className="rounded-xl border border-slate-300 px-3 py-2 text-sm font-semibold outline-none focus:border-emerald-500"
-                        />
-                        <button
-                          onClick={() => markCommissionPaid(c.id)}
-                          className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-black text-white hover:bg-emerald-700"
-                        >
-                          Confirmer
-                        </button>
-                        <button
-                          onClick={() => { setPayingId(null); setPayMethod(''); setPayRef('') }}
-                          className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-black text-slate-600 hover:bg-slate-50"
-                        >
-                          Annuler
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => setPayingId(c.id)}
-                        className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-black text-white hover:bg-emerald-700"
-                      >
-                        Marquer comme payé
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
+          )
+        })}
+        {filtered.length === 0 && (
+          <div className="rounded-[2rem] border border-white/10 bg-white/5 py-12 text-center">
+            <p className="font-bold text-white/40">Aucun agent trouvé.</p>
           </div>
         )}
-
       </div>
+
+      {/* Pending Commissions */}
+      {commissions.length > 0 && (
+        <div className="rounded-[2rem] border border-amber-400/30 bg-white/5 p-6">
+          <h2 className="mb-5 text-xl font-black text-white">Commissions en attente ({commissions.length})</h2>
+          <div className="space-y-3">
+            {commissions.map((c) => (
+              <div key={c.id} className="rounded-2xl border border-white/10 bg-slate-900 p-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="font-black text-white">{c.agents?.full_name || '—'}</p>
+                    <p className="text-sm text-white/50">{c.agents?.email} · {c.month}</p>
+                    <p className="mt-1 text-sm font-bold text-white/70">
+                      {c.signups_count} inscriptions · <span className="text-emerald-300">{cfa(c.amount)}</span>
+                    </p>
+                  </div>
+                  {payingId === c.id ? (
+                    <div className="flex flex-wrap items-center gap-2">
+                      <input
+                        value={payMethod}
+                        onChange={(e) => setPayMethod(e.target.value)}
+                        placeholder="Méthode (Wave, Orange...)"
+                        className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white outline-none placeholder:text-white/20 focus:border-emerald-400/50"
+                      />
+                      <input
+                        value={payRef}
+                        onChange={(e) => setPayRef(e.target.value)}
+                        placeholder="Référence (opt.)"
+                        className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white outline-none placeholder:text-white/20 focus:border-emerald-400/50"
+                      />
+                      <button
+                        onClick={() => markCommissionPaid(c.id)}
+                        className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-black text-white hover:bg-emerald-500"
+                      >
+                        Confirmer
+                      </button>
+                      <button
+                        onClick={() => { setPayingId(null); setPayMethod(''); setPayRef('') }}
+                        className="rounded-xl border border-white/10 px-4 py-2 text-sm font-black text-white/70 hover:bg-white/10"
+                      >
+                        Annuler
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setPayingId(c.id)}
+                      className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-black text-white hover:bg-emerald-500"
+                    >
+                      Marquer comme payé
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Create Agent Modal */}
       {showCreate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md overflow-hidden rounded-[2rem] bg-white p-8 shadow-2xl">
-            <h2 className="mb-5 text-2xl font-black text-slate-950">Créer un agent</h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md overflow-hidden rounded-[2rem] border border-white/10 bg-slate-900 p-8 shadow-2xl">
+            <h2 className="mb-5 text-2xl font-black text-white">Créer un agent</h2>
             <form onSubmit={createAgent} className="space-y-4">
               {['full_name', 'email', 'phone', 'city'].map((field) => (
                 <div key={field}>
-                  <label className="text-sm font-black text-slate-700 capitalize">
+                  <label className="text-sm font-black text-white/60 capitalize">
                     {field === 'full_name' ? 'Nom complet' : field === 'email' ? 'Email' : field === 'phone' ? 'Téléphone' : 'Ville'}
                     {['full_name', 'email'].includes(field) ? ' *' : ''}
                   </label>
@@ -471,7 +473,7 @@ export default function SuperAdminAgentsPage() {
                     type={field === 'email' ? 'email' : 'text'}
                     value={(newAgent as any)[field]}
                     onChange={(e) => setNewAgent((prev) => ({ ...prev, [field]: e.target.value }))}
-                    className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 font-semibold outline-none focus:border-emerald-600"
+                    className="mt-2 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 font-semibold text-white outline-none focus:border-emerald-400/50"
                   />
                 </div>
               ))}
@@ -479,14 +481,14 @@ export default function SuperAdminAgentsPage() {
                 <button
                   type="submit"
                   disabled={creating}
-                  className="flex-1 rounded-2xl bg-emerald-600 py-3 font-black text-white hover:bg-emerald-700 disabled:opacity-60"
+                  className="flex-1 rounded-2xl bg-emerald-600 py-3 font-black text-white hover:bg-emerald-500 disabled:opacity-60"
                 >
                   {creating ? <Loader2 size={18} className="mx-auto animate-spin" /> : 'Créer'}
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowCreate(false)}
-                  className="flex-1 rounded-2xl border border-slate-200 py-3 font-black text-slate-700 hover:bg-slate-50"
+                  className="flex-1 rounded-2xl border border-white/10 py-3 font-black text-white/70 hover:bg-white/10"
                 >
                   Annuler
                 </button>
@@ -498,37 +500,37 @@ export default function SuperAdminAgentsPage() {
 
       {/* View Leads Modal */}
       {viewLeadsAgent && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm" onClick={() => setViewLeadsAgent(null)}>
-          <div className="w-full max-w-2xl overflow-hidden rounded-[2rem] bg-white p-8 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={() => setViewLeadsAgent(null)}>
+          <div className="w-full max-w-2xl overflow-hidden rounded-[2rem] border border-white/10 bg-slate-900 p-8 shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="mb-5 flex items-center justify-between">
-              <h2 className="text-2xl font-black text-slate-950">
+              <h2 className="text-2xl font-black text-white">
                 Leads — {agents.find((a) => a.id === viewLeadsAgent)?.full_name}
               </h2>
-              <button onClick={() => setViewLeadsAgent(null)} className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-black text-slate-600 hover:bg-slate-50">
+              <button onClick={() => setViewLeadsAgent(null)} className="rounded-xl border border-white/10 px-3 py-2 text-sm font-black text-white/70 hover:bg-white/10">
                 Fermer
               </button>
             </div>
             {agentLeads.length === 0 ? (
-              <p className="py-8 text-center font-bold text-slate-400">Aucun lead trouvé.</p>
+              <p className="py-8 text-center font-bold text-white/40">Aucun lead trouvé.</p>
             ) : (
               <div className="max-h-96 overflow-y-auto">
                 <table className="w-full text-sm">
-                  <thead className="sticky top-0 bg-white">
-                    <tr className="border-b border-slate-100">
+                  <thead className="sticky top-0 bg-slate-900">
+                    <tr className="border-b border-white/10">
                       {['Boutique', 'Email', 'Pays', 'Date', 'Statut'].map((h) => (
-                        <th key={h} className="pb-3 pr-4 text-left text-xs font-black uppercase text-slate-400">{h}</th>
+                        <th key={h} className="pb-3 pr-4 text-left text-xs font-black uppercase text-white/40">{h}</th>
                       ))}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-50">
+                  <tbody className="divide-y divide-white/5">
                     {agentLeads.map((l) => (
                       <tr key={l.id}>
-                        <td className="py-3 pr-4 font-bold">{l.business_name || '—'}</td>
-                        <td className="py-3 pr-4 text-slate-500">{l.email || '—'}</td>
-                        <td className="py-3 pr-4 text-slate-500">{l.country || '—'}</td>
-                        <td className="py-3 pr-4 text-slate-500">{l.created_at ? new Date(l.created_at).toLocaleDateString('fr-FR') : '—'}</td>
+                        <td className="py-3 pr-4 font-bold text-white">{l.business_name || '—'}</td>
+                        <td className="py-3 pr-4 text-white/50">{l.email || '—'}</td>
+                        <td className="py-3 pr-4 text-white/50">{l.country || '—'}</td>
+                        <td className="py-3 pr-4 text-white/50">{l.created_at ? new Date(l.created_at).toLocaleDateString('fr-FR') : '—'}</td>
                         <td className="py-3">
-                          <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-black ${l.status === 'paid' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                          <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-black ${l.status === 'paid' ? 'bg-emerald-400/20 text-emerald-300' : 'bg-amber-400/20 text-amber-300'}`}>
                             {l.status === 'paid' ? 'Payé' : 'Inscrit'}
                           </span>
                         </td>
@@ -544,10 +546,10 @@ export default function SuperAdminAgentsPage() {
 
       {/* Confirm status change */}
       {confirmChange && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm" onClick={() => !applyingChange && setConfirmChange(null)}>
-          <div className="w-full max-w-sm rounded-[2rem] bg-white p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-xl font-black text-slate-950">{confirmChange.label} cet agent ?</h2>
-            <p className="mt-2 text-sm font-bold text-slate-500">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={() => !applyingChange && setConfirmChange(null)}>
+          <div className="w-full max-w-sm rounded-[2rem] border border-white/10 bg-slate-900 p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-xl font-black text-white">{confirmChange.label} cet agent ?</h2>
+            <p className="mt-2 text-sm font-bold text-white/50">
               {confirmChange.agent.full_name} ({confirmChange.agent.email})
               {confirmChange.agent.phone ? ' sera notifié par WhatsApp.' : '.'}
             </p>
@@ -555,14 +557,14 @@ export default function SuperAdminAgentsPage() {
               <button
                 onClick={applyStatusChange}
                 disabled={applyingChange}
-                className="flex-1 rounded-2xl bg-emerald-600 py-3 font-black text-white hover:bg-emerald-700 disabled:opacity-60"
+                className="flex-1 rounded-2xl bg-emerald-600 py-3 font-black text-white hover:bg-emerald-500 disabled:opacity-60"
               >
                 {applyingChange ? 'Application...' : `Confirmer : ${confirmChange.label}`}
               </button>
               <button
                 onClick={() => setConfirmChange(null)}
                 disabled={applyingChange}
-                className="flex-1 rounded-2xl border border-slate-200 py-3 font-black text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+                className="flex-1 rounded-2xl border border-white/10 py-3 font-black text-white/70 hover:bg-white/10 disabled:opacity-60"
               >
                 Annuler
               </button>
@@ -570,6 +572,6 @@ export default function SuperAdminAgentsPage() {
           </div>
         </div>
       )}
-    </main>
+    </div>
   )
 }

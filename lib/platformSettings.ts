@@ -1,5 +1,8 @@
-import useSWR, { mutate as globalMutate } from 'swr'
 import { supabasePublic } from '@/lib/supabasePublic'
+
+// Server-safe settings reader. No React/SWR imports here so this module can be
+// pulled into server route handlers (e.g. /api/whatsapp/send) without bundling
+// client-only libraries. The React hook lives in ./usePlatformSettings.
 
 export type PlatformSettings = {
   commission_target_signups: number
@@ -24,8 +27,10 @@ export const PLATFORM_DEFAULTS: PlatformSettings = {
   announcement_banner: '',
 }
 
+export const PLATFORM_SETTINGS_SWR_KEY = 'platform-settings'
 const CACHE_KEY = 'platform-settings-v1'
 const TTL = 5 * 60 * 1000
+export const PLATFORM_SETTINGS_TTL = TTL
 
 function num(v: string | undefined, fallback: number): number {
   const n = Number(v)
@@ -53,7 +58,7 @@ function parseRows(rows: { key: string; value: string | null }[]): PlatformSetti
   }
 }
 
-function readCache(): PlatformSettings | null {
+export function readPlatformSettingsCache(): PlatformSettings | null {
   if (typeof window === 'undefined') return null
   try {
     const raw = window.localStorage.getItem(CACHE_KEY)
@@ -75,10 +80,19 @@ function writeCache(data: PlatformSettings) {
   }
 }
 
+export function clearPlatformSettingsCache() {
+  if (typeof window === 'undefined') return
+  try {
+    window.localStorage.removeItem(CACHE_KEY)
+  } catch {
+    /* ignore */
+  }
+}
+
 // Works in both browser and server (route handlers). Falls back to defaults on any error.
 export async function fetchPlatformSettings(force = false): Promise<PlatformSettings> {
   if (!force) {
-    const cached = readCache()
+    const cached = readPlatformSettingsCache()
     if (cached) return cached
   }
   try {
@@ -90,32 +104,4 @@ export async function fetchPlatformSettings(force = false): Promise<PlatformSett
   } catch {
     return PLATFORM_DEFAULTS
   }
-}
-
-export function clearPlatformSettingsCache() {
-  if (typeof window === 'undefined') return
-  try {
-    window.localStorage.removeItem(CACHE_KEY)
-  } catch {
-    /* ignore */
-  }
-}
-
-// Call after saving settings: drop the cache, re-read fresh, and push into any
-// mounted usePlatformSettings() so the change propagates instantly (no 5min wait).
-export async function refreshPlatformSettings(): Promise<PlatformSettings> {
-  clearPlatformSettingsCache()
-  const fresh = await fetchPlatformSettings(true)
-  await globalMutate('platform-settings', fresh, { revalidate: false })
-  return fresh
-}
-
-// Client hook. Returns defaults until loaded; cached value is used as immediate fallback.
-export function usePlatformSettings(): PlatformSettings {
-  const { data } = useSWR('platform-settings', () => fetchPlatformSettings(), {
-    revalidateOnFocus: false,
-    dedupingInterval: TTL,
-    fallbackData: readCache() || PLATFORM_DEFAULTS,
-  })
-  return data || PLATFORM_DEFAULTS
 }
