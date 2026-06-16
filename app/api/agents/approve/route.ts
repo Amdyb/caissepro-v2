@@ -8,10 +8,13 @@ import AgentApprovedEmail from '@/lib/emails/agent-approved'
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://caissepro.app'
 const FOUNDER_EMAILS = ['infos@dakarvapes.com', 'azzideejay@gmail.com']
 
+// Service-role admin client. NEVER falls back to the anon key — admin.* calls
+// require the service role, and silently using the anon key produces the
+// confusing "This endpoint requires a valid Bearer token" error from GoTrue.
 function adminClient() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
     { auth: { autoRefreshToken: false, persistSession: false } }
   )
 }
@@ -59,6 +62,15 @@ async function authorizeCaller(req: NextRequest): Promise<boolean> {
 }
 
 export async function POST(req: NextRequest) {
+  // The service role key is mandatory for creating auth accounts.
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    console.error('[agents/approve] Service role key not configured')
+    return NextResponse.json(
+      { error: "Configuration serveur manquante : clé de service Supabase (SUPABASE_SERVICE_ROLE_KEY) absente des variables d'environnement Vercel." },
+      { status: 500 }
+    )
+  }
+
   if (!(await authorizeCaller(req))) {
     return NextResponse.json({ error: 'Non autorisé.' }, { status: 403 })
   }

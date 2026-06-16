@@ -15,10 +15,13 @@ const ROLE_LABEL: Record<string, string> = {
   agent_manager: 'Agent Manager',
 }
 
+// Service-role admin client. NEVER falls back to the anon key — admin.* calls
+// require the service role, and silently using the anon key produces the
+// confusing "This endpoint requires a valid Bearer token" error from GoTrue.
 function adminClient() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
     { auth: { autoRefreshToken: false, persistSession: false } }
   )
 }
@@ -30,22 +33,44 @@ function genPassword(): string {
   return out
 }
 
-// Only founders may invite admins.
-async function authorizeFounder(req: NextRequest): Promise<boolean> {
+// Authorize the caller: must be a founder email OR an active super_admin in
+// admin_users. Resolves the user from their session bearer token.
+async function authorizeCaller(req: NextRequest): Promise<boolean> {
   const token = (req.headers.get('authorization') || '').replace(/^Bearer\s+/i, '')
   if (!token) return false
-  const supabase = createClient(
+  const anon = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   )
-  const { data, error } = await supabase.auth.getUser(token)
+  const { data, error } = await anon.auth.getUser(token)
   if (error || !data.user) return false
-  return FOUNDER_EMAILS.includes((data.user.email || '').toLowerCase())
+
+  const email = (data.user.email || '').toLowerCase()
+  if (FOUNDER_EMAILS.includes(email)) return true
+
+  const admin = adminClient()
+  const { data: row } = await admin
+    .from('admin_users')
+    .select('id')
+    .or(`user_id.eq.${data.user.id},email.ilike.${email}`)
+    .eq('role', 'super_admin')
+    .eq('status', 'active')
+    .maybeSingle()
+  return !!row
 }
 
 export async function POST(req: NextRequest) {
-  if (!(await authorizeFounder(req))) {
-    return NextResponse.json({ error: 'Réservé aux founders.' }, { status: 403 })
+  // The service role key is mandatory for creating auth accounts.
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    console.error('[admins/invite] Service role key not configured')
+    return NextResponse.json(
+      { error: "Configuration serveur manquante : clé de service Supabase (SUPABASE_SERVICE_ROLE_KEY) absente des variables d'environnement Vercel." },
+      { status: 500 }
+    )
+  }
+
+  if (!(await authorizeCaller(req))) {
+    return NextResponse.json({ error: 'Réservé aux administrateurs (founder / super admin).' }, { status: 403 })
   }
 
   const body = await req.json().catch(() => ({}))

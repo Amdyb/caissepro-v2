@@ -6,12 +6,17 @@ const FOUNDER_EMAILS = ['infos@dakarvapes.com', 'azzideejay@gmail.com']
 function adminClient() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
     { auth: { autoRefreshToken: false, persistSession: false } }
   )
 }
 
 export async function POST(req: NextRequest) {
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    console.error('[notifications/agent-signup] Service role key not configured')
+    return NextResponse.json({ error: 'Service role key not configured' }, { status: 500 })
+  }
+
   const body = await req.json().catch(() => ({}))
   const fullName = (body.full_name as string) || 'Nouvel agent'
   const location = [body.city, body.country].filter(Boolean).join(', ')
