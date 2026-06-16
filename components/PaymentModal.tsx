@@ -37,11 +37,45 @@ export default function PaymentModal({ plan, businessId, businessName, userEmail
   const [done, setDone] = useState(false)
   const [loading, setLoading] = useState(false)
   const [onlineLoading, setOnlineLoading] = useState(false)
+  const [cardLoading, setCardLoading] = useState(false)
   const [error, setError] = useState('')
   const [selectedCountry, setSelectedCountry] = useState('Sénégal')
   const [showCountryPicker, setShowCountryPicker] = useState(false)
 
   const countryConfig = COUNTRIES[selectedCountry] || COUNTRIES['Sénégal']
+
+  async function payByCard() {
+    if (!businessId) { setError('Boutique introuvable. Veuillez réessayer.'); return }
+    setCardLoading(true)
+    setError('')
+
+    try {
+      const res = await fetch('/api/stripe/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          businessId,
+          plan: plan.id,
+          amount: plan.amount,
+          billingPeriod: 'monthly',
+          businessName,
+          email: userEmail,
+        }),
+      })
+      const data = await res.json()
+
+      if (!res.ok || !data.url) {
+        setError(data.error || "Erreur lors de l'initialisation du paiement par carte.")
+        setCardLoading(false)
+        return
+      }
+
+      window.location.href = data.url
+    } catch (err) {
+      setError('Erreur de connexion. Veuillez réessayer.')
+      setCardLoading(false)
+    }
+  }
 
   async function payOnline() {
     if (!businessId) { setError('Boutique introuvable. Veuillez réessayer.'); return }
@@ -179,15 +213,30 @@ export default function PaymentModal({ plan, businessId, businessName, userEmail
               </div>
             </div>
 
-            {/* Online payment — PayDunya */}
+            {/* Card payment — Stripe (Visa / Mastercard) */}
+            <button
+              onClick={payByCard}
+              disabled={cardLoading}
+              className="mb-1 flex w-full items-center justify-center gap-3 rounded-2xl bg-emerald-600 py-4 font-black text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700 disabled:opacity-60"
+            >
+              {cardLoading
+                ? <><Loader2 size={18} className="animate-spin" /> Redirection...</>
+                : <><CreditCard size={18} /> Payer par carte (Visa/Mastercard)</>
+              }
+            </button>
+            <p className="mb-5 text-center text-xs font-bold text-slate-400">
+              Paiement sécurisé par Stripe — Activation automatique
+            </p>
+
+            {/* Online payment — PayDunya (ready when live) */}
             <button
               onClick={payOnline}
               disabled={onlineLoading}
-              className="mb-1 flex w-full items-center justify-center gap-3 rounded-2xl bg-emerald-600 py-4 font-black text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700 disabled:opacity-60"
+              className="mb-1 flex w-full items-center justify-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 py-4 font-black text-emerald-700 transition hover:bg-emerald-100 disabled:opacity-60"
             >
               {onlineLoading
                 ? <><Loader2 size={18} className="animate-spin" /> Redirection...</>
-                : <><CreditCard size={18} /> Payer en ligne — Rapide &amp; Sécurisé</>
+                : <><CreditCard size={18} /> Payer via PayDunya (Mobile Money)</>
               }
             </button>
             <p className="mb-5 text-center text-xs font-bold text-slate-400">
@@ -202,6 +251,9 @@ export default function PaymentModal({ plan, businessId, businessName, userEmail
             </div>
 
             {/* Manual Mobile Money — show Wave/Orange only for Senegal */}
+            <p className="mb-1 text-center text-base font-black text-slate-950">
+              Payer avec Wave / Orange Money
+            </p>
             <p className="mb-3 text-center text-sm font-bold text-slate-500">
               Envoyez le montant au numéro de votre choix
             </p>
