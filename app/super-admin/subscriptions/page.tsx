@@ -22,6 +22,8 @@ type UpgradeRequest = {
   user_email: string | null
   plan: string
   price: string
+  amount: number | null
+  payment_reference: string | null
   status: string | null
   whatsapp_sent: boolean | null
   duration_months: number | null
@@ -93,8 +95,16 @@ export default function SuperAdminSubscriptionsPage() {
     return b?.whatsapp || b?.whatsapp_number || b?.phone || null
   }
 
-  // Activate (or replace) a subscription for a business.
-  async function activate(businessId: string, plan: string, months: number) {
+  function notifyWhatsApp(to: string, body: string) {
+    fetch('/api/whatsapp/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ to, body }),
+    }).catch(() => null)
+  }
+
+  // Activate (or replace) a subscription for a business. Returns the expiry date.
+  async function activate(businessId: string, plan: string, months: number): Promise<Date> {
     const now = new Date()
     const expires = new Date(Date.now() + months * 30 * 24 * 60 * 60 * 1000)
     await supabase.from('subscriptions').delete().eq('business_id', businessId)
@@ -107,24 +117,7 @@ export default function SuperAdminSubscriptionsPage() {
       expires_at: expires.toISOString(),
     })
     await supabase.from('businesses').update({ plan: plan.toLowerCase() }).eq('id', businessId)
-  }
-
-  function notifyMerchant(businessId: string | null, businessName: string, plan: string) {
-    const phone = phoneFor(businessId)
-    const body = `CaissePro - Abonnement activé\nBoutique: ${businessName}\nPlan: ${plan}\nMerci pour votre confiance !`
-    if (phone) {
-      fetch('/api/whatsapp/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ to: phone, body }),
-      }).catch(() => null)
-    }
-    // Also log to the platform admin number.
-    fetch('/api/whatsapp/send', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ to: PLATFORM_WHATSAPP, body: `UPGRADE ACTIVÉ\n${businessName}\nPlan: ${plan}` }),
-    }).catch(() => null)
+    return expires
   }
 
   async function approve(req: UpgradeRequest) {
@@ -134,8 +127,13 @@ export default function SuperAdminSubscriptionsPage() {
       .update({ status: 'approved', approved_at: new Date().toISOString() })
       .eq('id', req.id)
     if (req.business_id) {
-      await activate(req.business_id, req.plan, req.duration_months || 2)
-      notifyMerchant(req.business_id, req.business_name || nameFor(req.business_id), req.plan)
+      const expires = await activate(req.business_id, req.plan, req.duration_months || 2)
+      const expiryStr = expires.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })
+      const phone = phoneFor(req.business_id)
+      if (phone) {
+        notifyWhatsApp(phone, `Félicitations ! Votre plan ${req.plan} est activé jusqu'au ${expiryStr}. Merci !`)
+      }
+      notifyWhatsApp(PLATFORM_WHATSAPP, `UPGRADE ACTIVÉ\n${req.business_name || nameFor(req.business_id)}\nPlan: ${req.plan}\nExpire le ${expiryStr}`)
     }
     await load()
     setActing(null)
@@ -148,9 +146,13 @@ export default function SuperAdminSubscriptionsPage() {
       .from('upgrade_requests')
       .update({ status: 'rejected', rejected_at: new Date().toISOString() })
       .eq('id', req.id)
+    const phone = phoneFor(req.business_id)
+    if (phone) {
+      notifyWhatsApp(phone, `Paiement non confirmé. Contactez-nous au ${PLATFORM_WHATSAPP}`)
+    }
     await load()
     setActing(null)
-    flash('Demande rejetée.')
+    flash('Demande rejetée et marchand notifié.')
   }
 
   async function manualUpgrade(e: React.FormEvent) {
@@ -162,8 +164,13 @@ export default function SuperAdminSubscriptionsPage() {
       return
     }
     setManualBusy(true)
-    await activate(biz.id, manualPlan, manualMonths)
-    notifyMerchant(biz.id, biz.name, manualPlan)
+    const expires = await activate(biz.id, manualPlan, manualMonths)
+    const expiryStr = expires.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })
+    const phone = phoneFor(biz.id)
+    if (phone) {
+      notifyWhatsApp(phone, `Félicitations ! Votre plan ${manualPlan} est activé jusqu'au ${expiryStr}. Merci !`)
+    }
+    notifyWhatsApp(PLATFORM_WHATSAPP, `UPGRADE MANUEL\n${biz.name}\nPlan: ${manualPlan}\nExpire le ${expiryStr}`)
     setManualBusiness('')
     await load()
     setManualBusy(false)
@@ -239,15 +246,25 @@ export default function SuperAdminSubscriptionsPage() {
               <div key={req.id} className="rounded-3xl border border-amber-400/30 bg-amber-400/5 p-6">
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div>
-                    <p className="text-xl font-black">{req.business_name || nameFor(req.business_id)}</p>
+                    <div className="flex items-center gap-2">
+                      <span className="rounded-full bg-amber-400/20 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-amber-300">En attente</span>
+                      <p className="text-xl font-black">{req.business_name || nameFor(req.business_id)}</p>
+                    </div>
                     <p className="mt-0.5 text-sm font-semibold text-white/50">{req.user_email}</p>
                     <div className="mt-3 flex flex-wrap gap-2">
                       <span className="rounded-xl bg-white/10 px-3 py-1 text-xs font-black uppercase">{req.plan}</span>
-                      <span className="rounded-xl bg-emerald-400/15 px-3 py-1 text-xs font-black text-emerald-300">{req.price}</span>
+                      <span className="rounded-xl bg-emerald-400/15 px-3 py-1 text-xs font-black text-emerald-300">
+                        {req.amount != null ? `${req.amount.toLocaleString('fr-FR')} XOF` : req.price}
+                      </span>
                       <span className="rounded-xl bg-white/5 px-3 py-1 text-xs font-semibold text-white/50">
                         {new Date(req.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}
                       </span>
                     </div>
+                    {req.payment_reference && (
+                      <p className="mt-2 text-sm font-bold text-white/70">
+                        Référence paiement : <span className="rounded-lg bg-white/10 px-2 py-0.5 font-black text-white">{req.payment_reference}</span>
+                      </p>
+                    )}
                   </div>
                   <div className="flex gap-3">
                     <button

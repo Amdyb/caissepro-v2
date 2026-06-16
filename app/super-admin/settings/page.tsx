@@ -15,6 +15,8 @@ const KEYS = [
   'whatsapp_notifications_enabled',
   'maintenance_mode',
   'announcement_banner',
+  'payment_wave_number',
+  'payment_orange_number',
 ] as const
 
 type SettingsMap = Record<string, string>
@@ -154,6 +156,21 @@ export default function SuperAdminSettingsPage() {
             <Field label="Starter" value={values['plan_price_starter'] || ''} onChange={(v) => set('plan_price_starter', v)} type="number" />
             <Field label="Business" value={values['plan_price_business'] || ''} onChange={(v) => set('plan_price_business', v)} type="number" />
             <Field label="Premium" value={values['plan_price_premium'] || ''} onChange={(v) => set('plan_price_premium', v)} type="number" />
+          </div>
+        </section>
+
+        {/* Manual payment numbers (Wave / Orange Money) */}
+        <section className="rounded-[2rem] border border-white/10 bg-white/5 p-6">
+          <div className="mb-5 flex items-center gap-3">
+            <CreditCard className="text-emerald-300" size={20} />
+            <h2 className="text-xl font-black">Numéros de paiement manuel</h2>
+          </div>
+          <p className="mb-4 text-sm font-semibold text-white/50">
+            Numéros affichés aux marchands pour les paiements Wave / Orange Money.
+          </p>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Numéro Wave" value={values['payment_wave_number'] || ''} onChange={(v) => set('payment_wave_number', v)} />
+            <Field label="Numéro Orange Money" value={values['payment_orange_number'] || ''} onChange={(v) => set('payment_orange_number', v)} />
           </div>
         </section>
 

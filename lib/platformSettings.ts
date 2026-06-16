@@ -13,6 +13,8 @@ export type PlatformSettings = {
   whatsapp_notifications_enabled: boolean
   maintenance_mode: boolean
   announcement_banner: string
+  payment_wave_number: string
+  payment_orange_number: string
 }
 
 // Defaults mirror the values hardcoded across the app before settings existed.
@@ -25,6 +27,8 @@ export const PLATFORM_DEFAULTS: PlatformSettings = {
   whatsapp_notifications_enabled: true,
   maintenance_mode: false,
   announcement_banner: '',
+  payment_wave_number: '+221784581111',
+  payment_orange_number: '+221784581111',
 }
 
 export const PLATFORM_SETTINGS_SWR_KEY = 'platform-settings'
@@ -55,6 +59,8 @@ function parseRows(rows: { key: string; value: string | null }[]): PlatformSetti
     whatsapp_notifications_enabled: bool(m.whatsapp_notifications_enabled, PLATFORM_DEFAULTS.whatsapp_notifications_enabled),
     maintenance_mode: bool(m.maintenance_mode, PLATFORM_DEFAULTS.maintenance_mode),
     announcement_banner: m.announcement_banner ?? PLATFORM_DEFAULTS.announcement_banner,
+    payment_wave_number: m.payment_wave_number || PLATFORM_DEFAULTS.payment_wave_number,
+    payment_orange_number: m.payment_orange_number || PLATFORM_DEFAULTS.payment_orange_number,
   }
 }
 
