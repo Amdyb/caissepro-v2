@@ -5,8 +5,9 @@ import { getResend } from '@/lib/email';
 import WelcomeEmail from '@/lib/emails/welcome';
 import ResetPasswordEmail from '@/lib/emails/reset-password';
 import SaleNotificationEmail from '@/lib/emails/sale-notification';
+import AdminInviteEmail from '@/lib/emails/admin-invite';
 
-type EmailType = 'welcome' | 'reset-password' | 'sale-notification';
+type EmailType = 'welcome' | 'reset-password' | 'sale-notification' | 'admin-invite';
 
 interface SendEmailBody {
   type: EmailType;
@@ -53,6 +54,16 @@ export async function POST(request: NextRequest) {
           customerName: data.customerName as string,
           timestamp: data.timestamp as string,
           shopName: data.shopName as string | undefined,
+        }),
+      },
+      'admin-invite': {
+        subject: "Vos identifiants administrateur CaissePro",
+        element: React.createElement(AdminInviteEmail, {
+          name: data.name as string | undefined,
+          email: data.email as string,
+          tempPassword: data.tempPassword as string,
+          roleLabel: (data.roleLabel as string) || 'Admin',
+          loginUrl: (data.loginUrl as string) || 'https://caissepro.app/admin/login',
         }),
       },
     };
