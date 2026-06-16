@@ -1,6 +1,7 @@
 'use client'
 
 import { supabase } from '@/lib/supabaseClient'
+import { getAdminContext } from '@/lib/superAdmin'
 import { KeyRound } from 'lucide-react'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -40,11 +41,37 @@ export default function ChangePasswordPage() {
     }
 
     const { data: userData } = await supabase.auth.getUser()
-    if (userData.user) {
-      await supabase
-        .from('business_members')
-        .update({ temp_password: null })
-        .eq('user_id', userData.user.id)
+    const user = userData.user
+    if (!user) {
+      router.push('/login')
+      return
+    }
+
+    const email = (user.email || '').toLowerCase()
+
+    // Clear the forced-change flag everywhere this user could be referenced.
+    await Promise.all([
+      supabase.from('business_members').update({ temp_password: null, must_change_password: false }).eq('user_id', user.id),
+      supabase.from('admin_users').update({ must_change_password: false }).or(`user_id.eq.${user.id},email.ilike.${email}`),
+      supabase.from('agents').update({ must_change_password: false }).or(`auth_user_id.eq.${user.id},email.ilike.${email}`),
+    ])
+
+    // Route to the correct home: admins → /super-admin, agents → /agents/dashboard,
+    // merchants → /dashboard.
+    const ctx = await getAdminContext()
+    if (ctx?.allowed) {
+      router.push('/super-admin')
+      return
+    }
+
+    const { data: agent } = await supabase
+      .from('agents')
+      .select('id, status')
+      .eq('email', email)
+      .maybeSingle()
+    if (agent && agent.status === 'active') {
+      router.push('/agents/dashboard')
+      return
     }
 
     router.push('/dashboard')

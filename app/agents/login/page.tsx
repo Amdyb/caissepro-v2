@@ -29,7 +29,7 @@ export default function AgentLoginPage() {
       // Verify agent record exists
       const { data: agent } = await supabase
         .from('agents')
-        .select('id, status')
+        .select('id, status, must_change_password')
         .eq('email', userEmail)
         .maybeSingle()
 
@@ -51,6 +51,12 @@ export default function AgentLoginPage() {
         await supabase.auth.signOut()
         setError('Votre compte agent est suspendu. Contactez le support.')
         setLoading(false)
+        return
+      }
+
+      // Force a password change on first login if flagged.
+      if (agent.must_change_password) {
+        router.push('/change-password')
         return
       }
 

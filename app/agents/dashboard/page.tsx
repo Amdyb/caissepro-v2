@@ -91,6 +91,12 @@ export default function AgentDashboard() {
         return
       }
 
+      // Force password change before any dashboard access.
+      if (agentData.must_change_password) {
+        router.push('/change-password')
+        return
+      }
+
       setAgent(agentData)
 
       const [leadsRes, commsRes] = await Promise.all([

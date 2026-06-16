@@ -65,6 +65,18 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
         router.replace('/dashboard')
         return
       }
+      // Force password change on first login before any admin access.
+      if (!context.isFounder) {
+        const { data: adminRow } = await supabase
+          .from('admin_users')
+          .select('must_change_password')
+          .ilike('email', context.email)
+          .maybeSingle()
+        if (adminRow?.must_change_password) {
+          router.replace('/change-password')
+          return
+        }
+      }
       setCtx(context)
       setLoading(false)
     }

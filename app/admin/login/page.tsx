@@ -39,6 +39,17 @@ export default function AdminLoginPage() {
         return
       }
 
+      // Force a password change on first login if flagged.
+      const { data: adminRow } = await supabase
+        .from('admin_users')
+        .select('must_change_password')
+        .ilike('email', data.user.email || '')
+        .maybeSingle()
+      if (adminRow?.must_change_password) {
+        router.push('/change-password')
+        return
+      }
+
       router.push('/super-admin')
     } catch (err: any) {
       setError(err.message || 'Email ou mot de passe incorrect.')
