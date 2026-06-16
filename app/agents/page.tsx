@@ -84,13 +84,25 @@ export default function AgentsPage() {
         return
       }
 
-      // Notify admin
+      // Notify admin by WhatsApp
       await fetch('/api/whatsapp/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           to: '+221784581111',
           body: `*Nouvelle demande agent CaissePro!*\n\nNom: ${form.full_name}\nEmail: ${form.email}\nTéléphone: ${form.phone || 'Non renseigné'}\nPays: ${form.country}\nVille: ${form.city || 'Non renseignée'}`,
+        }),
+      }).catch(() => null)
+
+      // In-app notification for all platform admins
+      await fetch('/api/notifications/agent-signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          full_name: form.full_name,
+          email: form.email,
+          city: form.city,
+          country: form.country,
         }),
       }).catch(() => null)
 

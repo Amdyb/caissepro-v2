@@ -1,5 +1,21 @@
 import { supabase } from '@/lib/supabaseClient'
 
+const FOUNDER_EMAILS = ['infos@dakarvapes.com', 'azzideejay@gmail.com']
+
+// True if the email is a founder or an active platform admin.
+async function isPlatformAdmin(email: string): Promise<boolean> {
+  const lower = (email || '').toLowerCase()
+  if (!lower) return false
+  if (FOUNDER_EMAILS.includes(lower)) return true
+  const { data } = await supabase
+    .from('admin_users')
+    .select('id')
+    .ilike('email', lower)
+    .eq('status', 'active')
+    .maybeSingle()
+  return !!data
+}
+
 export async function getNextRoute(userId: string, userEmail: string): Promise<string> {
   let { data: memberships } = await supabase
     .from('business_members')
@@ -23,7 +39,12 @@ export async function getNextRoute(userId: string, userEmail: string): Promise<s
     }
   }
 
-  if (!memberships || memberships.length === 0) return '/onboarding'
+  // Invited admins / founders may have no business membership at all — send
+  // them straight to the admin panel instead of onboarding.
+  if (!memberships || memberships.length === 0) {
+    if (await isPlatformAdmin(userEmail)) return '/super-admin'
+    return '/onboarding'
+  }
 
   const sorted = (memberships as any[]).sort((a, b) => {
     const p: Record<string, number> = { owner: 0, admin: 1 }

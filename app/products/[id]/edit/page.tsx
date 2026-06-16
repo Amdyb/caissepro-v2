@@ -7,6 +7,8 @@ import { Save, Tags } from 'lucide-react'
 import { useParams, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 
+const SELECTED_BIZ_KEY = 'caissepro_selected_business_id'
+
 export default function EditProductPage() {
   const params = useParams()
   const router = useRouter()
@@ -16,6 +18,7 @@ export default function EditProductPage() {
   const [categories, setCategories] = useState<string[]>([])
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
+  const [success, setSuccess] = useState('')
   const [form, setForm] = useState({
     name: '',
     category: '',
@@ -61,7 +64,8 @@ export default function EditProductPage() {
         return
       }
 
-      setBusinessId(product.business_id || '')
+      const storedBiz = typeof window !== 'undefined' ? localStorage.getItem(SELECTED_BIZ_KEY) || '' : ''
+      setBusinessId(product.business_id || storedBiz)
       setForm({
         name: product.name || '',
         category: product.category || '',
@@ -92,10 +96,13 @@ export default function EditProductPage() {
     e.preventDefault()
     setSaving(true)
     setMessage('')
+    setSuccess('')
+
+    const bizId = businessId || (typeof window !== 'undefined' ? localStorage.getItem(SELECTED_BIZ_KEY) || '' : '')
 
     const cleanedCategory = form.category.trim()
 
-    const { error } = await supabase
+    let query = supabase
       .from('products')
       .update({
         name: form.name.trim(),
@@ -109,6 +116,10 @@ export default function EditProductPage() {
       })
       .eq('id', productId)
 
+    if (bizId) query = query.eq('business_id', bizId)
+
+    const { data, error } = await query.select('id')
+
     setSaving(false)
 
     if (error) {
@@ -116,13 +127,20 @@ export default function EditProductPage() {
       return
     }
 
-    router.push('/products')
+    if (!data || data.length === 0) {
+      setMessage("Aucun produit mis à jour. Vérifiez vos droits d'accès.")
+      return
+    }
+
+    setSuccess('Produit modifié avec succès!')
+    setTimeout(() => router.push('/products'), 900)
   }
 
   return (
     <AppShell title="Modifier produit" subtitle="Mettez à jour les informations du produit.">
       <div className="mx-auto max-w-2xl rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm">
         {message && <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-black text-red-700">{message}</div>}
+        {success && <div className="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-black text-emerald-700">{success}</div>}
 
         <form onSubmit={saveProduct} className="space-y-5">
           <input required className="w-full rounded-2xl border border-slate-300 px-4 py-3 font-semibold outline-none focus:border-emerald-500" placeholder="Nom produit" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />

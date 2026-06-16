@@ -122,29 +122,57 @@ export default function SuperAdminAgentsPage() {
     if (!confirmChange) return
     const { agent, status } = confirmChange
     setApplyingChange(true)
+
+    if (status === 'active') {
+      // Activation provisions a Supabase auth account (if missing), sets the
+      // agent active, and emails + WhatsApps the login credentials. Handled
+      // server-side because it needs the service-role key.
+      const { data: sessionData } = await supabase.auth.getSession()
+      const token = sessionData.session?.access_token
+      const res = await fetch('/api/agents/approve', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ agentId: agent.id }),
+      })
+      const result = await res.json().catch(() => ({}))
+
+      if (!res.ok) {
+        flash(result.error || "Échec de l'activation de l'agent.")
+        setApplyingChange(false)
+        setConfirmChange(null)
+        return
+      }
+
+      setAgents((prev) => prev.map((a) => a.id === agent.id ? { ...a, status: 'active', invite_code: result.inviteCode || a.invite_code } : a))
+      flash(result.credentialsCreated
+        ? 'Agent activé. Identifiants envoyés par email et WhatsApp.'
+        : 'Agent réactivé.')
+      setApplyingChange(false)
+      setConfirmChange(null)
+      return
+    }
+
     await supabase.from('agents').update({ status, updated_at: new Date().toISOString() }).eq('id', agent.id)
     setAgents((prev) => prev.map((a) => a.id === agent.id ? { ...a, status } : a))
 
     const messages: Record<string, string> = {
-      active: 'Agent activé.', suspended: 'Agent suspendu.', rejected: 'Agent rejeté.', pending: 'Statut mis à jour.',
+      suspended: 'Agent suspendu.', rejected: 'Agent rejeté.', pending: 'Statut mis à jour.',
     }
     flash(messages[status] || 'Statut mis à jour.')
 
     // WhatsApp notifications (non-blocking)
-    if (agent.phone) {
-      let body: string | null = null
-      if (status === 'active') {
-        body = `Félicitations ${agent.full_name} ! Votre compte agent CaissePro a été activé. Votre code de parrainage : ${agent.invite_code || 'en cours d\'attribution'}. Commencez à recruter des commerçants et gagnez ${settings.commission_amount_xof.toLocaleString('fr-FR')} XOF/mois !`
-      } else if (status === 'suspended') {
-        body = `Bonjour ${agent.full_name}, votre compte agent CaissePro a été suspendu. Contactez l'équipe CaissePro pour plus d'informations.`
-      }
-      if (body) {
-        await fetch('/api/whatsapp/send', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ to: agent.phone, body }),
-        }).catch(() => null)
-      }
+    if (agent.phone && status === 'suspended') {
+      await fetch('/api/whatsapp/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: agent.phone,
+          body: `Bonjour ${agent.full_name}, votre compte agent CaissePro a été suspendu. Contactez l'équipe CaissePro pour plus d'informations.`,
+        }),
+      }).catch(() => null)
     }
 
     setApplyingChange(false)

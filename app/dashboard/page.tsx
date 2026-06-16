@@ -5,6 +5,7 @@ import { getBusinessTemplate } from '@/lib/businessTemplates'
 import { getDashboardCards } from '@/lib/dashboardCards'
 import { SkeletonDashboard } from '@/components/Skeleton'
 import { supabase } from '@/lib/supabaseClient'
+import { getAdminContext } from '@/lib/superAdmin'
 import { useBusinessData } from '@/lib/hooks/useBusinessData'
 import {
   ArrowRight,
@@ -22,6 +23,7 @@ import {
   RotateCcw,
   Settings,
   ShoppingBag,
+  ShieldCheck,
   ShoppingCart,
   Sparkles,
   Store,
@@ -147,6 +149,16 @@ export default function DashboardPage() {
   // Raccourcis state
   const [shortcutSearch, setShortcutSearch] = useState('')
   const [pinnedSlugs, setPinnedSlugs] = useState<string[]>([])
+
+  // Platform-admin access (founders + invited admins) for the admin shortcut.
+  const [adminAllowed, setAdminAllowed] = useState(false)
+  useEffect(() => {
+    let active = true
+    getAdminContext().then((ctx) => {
+      if (active) setAdminAllowed(!!ctx?.allowed)
+    })
+    return () => { active = false }
+  }, [])
 
   useEffect(() => {
     // Prefetch frequently-visited pages
@@ -335,6 +347,20 @@ export default function DashboardPage() {
         <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-bold text-red-700">
           {message}
         </div>
+      )}
+
+      {/* Platform-admin shortcut — founders & invited admins only */}
+      {adminAllowed && (
+        <Link
+          href="/super-admin"
+          className="mb-4 flex items-center justify-between gap-3 rounded-[2rem] border border-slate-800 bg-slate-950 px-5 py-4 text-white shadow-sm transition hover:bg-slate-800"
+        >
+          <span className="flex items-center gap-3">
+            <ShieldCheck size={20} className="text-emerald-400" />
+            <span className="text-sm font-black">Accéder à l&apos;administration</span>
+          </span>
+          <ArrowRight size={18} className="text-emerald-400" />
+        </Link>
       )}
 
       {/* Business switcher — shown only when user manages multiple businesses */}

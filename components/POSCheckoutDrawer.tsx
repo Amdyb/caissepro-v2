@@ -130,6 +130,21 @@ export default function POSCheckoutDrawer({
               ))}
             </select>
 
+            {(() => {
+              const selected = customers.find((c: any) => c.id === selectedCustomerId)
+              if (!selected) return null
+              return (
+                <div className="mt-3 flex items-center gap-2 rounded-2xl bg-emerald-50 px-4 py-3">
+                  <span className="text-sm font-black text-emerald-700">
+                    Client : {selected.full_name}
+                  </span>
+                  {selected.phone && (
+                    <span className="text-sm font-bold text-emerald-600">• {selected.phone}</span>
+                  )}
+                </div>
+              )
+            })()}
+
             <div className="mt-4 grid gap-3">
               <input
                 value={newCustomer.full_name}

@@ -6,6 +6,7 @@ import dynamic from 'next/dynamic'
 const POSCheckoutDrawer = dynamic(() => import('@/components/POSCheckoutDrawer'), { ssr: false })
 const BarcodeScanner = dynamic(() => import('@/components/BarcodeScanner'), { ssr: false })
 import { supabase } from '@/lib/supabaseClient'
+import { notifySelf } from '@/lib/notifications'
 import { useBusinessData } from '@/lib/hooks/useBusinessData'
 import useSWR from 'swr'
 import { ImageIcon, Lock, ReceiptText, ScanLine, ShoppingCart, Trash2, X, Zap } from 'lucide-react'
@@ -258,6 +259,7 @@ export default function POSPage() {
         flash(`Erreur lignes vente: ${itemError.message}`)
       }
 
+      const lowStockProducts: string[] = []
       for (const item of cart) {
         const newStock = Math.max(0, Number(item.product.stock || 0) - Number(item.quantity || 0))
 
@@ -265,9 +267,27 @@ export default function POSPage() {
           .from('products')
           .update({ stock: newStock })
           .eq('id', item.product.id)
+
+        if (newStock <= 5) lowStockProducts.push(`${item.product.name} (${newStock})`)
       }
 
       const customer = customers.find((c) => c.id === selectedCustomerId)
+
+      // In-app notifications (non-blocking)
+      notifySelf({
+        title: 'Nouvelle vente',
+        message: `${total.toLocaleString('fr-FR')} CFA${customer?.full_name ? ` — ${customer.full_name}` : ''}`,
+        type: 'sale',
+        businessId,
+      })
+      if (lowStockProducts.length > 0) {
+        notifySelf({
+          title: 'Stock faible',
+          message: `Réassort nécessaire : ${lowStockProducts.join(', ')}`,
+          type: 'low_stock',
+          businessId,
+        })
+      }
 
       const receiptLines = cart.map((item) => `• ${item.product.name} x${item.quantity} - ${(item.price * item.quantity).toLocaleString('fr-FR')} CFA`).join('%0A')
 

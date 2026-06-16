@@ -100,26 +100,37 @@ export default function SuperAdminAdminsPage() {
     setInviting(true)
 
     const { data: userData } = await supabase.auth.getUser()
-    const { error } = await supabase.from('admin_users').insert({
-      email: cleanEmail,
-      name: name.trim() || null,
-      role,
-      status: 'active',
-      invited_by: userData.user?.id || null,
-    })
+    const { data: sessionData } = await supabase.auth.getSession()
+    const token = sessionData.session?.access_token
 
-    if (error) {
-      flash(error.message.includes('duplicate') ? 'Cet email est déjà admin.' : `Erreur: ${error.message}`)
+    // Provision the auth account + email credentials server-side (needs the
+    // service-role key), then persist the admin_users row.
+    const res = await fetch('/api/admins/invite', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({
+        email: cleanEmail,
+        name: name.trim() || null,
+        role,
+        invitedBy: userData.user?.id || null,
+      }),
+    })
+    const result = await res.json().catch(() => ({}))
+
+    if (!res.ok) {
+      flash(result.error || "Erreur lors de l'invitation.")
       setInviting(false)
       return
     }
 
-    notifyWhatsApp(`NOUVEL ADMIN\n${name.trim() || cleanEmail}\nEmail: ${cleanEmail}\nRôle: ${ROLE_LABEL[role]}`)
     setName('')
     setEmail('')
     setRole('admin')
     await load()
-    flash(`Admin ${ROLE_LABEL[role]} ajouté.`)
+    flash(`Admin ${ROLE_LABEL[role]} ajouté. Identifiants envoyés par email.`)
     setInviting(false)
   }
 

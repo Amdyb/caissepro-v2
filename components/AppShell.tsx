@@ -3,6 +3,7 @@
 import AmdyLabsBrand from '@/components/AmdyLabsBrand'
 import TutorialTour from '@/components/TutorialTour'
 import DarkModeToggle from '@/components/DarkModeToggle'
+import NotificationBell from '@/components/NotificationBell'
 import LanguageSwitcher from '@/components/LanguageSwitcher'
 import NetworkStatusBanner from '@/components/NetworkStatusBanner'
 import SoundManager from '@/components/SoundManager'
@@ -952,6 +953,7 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
               </div>
             </div>
             <div className="flex items-center gap-3">
+              <NotificationBell />
               <DarkModeToggle />
               <LanguageSwitcher />
               {action && <div>{action}</div>}
