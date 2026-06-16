@@ -486,6 +486,7 @@ export default function LandingPage() {
             <Link href="/careers" className="hover:text-emerald-400 transition-colors">Carrières</Link>
             <Link href="/login" className="hover:text-white transition-colors">Connexion</Link>
             <Link href="/register" className="hover:text-emerald-400 transition-colors">Inscription</Link>
+            <Link href="/admin/login" className="hover:text-indigo-300 transition-colors">Administration</Link>
           </div>
           <p className="text-xs font-semibold text-white/30">© {new Date().getFullYear()} CaissePro. Tous droits réservés.</p>
         </div>

@@ -25,7 +25,7 @@ export default function AdminInviteEmail({
   email,
   tempPassword,
   roleLabel,
-  loginUrl = 'https://caissepro.app/login',
+  loginUrl = 'https://caissepro.app/admin/login',
 }: AdminInviteEmailProps) {
   return (
     <Html>
@@ -41,7 +41,8 @@ export default function AdminInviteEmail({
             <Heading style={h1}>Bienvenue dans l&apos;équipe{name ? `, ${name.split(' ')[0]}` : ''} !</Heading>
             <Text style={paragraph}>
               Vous avez été ajouté à l&apos;administration de CaissePro avec le rôle{' '}
-              <strong>{roleLabel}</strong>. Connectez-vous pour accéder au panneau Super Admin.
+              <strong>{roleLabel}</strong>. Connectez-vous au <strong>portail Administration</strong>{' '}
+              pour accéder au panneau Super Admin.
             </Text>
           </Section>
 
@@ -57,10 +58,10 @@ export default function AdminInviteEmail({
 
           <Section style={ctaSection}>
             <Button style={button} href={loginUrl}>
-              Me connecter
+              Accéder au portail Administration
             </Button>
             <Text style={smallNote}>
-              Connectez-vous, puis cliquez sur « Accéder à l&apos;administration ». Changez votre
+              Connectez-vous sur le portail Administration ({loginUrl}). Changez votre
               mot de passe après la première connexion.
             </Text>
           </Section>

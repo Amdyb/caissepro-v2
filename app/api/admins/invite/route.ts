@@ -111,7 +111,7 @@ export async function POST(req: NextRequest) {
   }
 
   const roleLabel = ROLE_LABEL[role] || role
-  const loginUrl = `${APP_URL}/login`
+  const loginUrl = `${APP_URL}/admin/login`
 
   // Email credentials (non-blocking).
   try {

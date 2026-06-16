@@ -58,7 +58,7 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
       if (!active) return
 
       if (!context) {
-        router.replace('/login')
+        router.replace('/admin/login')
         return
       }
       if (!context.allowed) {
@@ -81,7 +81,7 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
 
   async function logout() {
     await supabase.auth.signOut()
-    router.replace('/login')
+    router.replace('/admin/login')
   }
 
   if (loading || !ctx) {
