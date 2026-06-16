@@ -191,7 +191,16 @@ export default function SuperAdminBusinessesPage() {
                   >
                     {PLANS.map((p) => <option key={p} value={p}>{p}</option>)}
                   </select>
-                  <Link href={`/store/${business.slug}`} className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-black text-white/70 hover:bg-white/10">Voir boutique</Link>
+                  {business.slug && business.slug.trim() ? (
+                    <Link href={`/store/${business.slug}`} className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-black text-white/70 hover:bg-white/10">Voir boutique</Link>
+                  ) : (
+                    <span
+                      title="Cette boutique n'a pas encore de lien public"
+                      className="cursor-not-allowed rounded-2xl border border-white/5 bg-white/[0.02] px-4 py-2.5 text-sm font-black text-white/30"
+                    >
+                      Boutique sans lien public
+                    </span>
+                  )}
                   <button onClick={() => toggleStatus(business)} className={`rounded-2xl px-4 py-2.5 text-sm font-black text-white ${status === 'suspended' ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-orange-500 hover:bg-orange-600'}`}>
                     {status === 'suspended' ? 'Activer' : 'Désactiver'}
                   </button>
