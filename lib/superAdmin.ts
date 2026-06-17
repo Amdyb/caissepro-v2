@@ -21,6 +21,17 @@ export function isFounder(email: string | null | undefined): boolean {
   return FOUNDER_EMAILS.includes(email.toLowerCase())
 }
 
+// admin_users.role may be stored with either spelling ('analyst' English /
+// 'analyste' French). We standardize on the canonical 'analyst' everywhere.
+// Unknown spellings pass through unchanged so an active admin is never locked
+// out purely over a label mismatch.
+export function normalizeRole(raw: string | null | undefined): AdminRole | null {
+  if (!raw) return null
+  const r = raw.toLowerCase().trim()
+  if (r === 'analyste' || r === 'analyst') return 'analyst'
+  return r as AdminRole
+}
+
 // Permission matrix per role. Founders resolve to 'super_admin'.
 const ROLE_ACCESS: Record<AdminRole, AdminFeature[]> = {
   super_admin: ['dashboard', 'businesses', 'agents', 'parrainage', 'subscriptions', 'admins', 'settings', 'tickets'],
@@ -30,8 +41,9 @@ const ROLE_ACCESS: Record<AdminRole, AdminFeature[]> = {
 }
 
 export function canAccess(role: AdminRole | null | undefined, feature: AdminFeature): boolean {
-  if (!role) return false
-  return ROLE_ACCESS[role]?.includes(feature) ?? false
+  const r = normalizeRole(role)
+  if (!r) return false
+  return ROLE_ACCESS[r]?.includes(feature) ?? false
 }
 
 // Resolve the admin role for an email. Founders are always super_admin.
@@ -44,7 +56,7 @@ export async function getAdminRole(email: string | null | undefined): Promise<Ad
   const lookupEmail = (email || userData.user?.email || '').toLowerCase()
   if (!uid && !lookupEmail) return null
 
-  let row: { role: AdminRole } | null = null
+  let row: { role: string } | null = null
 
   if (uid) {
     const { data } = await supabase
@@ -66,7 +78,7 @@ export async function getAdminRole(email: string | null | undefined): Promise<Ad
     row = (data as any) || null
   }
 
-  return row?.role ?? null
+  return normalizeRole(row?.role)
 }
 
 export type AdminContext = {
