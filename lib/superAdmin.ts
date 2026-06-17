@@ -14,6 +14,7 @@ export type AdminFeature =
   | 'subscriptions'
   | 'admins'
   | 'settings'
+  | 'tickets'
 
 export function isFounder(email: string | null | undefined): boolean {
   if (!email) return false
@@ -22,9 +23,9 @@ export function isFounder(email: string | null | undefined): boolean {
 
 // Permission matrix per role. Founders resolve to 'super_admin'.
 const ROLE_ACCESS: Record<AdminRole, AdminFeature[]> = {
-  super_admin: ['dashboard', 'businesses', 'agents', 'parrainage', 'subscriptions', 'admins', 'settings'],
-  admin: ['dashboard', 'businesses', 'agents', 'parrainage', 'subscriptions'],
-  analyst: ['dashboard', 'businesses', 'agents', 'parrainage', 'subscriptions'],
+  super_admin: ['dashboard', 'businesses', 'agents', 'parrainage', 'subscriptions', 'admins', 'settings', 'tickets'],
+  admin: ['dashboard', 'businesses', 'agents', 'parrainage', 'subscriptions', 'tickets'],
+  analyst: ['dashboard', 'businesses', 'agents', 'parrainage', 'subscriptions', 'tickets'],
   agent_manager: ['dashboard', 'agents', 'parrainage'],
 }
 

@@ -10,6 +10,7 @@ import {
   CreditCard,
   ShieldCheck,
   Settings,
+  LifeBuoy,
   Menu,
   X,
   LogOut,
@@ -33,6 +34,7 @@ const NAV: NavItem[] = [
   { label: 'Agents', href: '/super-admin/agents', icon: Users, feature: 'agents' },
   { label: 'Parrainage', href: '/super-admin/parrainage', icon: Gift, feature: 'parrainage' },
   { label: 'Abonnements', href: '/super-admin/subscriptions', icon: CreditCard, feature: 'subscriptions' },
+  { label: 'Tickets', href: '/super-admin/tickets', icon: LifeBuoy, feature: 'tickets' },
   { label: 'Admins', href: '/super-admin/admins', icon: ShieldCheck, feature: 'admins' },
   { label: 'Paramètres', href: '/super-admin/settings', icon: Settings, feature: 'settings' },
 ]
@@ -50,6 +52,7 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
   const [loading, setLoading] = useState(true)
   const [ctx, setCtx] = useState<AdminContext | null>(null)
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [openTickets, setOpenTickets] = useState(0)
 
   useEffect(() => {
     let active = true
@@ -90,6 +93,21 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
   useEffect(() => {
     setMobileOpen(false)
   }, [pathname])
+
+  // Live count of tickets needing attention for the nav badge.
+  useEffect(() => {
+    if (!ctx) return
+    let active = true
+    async function count() {
+      const { count } = await supabase
+        .from('support_tickets')
+        .select('id', { count: 'exact', head: true })
+        .in('status', ['open', 'en_cours'])
+      if (active) setOpenTickets(count || 0)
+    }
+    count()
+    return () => { active = false }
+  }, [ctx, pathname])
 
   async function logout() {
     await supabase.auth.signOut()
@@ -140,7 +158,12 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
               }`}
             >
               <Icon size={18} />
-              {item.label}
+              <span className="flex-1">{item.label}</span>
+              {item.feature === 'tickets' && openTickets > 0 && (
+                <span className="rounded-full bg-orange-500 px-2 py-0.5 text-[10px] font-black text-white">
+                  {openTickets > 99 ? '99+' : openTickets}
+                </span>
+              )}
             </Link>
           )
         })}

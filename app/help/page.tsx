@@ -3,7 +3,7 @@
 import AppShell from '@/components/AppShell'
 import Link from 'next/link'
 import { useState } from 'react'
-import { ChevronDown, ChevronUp, HelpCircle, MessageCircle, PlayCircle, Search } from 'lucide-react'
+import { ChevronDown, ChevronUp, HelpCircle, Inbox, MessageCircle, PlayCircle, Search, Ticket } from 'lucide-react'
 
 type FAQ = { question: string; answer: string }
 type Section = { title: string; emoji: string; items: FAQ[] }
@@ -296,19 +296,25 @@ export default function HelpPage() {
           <h3 className="text-xl font-black text-slate-950">Contacter le support</h3>
           <p className="mt-2 text-sm text-slate-500">Vous n'avez pas trouvé votre réponse ? Notre équipe est là pour vous aider.</p>
           <div className="mt-5 flex flex-wrap justify-center gap-3">
+            <button
+              onClick={() => window.dispatchEvent(new Event('open-support-ticket'))}
+              className="inline-flex items-center gap-2 rounded-2xl bg-emerald-600 px-6 py-3 text-sm font-black text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700"
+            >
+              <Ticket size={16} /> Créer un ticket
+            </button>
+            <Link
+              href="/my-tickets"
+              className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-6 py-3 text-sm font-black text-slate-700 hover:bg-slate-100"
+            >
+              <Inbox size={16} /> Mes tickets
+            </Link>
             <a
               href={`https://wa.me/15863442378?text=${encodeURIComponent("Bonjour, j'ai besoin d'aide avec CaissePro:")}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-2xl bg-emerald-600 px-6 py-3 text-sm font-black text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700"
-            >
-              <MessageCircle size={16} /> Contacter via WhatsApp
-            </a>
-            <a
-              href="mailto:support@caissepro.app"
               className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-6 py-3 text-sm font-black text-slate-700 hover:bg-slate-100"
             >
-              Envoyer un email
+              <MessageCircle size={16} /> WhatsApp
             </a>
           </div>
           <p className="mt-4 text-xs font-black uppercase tracking-wide text-emerald-600">Réponse sous 24h</p>
