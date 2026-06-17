@@ -145,7 +145,7 @@ export default function EditProductPage() {
         <form onSubmit={saveProduct} className="space-y-5">
           <input required className="w-full rounded-2xl border border-slate-300 px-4 py-3 font-semibold outline-none focus:border-emerald-500" placeholder="Nom produit" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
 
-          <ProductImageUploader value={form.image} onChange={(url) => setForm({ ...form, image: url })} />
+          <ProductImageUploader value={form.image} businessId={businessId} onChange={(url) => setForm({ ...form, image: url })} />
 
           <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
             <label className="mb-2 flex items-center gap-2 text-sm font-black text-slate-700"><Tags size={16} /> Catégorie</label>

@@ -1,6 +1,7 @@
 'use client'
 
 import { supabase } from '@/lib/supabaseClient'
+import { uploadImage, validateImageFile } from '@/lib/uploadImage'
 import { ImageIcon, Upload } from 'lucide-react'
 import { useState } from 'react'
 
@@ -41,40 +42,25 @@ export default function BrandingImageUploader({
   async function uploadFile(file: File) {
     if (!businessId || !file) return
 
-    setUploading(true)
     setMessage('')
-
-    const ext = file.name.split('.').pop() || 'jpg'
-    const path = `${businessId}/${folder}/${Date.now()}.${ext}`
-
-    const { error } = await supabase.storage
-      .from('business-assets')
-      .upload(path, file, {
-        cacheControl: '3600',
-        upsert: true
-      })
-
-    if (error) {
-      setMessage(error.message)
-      setUploading(false)
+    const validationError = validateImageFile(file)
+    if (validationError) {
+      setMessage(validationError)
       return
     }
 
-    const { data } = supabase.storage
-      .from('business-assets')
-      .getPublicUrl(path)
+    setUploading(true)
 
-    const url = data.publicUrl
-
-    onUploaded(url)
-
-    const saved = await persistBranding(url)
-
-    if (saved) {
-      setMessage('Image enregistrée avec succès.')
+    try {
+      const { url } = await uploadImage({ file, bucket: 'business-assets', businessId, folder })
+      onUploaded(url)
+      const saved = await persistBranding(url)
+      if (saved) setMessage('Image enregistrée avec succès.')
+    } catch (err: any) {
+      setMessage(err.message || "Erreur lors de l'upload de l'image.")
+    } finally {
+      setUploading(false)
     }
-
-    setUploading(false)
   }
 
   async function handleManualChange(url: string) {

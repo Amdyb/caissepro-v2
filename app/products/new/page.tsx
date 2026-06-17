@@ -3,7 +3,8 @@
 import AppShell from '@/components/AppShell'
 import { PLAN_LIMITS, PlanName, getNumericLimit } from '@/lib/plans'
 import { supabase } from '@/lib/supabaseClient'
-import { ArrowLeft, ImagePlus, PackagePlus, Save, ScanLine } from 'lucide-react'
+import { uploadImage, validateImageFile, getSelectedBusinessId } from '@/lib/uploadImage'
+import { ArrowLeft, ImagePlus, Loader2, PackagePlus, Save, ScanLine } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -20,6 +21,9 @@ export default function NewProductPage() {
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
   const [showScanner, setShowScanner] = useState(false)
+  const [uploadingImage, setUploadingImage] = useState(false)
+  const [imageError, setImageError] = useState('')
+  const [imagePreview, setImagePreview] = useState('')
 
   const [form, setForm] = useState({
     name: '',
@@ -116,12 +120,26 @@ export default function NewProductPage() {
   async function handleProductImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
-    const ext = file.name.split('.').pop() || 'jpg'
-    const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${ext}`
-    const { error } = await supabase.storage.from('product-images').upload(fileName, file)
-    if (error) { setMessage(error.message); return }
-    const { data } = supabase.storage.from('product-images').getPublicUrl(fileName)
-    setForm(f => ({ ...f, image: data.publicUrl }))
+    setImageError('')
+
+    const validationError = validateImageFile(file)
+    if (validationError) { setImageError(validationError); return }
+
+    // Instant preview before the upload completes.
+    setImagePreview(URL.createObjectURL(file))
+    setUploadingImage(true)
+
+    try {
+      const bId = businessId || getSelectedBusinessId()
+      const { url } = await uploadImage({ file, bucket: 'product-images', businessId: bId })
+      setForm(f => ({ ...f, image: url }))
+      setImagePreview('')
+    } catch (err: any) {
+      setImageError(err.message || "Erreur lors de l'upload de l'image.")
+      setImagePreview('')
+    } finally {
+      setUploadingImage(false)
+    }
   }
 
   return (
@@ -173,18 +191,30 @@ export default function NewProductPage() {
             </div>
 
             <div>
-              {form.image && (
-                <div className="mb-3 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
-                  <img src={form.image} alt="Produit" className="h-28 w-full object-contain bg-white" />
+              <label className="mb-2 block text-sm font-bold text-slate-700">Image produit (optionnel)</label>
+              {(form.image || imagePreview) && (
+                <div className="relative mb-3 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={form.image || imagePreview} alt="Produit" className="h-28 w-full bg-white object-contain" />
+                  {uploadingImage && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-white/70">
+                      <Loader2 className="animate-spin text-emerald-600" size={26} />
+                    </div>
+                  )}
                 </div>
               )}
               <button
                 type="button"
+                disabled={uploadingImage}
                 onClick={() => (document.getElementById('product-image-upload') as HTMLInputElement)?.click()}
-                className="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-xl"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
               >
-                <ImagePlus size={17} /> Ajoute l&apos;image du produit
+                {uploadingImage
+                  ? <><Loader2 className="animate-spin" size={17} /> Upload en cours...</>
+                  : <><ImagePlus size={17} /> {form.image ? "Changer l'image" : "Ajouter l'image du produit"}</>}
               </button>
+              <p className="mt-2 text-xs font-semibold text-slate-400">JPG, PNG, WEBP — max 5MB. Le produit peut être créé sans image.</p>
+              {imageError && <p className="mt-2 text-sm font-bold text-red-700">{imageError}</p>}
               <input id="product-image-upload" type="file" accept="image/*" className="hidden" onChange={handleProductImageUpload} />
             </div>
 
