@@ -1,6 +1,7 @@
 'use client'
 
 import { supabase } from '@/lib/supabaseClient'
+import ResetPasswordButton from '@/components/ResetPasswordButton'
 import { AlertTriangle, Crown, Search, ShieldCheck, Store, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
@@ -201,6 +202,7 @@ export default function SuperAdminBusinessesPage() {
                       Boutique sans lien public
                     </span>
                   )}
+                  <ResetPasswordButton businessId={business.id} name={business.name} phone={ownerPhone(business)} />
                   <button onClick={() => toggleStatus(business)} className={`rounded-2xl px-4 py-2.5 text-sm font-black text-white ${status === 'suspended' ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-orange-500 hover:bg-orange-600'}`}>
                     {status === 'suspended' ? 'Activer' : 'Désactiver'}
                   </button>

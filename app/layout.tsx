@@ -5,6 +5,7 @@ import DarkModeProvider from '@/components/DarkModeProvider'
 import InstallAppPrompt from '@/components/InstallAppPrompt'
 import NetworkStatusBanner from '@/components/NetworkStatusBanner'
 import ServiceWorkerRegister from '@/components/ServiceWorkerRegister'
+import SupportBubble from '@/components/SupportBubble'
 import SWRProvider from '@/components/SWRProvider'
 
 export const viewport: Viewport = {
@@ -52,6 +53,7 @@ export default function RootLayout({
           <ServiceWorkerRegister />
           {children}
           <InstallAppPrompt />
+          <SupportBubble />
         </SWRProvider>
       </body>
       <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID!} />

@@ -49,7 +49,7 @@ export default function ForgotPasswordPage() {
         {sent ? (
           <div className="space-y-6">
             <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-bold text-emerald-700">
-              Lien envoyé ! Vérifiez votre boîte mail et suivez les instructions.
+              Email de réinitialisation envoyé ! Vérifiez votre boîte mail.
             </div>
             <Link
               href="/login"
@@ -57,6 +57,17 @@ export default function ForgotPasswordPage() {
             >
               Retour à la connexion
             </Link>
+            <p className="text-center text-sm font-semibold text-slate-500">
+              Toujours bloqué ?{' '}
+              <a
+                href={`https://wa.me/15863442378?text=${encodeURIComponent("Bonjour, je n'arrive pas à réinitialiser mon mot de passe CaissePro:")}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-black text-emerald-700 hover:underline"
+              >
+                Contactez le support
+              </a>
+            </p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -87,6 +98,17 @@ export default function ForgotPasswordPage() {
 
             <p className="text-center text-sm text-slate-500">
               <Link href="/login" className="font-black text-brand-700">Retour à la connexion</Link>
+            </p>
+            <p className="text-center text-xs font-semibold text-slate-400">
+              Toujours bloqué ?{' '}
+              <a
+                href={`https://wa.me/15863442378?text=${encodeURIComponent("Bonjour, je n'arrive pas à réinitialiser mon mot de passe CaissePro:")}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-black text-emerald-700 hover:underline"
+              >
+                Contactez le support
+              </a>
             </p>
           </form>
         )}

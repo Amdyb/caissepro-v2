@@ -3,6 +3,7 @@
 import { supabase } from '@/lib/supabaseClient'
 import { getAdminContext } from '@/lib/superAdmin'
 import { usePlatformSettings } from '@/lib/usePlatformSettings'
+import ResetPasswordButton from '@/components/ResetPasswordButton'
 import { CheckCircle2, Loader2, PauseCircle, Plus, Search, Users } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
@@ -414,6 +415,12 @@ export default function SuperAdminAgentsPage() {
                     >
                       <Users size={13} /> Voir détails
                     </button>
+                    <ResetPasswordButton
+                      email={agent.email}
+                      name={agent.full_name}
+                      phone={agent.phone}
+                      className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-black text-white/70 hover:bg-white/10"
+                    />
                   </div>
                 </div>
               </div>

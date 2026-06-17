@@ -10,6 +10,24 @@ type Section = { title: string; emoji: string; items: FAQ[] }
 
 const FAQ_SECTIONS: Section[] = [
   {
+    title: 'Connexion & Mot de passe',
+    emoji: '🔑',
+    items: [
+      {
+        question: 'Comment me connecter ?',
+        answer: 'Rendez-vous sur la page de connexion (/login), entrez votre email et votre mot de passe, puis cliquez sur "Se connecter". Les agents se connectent sur /agents/login et l\'équipe d\'administration sur /admin/login.'
+      },
+      {
+        question: 'J\'ai oublié mon mot de passe',
+        answer: 'Sur la page de connexion, cliquez sur "Mot de passe oublié ?". Entrez votre email : vous recevrez un lien de réinitialisation. Ouvrez-le et choisissez un nouveau mot de passe. Si vous ne recevez rien, vérifiez vos spams ou contactez le support WhatsApp.'
+      },
+      {
+        question: 'Comment faire une vente ?',
+        answer: 'Allez sur la page Point de Vente (/pos), ajoutez les produits au panier, cliquez sur le total, choisissez le mode de paiement (Espèces, Wave, Orange Money, Carte ou Client Doit) puis confirmez. La vente est enregistrée et le stock mis à jour automatiquement.'
+      },
+    ]
+  },
+  {
     title: 'Démarrage',
     emoji: '🚀',
     items: [
@@ -138,6 +156,20 @@ const FAQ_SECTIONS: Section[] = [
     ]
   },
   {
+    title: 'Abonnement & Paiement',
+    emoji: '💳',
+    items: [
+      {
+        question: 'Problèmes de paiement d\'abonnement',
+        answer: 'Pour passer à un plan payant, allez dans Mise à niveau (/upgrade), choisissez votre plan et suivez les étapes de paiement Wave ou Orange Money : envoyez le montant au numéro affiché, entrez la référence de transaction, puis cliquez sur "J\'ai effectué le paiement". Votre plan est activé sous 24h après vérification. Si votre paiement n\'a pas été pris en compte, contactez le support WhatsApp avec votre référence de transaction.'
+      },
+      {
+        question: 'Quels sont les plans disponibles ?',
+        answer: 'Gratuit (0 XOF), Starter (5 000 XOF/mois), Business (15 000 XOF/mois) et Premium (35 000 XOF/mois). Offre promo en cours : payez 1 mois et obtenez 2 mois d\'utilisation.'
+      },
+    ]
+  },
+  {
     title: 'Compte & Sécurité',
     emoji: '🔐',
     items: [
@@ -191,7 +223,7 @@ export default function HelpPage() {
   })).filter((section) => section.items.length > 0)
 
   return (
-    <AppShell title="Centre d'aide" subtitle="Tout ce qu'il faut savoir sur CaissePro.">
+    <AppShell title="Centre d'aide CaissePro" subtitle="Tout ce qu'il faut savoir sur CaissePro.">
       <div className="mx-auto max-w-3xl">
 
         {/* Header */}
@@ -201,7 +233,7 @@ export default function HelpPage() {
               <HelpCircle size={28} />
             </div>
             <div>
-              <h1 className="text-3xl font-black">Centre d'aide</h1>
+              <h1 className="text-3xl font-black">Centre d'aide CaissePro</h1>
               <p className="mt-1 text-sm font-semibold text-emerald-100">Tout ce qu'il faut savoir sur CaissePro</p>
             </div>
           </div>
@@ -261,11 +293,11 @@ export default function HelpPage() {
         {/* Contact CTA */}
         <div className="mt-6 rounded-[2rem] border border-slate-200 bg-white p-8 text-center shadow-sm">
           <MessageCircle className="mx-auto mb-3 text-emerald-600" size={32} />
-          <h3 className="text-xl font-black text-slate-950">Vous n'avez pas trouvé votre réponse ?</h3>
-          <p className="mt-2 text-sm text-slate-500">Notre équipe est disponible pour vous aider.</p>
+          <h3 className="text-xl font-black text-slate-950">Contacter le support</h3>
+          <p className="mt-2 text-sm text-slate-500">Vous n'avez pas trouvé votre réponse ? Notre équipe est là pour vous aider.</p>
           <div className="mt-5 flex flex-wrap justify-center gap-3">
             <a
-              href="https://wa.me/221781234567"
+              href={`https://wa.me/15863442378?text=${encodeURIComponent("Bonjour, j'ai besoin d'aide avec CaissePro:")}`}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 rounded-2xl bg-emerald-600 px-6 py-3 text-sm font-black text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700"
@@ -279,6 +311,7 @@ export default function HelpPage() {
               Envoyer un email
             </a>
           </div>
+          <p className="mt-4 text-xs font-black uppercase tracking-wide text-emerald-600">Réponse sous 24h</p>
         </div>
 
         <div className="mt-8 flex justify-center gap-4 text-xs font-bold text-slate-400">

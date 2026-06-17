@@ -1,6 +1,7 @@
 'use client'
 
 import { supabase } from '@/lib/supabaseClient'
+import ResetPasswordButton from '@/components/ResetPasswordButton'
 import { getAdminContext, type AdminRole } from '@/lib/superAdmin'
 import {
   ShieldCheck,
@@ -327,6 +328,11 @@ export default function SuperAdminAdminsPage() {
                             ))}
                           </select>
 
+                          <ResetPasswordButton
+                            email={admin.email}
+                            name={admin.name || admin.email}
+                            className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-black text-white/70 hover:bg-white/10"
+                          />
                           {admin.status === 'active' ? (
                             <button
                               onClick={() => setStatus(admin, 'suspended')}
