@@ -15,11 +15,34 @@ export function getSelectedBusinessId(): string | null {
   return localStorage.getItem(SELECTED_BIZ_KEY)
 }
 
-// Returns a French error message, or null if the file is a valid image ≤ 5 MB.
+function isHeic(file: File): boolean {
+  return /image\/hei[cf]/i.test(file.type) || /\.(heic|heif)$/i.test(file.name)
+}
+
+// Returns a French error message, or null if the file is a valid image.
+// Size is enforced later (after HEIC conversion + compression) so a large HEIC
+// photo gets a chance to be shrunk before being rejected.
 export function validateImageFile(file: File): string | null {
-  if (!file.type.startsWith('image/')) return 'Veuillez sélectionner une image.'
-  if (file.size > MAX_BYTES) return 'Image trop grande (max 5MB)'
+  if (!file.type.startsWith('image/') && !isHeic(file)) return 'Veuillez sélectionner une image.'
   return null
+}
+
+// iPhone HEIC/HEIF photos don't render in most browsers and can't be canvas-
+// compressed, so convert them to JPEG up front. Browser-only (dynamic import);
+// falls back to the original file if conversion fails (the buckets accept HEIC).
+async function convertHeicIfNeeded(file: File): Promise<File> {
+  if (!isHeic(file)) return file
+  if (typeof window === 'undefined') return file
+  try {
+    const heic2any = (await import('heic2any')).default
+    const converted = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.85 })
+    const blob = (Array.isArray(converted) ? converted[0] : converted) as Blob
+    const baseName = file.name.replace(/\.[^.]+$/, '') || 'image'
+    return new File([blob], `${baseName}.jpg`, { type: 'image/jpeg' })
+  } catch (err) {
+    console.error('HEIC conversion failed, uploading original:', err)
+    return file
+  }
 }
 
 function sanitizeName(name: string): string {
@@ -94,7 +117,8 @@ export async function uploadImage({ file, bucket, businessId, folder }: UploadIm
   const validationError = validateImageFile(file)
   if (validationError) throw new Error(validationError)
 
-  const processed = await compressImage(file)
+  const converted = await convertHeicIfNeeded(file)
+  const processed = await compressImage(converted)
   if (processed.size > MAX_BYTES) throw new Error('Image trop grande (max 5MB)')
 
   const parts: string[] = []
