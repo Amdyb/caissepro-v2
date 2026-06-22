@@ -6,7 +6,7 @@ import { mutate } from 'swr'
 // they all stay in sync with the dashboard's business switcher.
 export const SELECTED_BUSINESS_KEY = 'caissepro_selected_business_id'
 
-export type ShopOption = { id: string; name: string; slug: string | null }
+export type ShopOption = { id: string; name: string; slug: string | null; is_demo: boolean }
 
 export function slugify(value: string) {
   return value
@@ -48,7 +48,7 @@ export async function resolveSelectedBusiness(): Promise<{
 
   const { data: memberships } = await supabase
     .from('business_members')
-    .select('business_id, businesses(id, name, slug)')
+    .select('business_id, businesses(id, name, slug, is_demo)')
     .eq('user_id', userData.user.id)
 
   const shops: ShopOption[] = (memberships || [])
@@ -56,6 +56,7 @@ export async function resolveSelectedBusiness(): Promise<{
       id: m.business_id as string,
       name: (m.businesses?.name as string) || 'Boutique',
       slug: (m.businesses?.slug as string) ?? null,
+      is_demo: !!m.businesses?.is_demo,
     }))
     .filter((s) => !!s.id)
 
