@@ -1,12 +1,16 @@
 'use client'
 
 import AppShell from '@/components/AppShell'
+import ShopSwitcher from '@/components/ShopSwitcher'
 import { supabase } from '@/lib/supabaseClient'
+import { resolveSelectedBusiness, setSelectedBusinessId, ShopOption } from '@/lib/storefront'
 import { Check, Copy, MessageCircle, QrCode, X } from 'lucide-react'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 
 export default function SharePage() {
+  const [shops, setShops] = useState<ShopOption[]>([])
+  const [selectedId, setSelectedId] = useState<string | null>(null)
   const [shopUrl, setShopUrl] = useState('')
   const [businessName, setBusinessName] = useState('')
   const [plan, setPlan] = useState<string>('free')
@@ -14,43 +18,45 @@ export default function SharePage() {
   const [copied, setCopied] = useState(false)
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
 
+  async function loadShop(businessId: string) {
+    const { data: biz } = await supabase
+      .from('businesses')
+      .select('name, slug')
+      .eq('id', businessId)
+      .maybeSingle()
+
+    const slug = (biz as any)?.slug
+    setBusinessName((biz as any)?.name || 'Ma boutique')
+    setShopUrl(slug ? `${window.location.origin}/shop/${slug}` : '')
+
+    const { data: sub } = await supabase
+      .from('subscriptions')
+      .select('plan')
+      .eq('business_id', businessId)
+      .eq('status', 'active')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    setPlan(sub?.plan || 'free')
+  }
+
   useEffect(() => {
     async function init() {
-      const { data: userData } = await supabase.auth.getUser()
-      if (!userData.user) return
-
-      const { data: membership } = await supabase
-        .from('business_members')
-        .select('business_id, businesses(name, slug)')
-        .eq('user_id', userData.user.id)
-        .limit(1)
-        .maybeSingle()
-
-      const member: any = membership
-      const slug = member?.businesses?.slug
-      const name = member?.businesses?.name || 'Ma boutique'
-
-      setBusinessName(name)
-      if (slug) {
-        setShopUrl(`${window.location.origin}/shop/${slug}`)
-      }
-
-      if (member?.business_id) {
-        const { data: sub } = await supabase
-          .from('subscriptions')
-          .select('plan')
-          .eq('business_id', member.business_id)
-          .eq('status', 'active')
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle()
-        setPlan(sub?.plan || 'free')
-      }
-
+      const { businessId, shops } = await resolveSelectedBusiness()
+      setShops(shops)
+      setSelectedId(businessId)
+      if (businessId) await loadShop(businessId)
       setLoading(false)
     }
     init()
   }, [])
+
+  async function switchShop(id: string) {
+    setSelectedBusinessId(id)
+    setSelectedId(id)
+    setShopUrl('')
+    await loadShop(id)
+  }
 
   const isFree = plan === 'free'
 
@@ -129,6 +135,8 @@ export default function SharePage() {
       )}
 
       <div className="mx-auto max-w-lg space-y-5">
+        <ShopSwitcher shops={shops} selectedId={selectedId} onChange={switchShop} />
+
         {isFree && (
           <div className="rounded-[2rem] border border-amber-200 bg-amber-50 p-5 text-center shadow-sm">
             <p className="text-sm font-black text-amber-800">Plan Gratuit — Boutique en ligne verrouillée</p>

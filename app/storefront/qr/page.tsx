@@ -1,40 +1,48 @@
 'use client'
 
 import AppShell from '@/components/AppShell'
+import ShopSwitcher from '@/components/ShopSwitcher'
 import { supabase } from '@/lib/supabaseClient'
+import { resolveSelectedBusiness, setSelectedBusinessId, ShopOption } from '@/lib/storefront'
 import { Download, Printer, QrCode } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
 export default function QRCodePage() {
+  const [shops, setShops] = useState<ShopOption[]>([])
+  const [selectedId, setSelectedId] = useState<string | null>(null)
   const [shopUrl, setShopUrl] = useState('')
   const [businessName, setBusinessName] = useState('')
   const [loading, setLoading] = useState(true)
   const printRef = useRef<HTMLDivElement>(null)
 
+  async function loadShop(businessId: string) {
+    const { data: biz } = await supabase
+      .from('businesses')
+      .select('name, slug')
+      .eq('id', businessId)
+      .maybeSingle()
+    const slug = (biz as any)?.slug
+    setBusinessName((biz as any)?.name || 'Ma boutique')
+    setShopUrl(slug ? `${window.location.origin}/shop/${slug}` : '')
+  }
+
   useEffect(() => {
     async function init() {
-      const { data: userData } = await supabase.auth.getUser()
-      if (!userData.user) return
-
-      const { data: membership } = await supabase
-        .from('business_members')
-        .select('business_id, businesses(name, slug)')
-        .eq('user_id', userData.user.id)
-        .limit(1)
-        .maybeSingle()
-
-      const member: any = membership
-      const slug = member?.businesses?.slug
-      const name = member?.businesses?.name || 'Ma boutique'
-
-      setBusinessName(name)
-      if (slug) {
-        setShopUrl(`${window.location.origin}/shop/${slug}`)
-      }
+      const { businessId, shops } = await resolveSelectedBusiness()
+      setShops(shops)
+      setSelectedId(businessId)
+      if (businessId) await loadShop(businessId)
       setLoading(false)
     }
     init()
   }, [])
+
+  async function switchShop(id: string) {
+    setSelectedBusinessId(id)
+    setSelectedId(id)
+    setShopUrl('')
+    await loadShop(id)
+  }
 
   const qrImageUrl = shopUrl
     ? `https://api.qrserver.com/v1/create-qr-code/?size=400x400&margin=20&data=${encodeURIComponent(shopUrl)}`
@@ -89,7 +97,9 @@ export default function QRCodePage() {
 
   return (
     <AppShell title="QR Code boutique" subtitle="Scannez pour accéder à votre boutique en ligne.">
-      <div className="mx-auto max-w-lg">
+      <div className="mx-auto max-w-lg space-y-5">
+        <ShopSwitcher shops={shops} selectedId={selectedId} onChange={switchShop} />
+
         {!shopUrl ? (
           <div className="rounded-[2rem] border border-dashed border-slate-300 bg-white p-10 text-center shadow-sm">
             <QrCode className="mx-auto mb-4 text-slate-300" size={48} />

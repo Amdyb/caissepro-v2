@@ -2,6 +2,7 @@
 
 import AppShell from '@/components/AppShell'
 import { supabase } from '@/lib/supabaseClient'
+import { resolveSelectedBusiness } from '@/lib/storefront'
 import { CheckCircle, MessageCircle, PackageCheck, Search, ShoppingBag, XCircle } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
@@ -62,28 +63,22 @@ export default function OrdersPage() {
 
   useEffect(() => {
     async function init() {
-      const { data: userData } = await supabase.auth.getUser()
+      // Respect the shop selected in the storefront / dashboard switcher.
+      const { userId, businessId } = await resolveSelectedBusiness()
 
-      if (!userData.user) {
+      if (!userId) {
         router.push('/login')
         return
       }
 
-      const { data: membership } = await supabase
-        .from('business_members')
-        .select('business_id')
-        .eq('user_id', userData.user.id)
-        .limit(1)
-        .maybeSingle()
-
-      if (!membership) {
+      if (!businessId) {
         setMessage('Aucune boutique trouvée.')
         setLoading(false)
         return
       }
 
-      setBusinessId(membership.business_id)
-      await loadOrders(membership.business_id)
+      setBusinessId(businessId)
+      await loadOrders(businessId)
       setLoading(false)
     }
 
