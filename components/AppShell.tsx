@@ -26,6 +26,7 @@ import {
   Package,
   PackagePlus,
   Database,
+  Eye,
   QrCode,
   Receipt,
   ReceiptText,
@@ -166,7 +167,7 @@ const MANAGER_GESTION_SECTION: SectionConfig = {
   items: [
     { label: 'Produits', href: '/products', icon: Package },
     { label: 'Clients', href: '/customers', icon: Users },
-    { label: 'Employes', href: '/employees', icon: UserCog },
+    { label: 'Employés', href: '/employees', icon: UserCog },
     { label: 'Depenses', href: '/expenses', icon: Receipt },
   ],
 }
@@ -314,9 +315,9 @@ const RETAIL_SECTIONS: SectionConfig[] = [
     defaultOpen: false,
     items: [
       { label: 'Produits', href: '/products', icon: Package, tourId: 'tour-nav-products' },
-      { label: 'Clients', href: '/customers', icon: Users },
-      { label: 'Employes', href: '/employees', icon: UserCog, lockedPlan: 'starter' },
       { label: 'Fournisseurs', href: '/suppliers', icon: Truck, lockedPlan: 'business' },
+      { label: 'Clients', href: '/customers', icon: Users },
+      { label: 'Employés', href: '/employees', icon: UserCog, lockedPlan: 'starter' },
       { label: 'Réassort', href: '/reassort', icon: PackagePlus, lockedPlan: 'business' },
       { label: 'Categories', href: '/categories', icon: Tag },
     ],
@@ -412,7 +413,7 @@ function getNavSections(businessType: string): SectionConfig[] {
         { ...GESTION, items: [
           { label: 'Menu & Produits', href: '/products', icon: Package },
           { label: 'Clients', href: '/customers', icon: Users },
-          { label: 'Employes', href: '/employees', icon: UserCog, lockedPlan: 'starter' },
+          { label: 'Employés', href: '/employees', icon: UserCog, lockedPlan: 'starter' },
           { label: 'Depenses', href: '/expenses', icon: Receipt },
         ]},
         BOUTIQUE,
@@ -437,7 +438,7 @@ function getNavSections(businessType: string): SectionConfig[] {
         { ...GESTION, items: [
           { label: 'Services', href: '/products', icon: Scissors },
           { label: 'Clients', href: '/customers', icon: Users },
-          { label: 'Employes', href: '/employees', icon: UserCog, lockedPlan: 'starter' },
+          { label: 'Employés', href: '/employees', icon: UserCog, lockedPlan: 'starter' },
           { label: 'Depenses', href: '/expenses', icon: Receipt },
         ]},
         { ...BOUTIQUE, items: [
@@ -622,7 +623,7 @@ function getNavSections(businessType: string): SectionConfig[] {
         { ...GESTION, items: [
           { label: 'Tarifs', href: '/products', icon: Package },
           { label: 'Clients', href: '/customers', icon: Users },
-          { label: 'Employes', href: '/employees', icon: UserCog, lockedPlan: 'starter' },
+          { label: 'Employés', href: '/employees', icon: UserCog, lockedPlan: 'starter' },
           { label: 'Depenses', href: '/expenses', icon: Receipt },
         ]},
         BOUTIQUE,
@@ -647,8 +648,15 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
   const router = useRouter()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({})
+  // Progressive disclosure: reveal nav items as the merchant gathers real data.
+  // Defaults are all `true` so nothing is ever hidden before signals load or if
+  // a lookup fails — we never trap the merchant.
+  const [navSignals, setNavSignals] = useState({ hasProducts: true, hasSold: true, hasStorefront: true, hasTeam: true })
+  // "Tout afficher" escape hatch — reveals everything regardless of signals.
+  const [showAllNav, setShowAllNav] = useState(false)
 
   const {
+    businessId,
     businessName,
     businessLogo,
     businessType,
@@ -692,6 +700,48 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
     }
     // owner has unrestricted access
   }, [loading, userRole, pathname, router])
+
+  // Restore the "Tout afficher" choice for this session.
+  useEffect(() => {
+    try { setShowAllNav(sessionStorage.getItem('nav_show_all') === '1') } catch {}
+  }, [])
+
+  // Compute the progressive-disclosure signals with a few lightweight count
+  // queries (parallel, head-only). RLS scopes each to the user's business via
+  // business_id IN (SELECT business_id FROM business_members WHERE user_id = auth.uid()).
+  // On any error we leave the signal at its default `true` (show the item).
+  useEffect(() => {
+    if (!businessId) return
+    let active = true
+    ;(async () => {
+      try {
+        const [products, sales, members, biz] = await Promise.all([
+          supabase.from('products').select('id', { count: 'exact', head: true }).eq('business_id', businessId).is('deleted_at', null),
+          supabase.from('sales').select('id', { count: 'exact', head: true }).eq('business_id', businessId),
+          supabase.from('business_members').select('id', { count: 'exact', head: true }).eq('business_id', businessId),
+          supabase.from('businesses').select('online_store_enabled').eq('id', businessId).maybeSingle(),
+        ])
+        if (!active) return
+        setNavSignals({
+          hasProducts: products.error ? true : (products.count ?? 0) > 0,
+          hasSold: sales.error ? true : (sales.count ?? 0) > 0,
+          hasTeam: members.error ? true : (members.count ?? 0) > 1,
+          hasStorefront: biz.error ? true : !!biz.data?.online_store_enabled,
+        })
+      } catch {
+        /* keep defaults (all visible) — never trap the merchant */
+      }
+    })()
+    return () => { active = false }
+  }, [businessId])
+
+  function toggleShowAllNav() {
+    setShowAllNav((prev) => {
+      const next = !prev
+      try { sessionStorage.setItem('nav_show_all', next ? '1' : '0') } catch {}
+      return next
+    })
+  }
 
   function toggleSection(key: string) {
     setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }))
@@ -746,6 +796,23 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
   const withConseiller = isStaff ? baseSections : [CONSEILLER_SECTION, ...baseSections]
   const navSections = isSuperAdmin ? [...withConseiller, SUPER_ADMIN_SECTION] : withConseiller
   const currentPlanLevel = PLAN_LEVELS[plan || 'free'] ?? 0
+
+  // Progressive disclosure rules (overridden by the "Tout afficher" toggle).
+  // Item-level gating keyed by route; anything not listed is always visible.
+  function navItemVisible(href: string): boolean {
+    if (showAllNav) return true
+    if (href === '/refunds' || href === '/customers') return navSignals.hasSold
+    if (href === '/suppliers' || href === '/reassort' || href === '/categories' || href === '/stock-movements') return navSignals.hasProducts
+    if (href === '/employees' || href === '/users') return navSignals.hasTeam
+    return true
+  }
+  // Section-level gating keyed by section key (hides the whole block).
+  function navSectionVisible(key: string): boolean {
+    if (showAllNav) return true
+    if (key === 'boutique' || key === 'manager-boutique') return navSignals.hasStorefront
+    if (key === 'rapports' || key === 'manager-rapports') return navSignals.hasSold
+    return true
+  }
 
   const sidebarContent = (
     <div className="flex h-full flex-col">
@@ -849,6 +916,9 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
       {/* Collapsible sections */}
       <nav className="flex-1 space-y-2 overflow-y-auto px-4 py-3">
         {navSections.map((section) => {
+          // Progressive disclosure: hide whole sections gated by the merchant's data.
+          if (!navSectionVisible(section.key)) return null
+
           // "Boutique en ligne" is a single direct link to /storefront — the page
           // itself surfaces all options (Voir, Personnaliser, Partager, Commandes,
           // Paiement) as cards, so no submenu is needed here.
@@ -909,6 +979,10 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
           const isOpen = openSections[section.key] ?? (section.defaultOpen ?? false)
           const itemHeight = 48
 
+          // Filter items by progressive-disclosure rules; hide the section if empty.
+          const visibleItems = section.items.filter((item) => navItemVisible(item.href))
+          if (visibleItems.length === 0) return null
+
           return (
             <div
               key={section.key}
@@ -927,10 +1001,10 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
 
               <div
                 className="overflow-hidden transition-all duration-300 ease-in-out"
-                style={{ maxHeight: isOpen ? `${section.items.length * itemHeight}px` : '0px' }}
+                style={{ maxHeight: isOpen ? `${visibleItems.length * itemHeight}px` : '0px' }}
               >
                 <div className="space-y-0.5 px-2 pb-2">
-                  {section.items.map((item) => {
+                  {visibleItems.map((item) => {
                     const Icon = item.icon
                     const active = pathname === item.href
                     const isLocked = item.lockedPlan
@@ -966,6 +1040,19 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
           )
         })}
       </nav>
+
+      {/* "Tout afficher" — escape hatch so advanced users always reach everything */}
+      <div className="px-4 pb-1 pt-2">
+        <button
+          onClick={toggleShowAllNav}
+          className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-xs font-bold text-slate-500 transition-colors hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-700"
+        >
+          <span className="flex items-center gap-2"><Eye size={14} /> Tout afficher</span>
+          <span className={`relative h-5 w-9 rounded-full transition-colors ${showAllNav ? 'bg-emerald-600' : 'bg-slate-300 dark:bg-slate-600'}`}>
+            <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-all ${showAllNav ? 'left-[18px]' : 'left-0.5'}`} />
+          </span>
+        </button>
+      </div>
 
       {/* Logout */}
       <div className="border-t border-slate-100 p-4 dark:border-slate-700">
