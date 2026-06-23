@@ -15,6 +15,7 @@ import {
   CreditCard,
   DollarSign,
   Globe,
+  Lightbulb,
   Lock,
   Package,
   Plus,
@@ -125,6 +126,8 @@ export default function DashboardPage() {
   const [copyDone, setCopyDone] = useState(false)
   // Activation: brand-new merchants (zero sales) are sent to Vente rapide first.
   const [checkingFirstSale, setCheckingFirstSale] = useState(true)
+  // Conseil du jour — one data-driven tip, cached per business per day.
+  const [dailyTip, setDailyTip] = useState('')
 
   const {
     userId,
@@ -309,6 +312,28 @@ export default function DashboardPage() {
     fetchStats()
   }, [businessId, bdLoading])
 
+  // Conseil du jour: pick one data-driven tip, stable for the day (cached).
+  useEffect(() => {
+    if (!businessId || statsLoading) return
+    const today = new Date().toISOString().slice(0, 10)
+    const key = `conseil_du_jour_${businessId}_${today}`
+    const cached = localStorage.getItem(key)
+    if (cached) { setDailyTip(cached); return }
+
+    const tips: string[] = []
+    if (totalDebt > 0) tips.push(`Vos clients vous doivent ${totalDebt.toLocaleString('fr-FR')} CFA. Relancez-les cette semaine pour renflouer votre caisse.`)
+    if (lowStockCount > 0) tips.push(`${lowStockCount} produit(s) en stock bas. Réapprovisionnez avant la rupture pour ne pas perdre de ventes.`)
+    if (todayTotal === 0) tips.push(`Aucune vente enregistrée aujourd'hui. Partagez votre boutique sur WhatsApp pour attirer des clients.`)
+    tips.push(`Mettez en avant vos produits les plus rentables pour augmenter votre panier moyen.`)
+    tips.push(`Offrez une petite remise à vos clients fidèles — ils reviendront et parleront de vous.`)
+    tips.push(`Demandez à vos clients satisfaits de recommander votre boutique autour d'eux.`)
+
+    const dayNum = Math.floor(Date.now() / 86400000)
+    const tip = tips[dayNum % tips.length]
+    setDailyTip(tip)
+    try { localStorage.setItem(key, tip) } catch {}
+  }, [businessId, statsLoading, totalDebt, lowStockCount, todayTotal])
+
   // Load pinned shortcuts from localStorage once userId is known
   useEffect(() => {
     if (!userId) return
@@ -375,6 +400,24 @@ export default function DashboardPage() {
       {message && (
         <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-bold text-red-700">
           {message}
+        </div>
+      )}
+
+      {/* Conseil du jour — data-driven daily tip + entry to the advisor */}
+      {dailyTip && (
+        <div className="mb-4 rounded-[2rem] border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-5 shadow-sm dark:border-emerald-900/40 dark:from-emerald-900/20 dark:to-slate-800">
+          <div className="flex items-start gap-4">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-600 text-white">
+              <Lightbulb size={20} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-black uppercase tracking-wide text-emerald-600 dark:text-emerald-400">Conseil du jour</p>
+              <p className="mt-1 text-sm font-bold text-slate-700 dark:text-slate-200">{dailyTip}</p>
+              <Link href="/conseiller" className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-4 py-2 text-xs font-black text-white transition hover:bg-emerald-700">
+                Voir plus de conseils <ArrowRight size={14} />
+              </Link>
+            </div>
+          </div>
         </div>
       )}
 

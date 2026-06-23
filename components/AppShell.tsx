@@ -86,7 +86,7 @@ const STAFF_ALLOWED_PATHS = [
 const MANAGER_ALLOWED_PATHS = [
   '/dashboard', '/pos', '/checkout',
   '/products', '/sales', '/refunds', '/register-shifts',
-  '/customers', '/expenses', '/reports', '/finances', '/coach',
+  '/customers', '/expenses', '/reports', '/finances', '/coach', '/conseiller',
   '/orders', '/debts', '/payment-links', '/purchases',
   '/stock-movements', '/activity',
   '/settings', '/payment-methods', '/employees', '/staff',
@@ -272,6 +272,19 @@ const SECURITY_SECTION: SectionConfig = {
   items: [
     { label: 'Reinitialiser produits', href: '/reset-products', icon: Trash2 },
     { label: 'Supprimer boutique', href: '/delete-store', icon: AlertTriangle },
+  ],
+}
+
+const CONSEILLER_SECTION: SectionConfig = {
+  key: 'conseiller',
+  title: 'CONSEILLER COMMERCIAL',
+  borderColor: 'border-amber-500',
+  bgColor: 'bg-amber-50 dark:bg-amber-900/30',
+  textColor: 'text-amber-700 dark:text-amber-400',
+  headerColor: 'text-amber-600 dark:text-amber-400',
+  defaultOpen: false,
+  items: [
+    { label: 'Conseiller Commercial', href: '/conseiller', icon: Sparkles, lockedPlan: 'premium' },
   ],
 }
 
@@ -729,7 +742,9 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
     : isManager
     ? getNavSections(businessType).filter(s => s.key !== 'securite')
     : getNavSections(businessType)
-  const navSections = isSuperAdmin ? [...baseSections, SUPER_ADMIN_SECTION] : baseSections
+  // Conseiller Commercial is its own section for owners/managers (not cashiers).
+  const withConseiller = isStaff ? baseSections : [CONSEILLER_SECTION, ...baseSections]
+  const navSections = isSuperAdmin ? [...withConseiller, SUPER_ADMIN_SECTION] : withConseiller
   const currentPlanLevel = PLAN_LEVELS[plan || 'free'] ?? 0
 
   const sidebarContent = (
@@ -837,6 +852,36 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
           // "Boutique en ligne" is a single direct link to /storefront — the page
           // itself surfaces all options (Voir, Personnaliser, Partager, Commandes,
           // Paiement) as cards, so no submenu is needed here.
+          // Conseiller Commercial: single direct link with a premium badge/lock.
+          if (section.key === 'conseiller') {
+            const isLocked = currentPlanLevel < (PLAN_LEVELS['premium'] ?? 3)
+            const active = pathname === '/conseiller' || pathname.startsWith('/conseiller/')
+            return (
+              <div
+                key={section.key}
+                className={`overflow-hidden rounded-2xl border-l-4 bg-white shadow-sm dark:bg-slate-800 dark:shadow-none ${section.borderColor}`}
+              >
+                <Link
+                  href={isLocked ? '/upgrade' : '/conseiller'}
+                  onClick={() => { setMobileMenuOpen(false); window.dispatchEvent(new Event('play-navigation')) }}
+                  className={`flex items-center gap-3 px-4 py-3 text-sm font-bold transition-colors ${
+                    active
+                      ? `${section.bgColor} ${section.textColor}`
+                      : 'text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700'
+                  }`}
+                >
+                  <Sparkles size={16} />
+                  <span className="flex-1">Conseiller Commercial</span>
+                  {isLocked && (
+                    <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-[9px] font-black uppercase tracking-wide text-amber-700 dark:bg-amber-900/40 dark:text-amber-400">
+                      Premium
+                    </span>
+                  )}
+                </Link>
+              </div>
+            )
+          }
+
           if (section.key === 'boutique' || section.key === 'manager-boutique') {
             const active = pathname === '/storefront' || pathname.startsWith('/storefront/')
             return (
