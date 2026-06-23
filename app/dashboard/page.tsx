@@ -312,26 +312,71 @@ export default function DashboardPage() {
     fetchStats()
   }, [businessId, bdLoading])
 
-  // Conseil du jour: pick one data-driven tip, stable for the day (cached).
+  // Conseil du jour: one tip per shop per day, stored in daily_tips.
+  // DB hit first (no API). If none today, generate once via /api/conseiller,
+  // save it, then show — so the AI is called at most once per day per shop.
   useEffect(() => {
     if (!businessId || statsLoading) return
-    const today = new Date().toISOString().slice(0, 10)
-    const key = `conseil_du_jour_${businessId}_${today}`
-    const cached = localStorage.getItem(key)
-    if (cached) { setDailyTip(cached); return }
+    let active = true
 
-    const tips: string[] = []
-    if (totalDebt > 0) tips.push(`Vos clients vous doivent ${totalDebt.toLocaleString('fr-FR')} CFA. Relancez-les cette semaine pour renflouer votre caisse.`)
-    if (lowStockCount > 0) tips.push(`${lowStockCount} produit(s) en stock bas. Réapprovisionnez avant la rupture pour ne pas perdre de ventes.`)
-    if (todayTotal === 0) tips.push(`Aucune vente enregistrée aujourd'hui. Partagez votre boutique sur WhatsApp pour attirer des clients.`)
-    tips.push(`Mettez en avant vos produits les plus rentables pour augmenter votre panier moyen.`)
-    tips.push(`Offrez une petite remise à vos clients fidèles — ils reviendront et parleront de vous.`)
-    tips.push(`Demandez à vos clients satisfaits de recommander votre boutique autour d'eux.`)
+    function fallbackTip(): string {
+      const tips: string[] = []
+      if (totalDebt > 0) tips.push(`Vos clients vous doivent ${totalDebt.toLocaleString('fr-FR')} CFA. Relancez-les cette semaine pour renflouer votre caisse.`)
+      if (lowStockCount > 0) tips.push(`${lowStockCount} produit(s) en stock bas. Réapprovisionnez avant la rupture pour ne pas perdre de ventes.`)
+      if (todayTotal === 0) tips.push(`Aucune vente enregistrée aujourd'hui. Partagez votre boutique sur WhatsApp pour attirer des clients.`)
+      tips.push(`Mettez en avant vos produits les plus rentables pour augmenter votre panier moyen.`)
+      tips.push(`Offrez une petite remise à vos clients fidèles — ils reviendront et parleront de vous.`)
+      tips.push(`Demandez à vos clients satisfaits de recommander votre boutique autour d'eux.`)
+      return tips[Math.floor(Date.now() / 86400000) % tips.length]
+    }
 
-    const dayNum = Math.floor(Date.now() / 86400000)
-    const tip = tips[dayNum % tips.length]
-    setDailyTip(tip)
-    try { localStorage.setItem(key, tip) } catch {}
+    ;(async () => {
+      const today = new Date().toISOString().slice(0, 10)
+
+      // 1. Already have today's tip in the DB? Show it, no API call.
+      const { data: existing } = await supabase
+        .from('daily_tips')
+        .select('tip_text')
+        .eq('business_id', businessId)
+        .eq('tip_date', today)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      if (!active) return
+      if (existing?.tip_text) { setDailyTip(existing.tip_text); return }
+
+      // 2. Only attempt generation once per browser per day (avoids re-calling
+      //    when the AI key isn't configured yet).
+      const attemptKey = `daily_tip_attempt_${businessId}_${today}`
+      if (localStorage.getItem(attemptKey) === '1') { setDailyTip(fallbackTip()); return }
+      localStorage.setItem(attemptKey, '1')
+
+      // 3. Generate via the advisor, persist to daily_tips, then show.
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        const res = await fetch('/api/conseiller', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` },
+          body: JSON.stringify({
+            businessId,
+            question: "Donne-moi UN seul conseil court (1 à 2 phrases), concret et actionnable pour ma boutique aujourd'hui. Réponds uniquement avec le conseil, sans introduction.",
+          }),
+        })
+        const data = await res.json()
+        if (!active) return
+        if (res.ok && data.advice) {
+          const tip = String(data.advice).trim()
+          setDailyTip(tip)
+          await supabase.from('daily_tips').insert({ business_id: businessId, tip_text: tip, tip_date: today })
+        } else {
+          setDailyTip(fallbackTip())
+        }
+      } catch {
+        if (active) setDailyTip(fallbackTip())
+      }
+    })()
+
+    return () => { active = false }
   }, [businessId, statsLoading, totalDebt, lowStockCount, todayTotal])
 
   // Load pinned shortcuts from localStorage once userId is known
