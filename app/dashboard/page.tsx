@@ -123,6 +123,8 @@ export default function DashboardPage() {
   const [referralCount, setReferralCount] = useState(0)
   const [rewardCount, setRewardCount] = useState(0)
   const [copyDone, setCopyDone] = useState(false)
+  // Activation: brand-new merchants (zero sales) are sent to Vente rapide first.
+  const [checkingFirstSale, setCheckingFirstSale] = useState(true)
 
   const {
     userId,
@@ -144,7 +146,7 @@ export default function DashboardPage() {
     mutate('business-data')
   }
 
-  const loading = bdLoading || statsLoading
+  const loading = bdLoading || statsLoading || checkingFirstSale
 
   // Raccourcis state
   const [shortcutSearch, setShortcutSearch] = useState('')
@@ -183,6 +185,33 @@ export default function DashboardPage() {
     if (!onboardingCompleted && !STAFF_ROLES_CHECK.includes(role)) {
       router.push('/onboarding')
     }
+  }, [bdLoading, businessId, isActive, onboardingCompleted, role, router])
+
+  // Activation guard: a merchant who has never recorded a sale is sent straight
+  // to Vente rapide so their first sale happens before any catalog setup. Once
+  // one sale exists the count is > 0 and this stops firing — never add this
+  // guard to /vente-rapide itself or it would loop forever.
+  useEffect(() => {
+    if (bdLoading || !businessId || !isActive) return
+    const STAFF_ROLES_CHECK = ['sales', 'staff', 'cashier', 'employee']
+    // Owners mid-onboarding are redirected to /onboarding by the effect above.
+    if (!onboardingCompleted && !STAFF_ROLES_CHECK.includes(role)) return
+    let active = true
+    supabase
+      .from('sales')
+      .select('id', { count: 'exact', head: true })
+      .eq('business_id', businessId)
+      .then(({ count }) => {
+        if (!active) return
+        // Only a confirmed zero redirects; a null count (query error) falls
+        // through to the dashboard so an established merchant is never bounced.
+        if (count === 0) {
+          router.replace('/vente-rapide')
+        } else {
+          setCheckingFirstSale(false)
+        }
+      })
+    return () => { active = false }
   }, [bdLoading, businessId, isActive, onboardingCompleted, role, router])
 
   // Fetch stats once businessId is known
