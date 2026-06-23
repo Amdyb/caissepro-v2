@@ -828,6 +828,33 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
       {/* Collapsible sections */}
       <nav className="flex-1 space-y-2 overflow-y-auto px-4 py-3">
         {navSections.map((section) => {
+          // "Boutique en ligne" is a single direct link to /storefront — the page
+          // itself surfaces all options (Voir, Personnaliser, Partager, Commandes,
+          // Paiement) as cards, so no submenu is needed here.
+          if (section.key === 'boutique' || section.key === 'manager-boutique') {
+            const active = pathname === '/storefront' || pathname.startsWith('/storefront/')
+            return (
+              <div
+                key={section.key}
+                className={`overflow-hidden rounded-2xl border-l-4 bg-white shadow-sm dark:bg-slate-800 dark:shadow-none ${section.borderColor}`}
+              >
+                <Link
+                  href="/storefront"
+                  id="tour-nav-storefront"
+                  onClick={() => { setMobileMenuOpen(false); window.dispatchEvent(new Event('play-navigation')) }}
+                  className={`flex items-center gap-3 px-4 py-3 text-sm font-bold transition-colors ${
+                    active
+                      ? `${section.bgColor} ${section.textColor}`
+                      : 'text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700'
+                  }`}
+                >
+                  <Store size={16} />
+                  <span className="flex-1">Boutique en ligne</span>
+                </Link>
+              </div>
+            )
+          }
+
           const isOpen = openSections[section.key] ?? (section.defaultOpen ?? false)
           const itemHeight = 48
 
