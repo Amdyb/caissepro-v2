@@ -3,9 +3,10 @@
 import AppShell from '@/components/AppShell'
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { AlertTriangle, Banknote, CalendarDays, CreditCard, HandCoins, Package, Printer, ReceiptText, TrendingUp, Wallet } from 'lucide-react'
+import { AlertTriangle, Banknote, Boxes, CalendarDays, CreditCard, HandCoins, Layers, Lightbulb, Package, Printer, ReceiptText, Sparkles, TrendingUp, Wallet } from 'lucide-react'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabaseClient'
+import { resolveSelectedBusiness } from '@/lib/storefront'
 
 type Sale = {
   id: string
@@ -27,7 +28,19 @@ type Product = {
   id: string
   name: string
   stock: number | null
+  cost_price: number | null
+  sell_price: number | null
 }
+
+type Shift = {
+  id: string
+  opening_cash: number | null
+  cash_sales: number | null
+  status: string | null
+}
+
+// Flattened sale line used to compute cost of goods sold for the period.
+type CogsItem = { created_at: string; product_id: string | null; quantity: number | null }
 
 type Customer = {
   id: string
@@ -112,6 +125,8 @@ export default function ReportsPage() {
   const [expenses, setExpenses] = useState<Expense[]>([])
   const [products, setProducts] = useState<Product[]>([])
   const [customers, setCustomers] = useState<Customer[]>([])
+  const [shifts, setShifts] = useState<Shift[]>([])
+  const [cogsItems, setCogsItems] = useState<CogsItem[]>([])
   const [dailyReports, setDailyReports] = useState<DailyReport[]>([])
   const [period, setPeriod] = useState<'today' | 'week' | 'month' | 'year'>('week')
   const [loading, setLoading] = useState(true)
@@ -149,8 +164,63 @@ export default function ReportsPage() {
     const lowStock = products.filter((p) => Number(p.stock || 0) <= 5)
     const totalDebt = customers.reduce((sum, c) => sum + Number(c.debt_balance || 0), 0)
 
-    return { periodSales, periodExpenses, totalSales, totalPaid, totalRemaining, totalExpenses, netProfit, paymentBreakdown, expenseBreakdown, lowStock, totalDebt }
-  }, [sales, expenses, products, customers, periodStart])
+    // Stock valuation (current stock, not period-dependent)
+    const stockCostValue = products.reduce((sum, p) => sum + Number(p.cost_price || 0) * Number(p.stock || 0), 0)
+    const stockRetailValue = products.reduce((sum, p) => sum + Number(p.sell_price || 0) * Number(p.stock || 0), 0)
+
+    // Cash at hand: open shift(s) opening cash + cash sales; fallback to period cash sales
+    const cashFromShifts = shifts.reduce((sum, s) => sum + Number(s.opening_cash || 0) + Number(s.cash_sales || 0), 0)
+    const periodCashSales = periodSales.filter((s) => s.payment_method === 'cash').reduce((sum, s) => sum + Number(s.paid_amount || s.total || 0), 0)
+    const cashAtHand = shifts.length > 0 ? cashFromShifts : periodCashSales
+
+    // Cost of goods sold for the period (sum of qty × product cost)
+    const costMap = new Map(products.map((p) => [p.id, Number(p.cost_price || 0)]))
+    const cogs = cogsItems
+      .filter((it) => (it.created_at || '').slice(0, 10) >= periodStart)
+      .reduce((sum, it) => sum + Number(it.quantity || 0) * (costMap.get(it.product_id || '') || 0), 0)
+
+    const revenue = totalSales
+    const netProfitFull = revenue - totalExpenses - cogs
+
+    // Most profitable product over the period (units sold × unit margin)
+    const sellMap = new Map(products.map((p) => [p.id, Number(p.sell_price || 0)]))
+    const nameMap = new Map(products.map((p) => [p.id, p.name]))
+    const profitByProduct = new Map<string, number>()
+    cogsItems
+      .filter((it) => (it.created_at || '').slice(0, 10) >= periodStart && it.product_id)
+      .forEach((it) => {
+        const margin = (sellMap.get(it.product_id!) || 0) - (costMap.get(it.product_id!) || 0)
+        profitByProduct.set(it.product_id!, (profitByProduct.get(it.product_id!) || 0) + margin * Number(it.quantity || 0))
+      })
+    let topPid = ''
+    let topProfit = -Infinity
+    Array.from(profitByProduct.entries()).forEach(([pid, profit]) => {
+      if (profit > topProfit) { topProfit = profit; topPid = pid }
+    })
+    const topProduct: { name: string; profit: number } | null = topPid ? { name: nameMap.get(topPid) || 'Produit', profit: topProfit } : null
+
+    // Rule-based recommendations (mirrors the AI coach, always available)
+    const recommendations: string[] = []
+    if (totalDebt > 0 && revenue > 0) {
+      const pct = Math.round((totalDebt / revenue) * 100)
+      if (pct >= 20) recommendations.push(`Vos dettes clients représentent ${pct}% de votre chiffre d'affaires — pensez à relancer vos clients débiteurs.`)
+    }
+    if (lowStock.length > 0) {
+      recommendations.push(`${lowStock.length} produit(s) en stock bas — réapprovisionnez avant la rupture : ${lowStock.slice(0, 3).map((p) => p.name).join(', ')}.`)
+    }
+    if (revenue > 0 && totalExpenses > 0) {
+      const pct = Math.round((totalExpenses / revenue) * 100)
+      if (pct >= 50) recommendations.push(`Vos dépenses représentent ${pct}% de votre chiffre d'affaires — identifiez les postes à optimiser.`)
+    }
+    if (topProduct && topProduct.profit > 0) {
+      recommendations.push(`Votre produit le plus rentable sur cette période est « ${topProduct.name} » — mettez-le en avant.`)
+    }
+    if (netProfitFull < 0) {
+      recommendations.push(`Votre bénéfice net est négatif sur cette période — réduisez les dépenses ou augmentez vos marges.`)
+    }
+
+    return { periodSales, periodExpenses, totalSales, totalPaid, totalRemaining, totalExpenses, netProfit, paymentBreakdown, expenseBreakdown, lowStock, totalDebt, stockCostValue, stockRetailValue, cashAtHand, cogs, revenue, netProfitFull, topProduct, recommendations }
+  }, [sales, expenses, products, customers, shifts, cogsItems, periodStart])
 
   const chartData = useMemo(() => {
     const periodReports = dailyReports.filter((r) => r.report_date >= periodStart)
@@ -197,26 +267,21 @@ export default function ReportsPage() {
 
   useEffect(() => {
     async function init() {
-      const { data: userData } = await supabase.auth.getUser()
-      if (!userData.user) { router.push('/login'); return }
+      // Respect the shop selected in the dashboard / storefront switcher.
+      const { userId, businessId } = await resolveSelectedBusiness()
+      if (!userId) { router.push('/login'); return }
+      if (!businessId) { setMessage('Aucune boutique trouvée.'); setLoading(false); return }
 
-      const { data: membership, error } = await supabase
-        .from('business_members')
-        .select('business_id')
-        .eq('user_id', userData.user.id)
-        .limit(1)
-        .maybeSingle()
-
-      if (error || !membership) { setMessage('Aucune boutique trouvée.'); setLoading(false); return }
-
-      setBusinessId(membership.business_id)
+      setBusinessId(businessId)
 
       await Promise.all([
-        loadSales(membership.business_id),
-        loadExpenses(membership.business_id),
-        loadProducts(membership.business_id),
-        loadCustomers(membership.business_id),
-        loadDailyReports(membership.business_id)
+        loadSales(businessId),
+        loadExpenses(businessId),
+        loadProducts(businessId),
+        loadCustomers(businessId),
+        loadShifts(businessId),
+        loadCogs(businessId),
+        loadDailyReports(businessId)
       ])
 
       setLoading(false)
@@ -235,13 +300,38 @@ export default function ReportsPage() {
   }
 
   async function loadProducts(id: string) {
-    const { data } = await supabase.from('products').select('id,name,stock').eq('business_id', id)
+    const { data } = await supabase.from('products').select('id,name,stock,cost_price,sell_price').eq('business_id', id).is('deleted_at', null)
     setProducts((data || []) as Product[])
   }
 
   async function loadCustomers(id: string) {
     const { data } = await supabase.from('customers').select('id,debt_balance').eq('business_id', id)
     setCustomers((data || []) as Customer[])
+  }
+
+  async function loadShifts(id: string) {
+    const { data } = await supabase.from('cash_register_shifts').select('id,opening_cash,cash_sales,status').eq('business_id', id).eq('status', 'open')
+    setShifts((data || []) as Shift[])
+  }
+
+  // Cost of goods sold: sale_items joined to their sale (for date + scoping).
+  // Wrapped defensively — if the embedded query is unavailable, COGS falls to 0.
+  async function loadCogs(id: string) {
+    try {
+      const { data } = await supabase
+        .from('sale_items')
+        .select('quantity, product_id, sales!inner(created_at, business_id)')
+        .eq('sales.business_id', id)
+        .limit(8000)
+      const items: CogsItem[] = (data || []).map((row: any) => ({
+        created_at: row.sales?.created_at || '',
+        product_id: row.product_id ?? null,
+        quantity: row.quantity ?? 0,
+      }))
+      setCogsItems(items)
+    } catch {
+      setCogsItems([])
+    }
   }
 
   async function loadDailyReports(id: string) {
@@ -289,9 +379,21 @@ export default function ReportsPage() {
         <div className="mb-8 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
           <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
             <ReceiptText className="text-emerald-600" />
-            <p className="mt-5 text-sm font-bold text-slate-500">Ventes</p>
-            <p className="mt-2 text-3xl font-black text-slate-950">{report.totalSales.toLocaleString('fr-FR')} CFA</p>
+            <p className="mt-5 text-sm font-bold text-slate-500">Chiffre d&apos;affaires</p>
+            <p className="mt-2 text-3xl font-black text-slate-950">{report.revenue.toLocaleString('fr-FR')} CFA</p>
             <p className="mt-1 text-sm font-semibold text-slate-400">{report.periodSales.length} vente(s)</p>
+          </div>
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <TrendingUp className={report.netProfitFull >= 0 ? 'text-emerald-600' : 'text-red-600'} />
+            <p className="mt-5 text-sm font-bold text-slate-500">Bénéfice Net</p>
+            <p className={`mt-2 text-3xl font-black ${report.netProfitFull >= 0 ? 'text-slate-950' : 'text-red-700'}`}>{report.netProfitFull.toLocaleString('fr-FR')} CFA</p>
+            <p className="mt-1 text-sm font-semibold text-slate-400">CA − dépenses − coût marchandise</p>
+          </div>
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <Banknote className="text-emerald-600" />
+            <p className="mt-5 text-sm font-bold text-slate-500">Cash en Caisse</p>
+            <p className="mt-2 text-3xl font-black text-slate-950">{report.cashAtHand.toLocaleString('fr-FR')} CFA</p>
+            <p className="mt-1 text-sm font-semibold text-slate-400">{shifts.length > 0 ? 'caisse ouverte' : 'ventes espèces (période)'}</p>
           </div>
           <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
             <Wallet className="text-red-600" />
@@ -300,16 +402,28 @@ export default function ReportsPage() {
             <p className="mt-1 text-sm font-semibold text-slate-400">{report.periodExpenses.length} dépense(s)</p>
           </div>
           <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <TrendingUp className={report.netProfit >= 0 ? 'text-emerald-600' : 'text-red-600'} />
-            <p className="mt-5 text-sm font-bold text-slate-500">Net</p>
-            <p className={`mt-2 text-3xl font-black ${report.netProfit >= 0 ? 'text-slate-950' : 'text-red-700'}`}>{report.netProfit.toLocaleString('fr-FR')} CFA</p>
-            <p className="mt-1 text-sm font-semibold text-slate-400">ventes − dépenses</p>
+            <Boxes className="text-sky-600" />
+            <p className="mt-5 text-sm font-bold text-slate-500">Valeur Marchandise</p>
+            <p className="mt-2 text-3xl font-black text-slate-950">{report.stockCostValue.toLocaleString('fr-FR')} CFA</p>
+            <p className="mt-1 text-sm font-semibold text-slate-400">coût d&apos;achat du stock</p>
+          </div>
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <Layers className="text-violet-600" />
+            <p className="mt-5 text-sm font-bold text-slate-500">Valeur Estimée</p>
+            <p className="mt-2 text-3xl font-black text-slate-950">{report.stockRetailValue.toLocaleString('fr-FR')} CFA</p>
+            <p className="mt-1 text-sm font-semibold text-slate-400">valeur de vente du stock</p>
           </div>
           <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
             <HandCoins className="text-red-600" />
-            <p className="mt-5 text-sm font-bold text-slate-500">Client Doit</p>
+            <p className="mt-5 text-sm font-bold text-slate-500">Dettes Clients</p>
             <p className="mt-2 text-3xl font-black text-red-700">{report.totalDebt.toLocaleString('fr-FR')} CFA</p>
             <p className="mt-1 text-sm font-semibold text-slate-400">dette totale clients</p>
+          </div>
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <Package className="text-amber-600" />
+            <p className="mt-5 text-sm font-bold text-slate-500">Coût Marchandise Vendue</p>
+            <p className="mt-2 text-3xl font-black text-slate-950">{report.cogs.toLocaleString('fr-FR')} CFA</p>
+            <p className="mt-1 text-sm font-semibold text-slate-400">coût des produits vendus</p>
           </div>
         </div>
 
@@ -460,6 +574,34 @@ export default function ReportsPage() {
               </div>
             )}
           </div>
+        </div>
+
+        {/* Recommendations summary + Coach IA */}
+        <div className="mt-8 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="flex items-center gap-3">
+              <div className="rounded-2xl bg-amber-50 p-3 text-amber-600"><Lightbulb /></div>
+              <div>
+                <h3 className="text-2xl font-black text-slate-950">Recommandations</h3>
+                <p className="text-sm text-slate-500">Conseils générés à partir de vos données.</p>
+              </div>
+            </div>
+            <Link href="/coach" className="no-print inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-black text-white hover:bg-slate-800">
+              <Sparkles size={16} /> Coach IA
+            </Link>
+          </div>
+          {report.recommendations.length === 0 ? (
+            <p className="rounded-2xl bg-emerald-50 p-5 text-sm font-bold text-emerald-700">Tout va bien — aucune alerte particulière sur cette période.</p>
+          ) : (
+            <div className="space-y-3">
+              {report.recommendations.map((rec, i) => (
+                <div key={i} className="flex items-start gap-3 rounded-2xl bg-amber-50 p-4">
+                  <Lightbulb className="mt-0.5 shrink-0 text-amber-600" size={18} />
+                  <p className="text-sm font-semibold text-slate-700">{rec}</p>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </AppShell>

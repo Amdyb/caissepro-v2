@@ -4,6 +4,7 @@ import AppShell from '@/components/AppShell'
 import { useEffect, useMemo, useState } from 'react'
 import { Edit, FolderTree, Plus, Save, Search, Tag, Trash2, X } from 'lucide-react'
 import { supabase } from '@/lib/supabaseClient'
+import { resolveSelectedBusiness } from '@/lib/storefront'
 
 type Category = { id: string; business_id: string; name: string; created_at: string }
 type Product = { id: string; name: string; category: string | null }
@@ -32,26 +33,19 @@ export default function CategoriesPage() {
 
   useEffect(() => {
     async function init() {
-      const { data: userData } = await supabase.auth.getUser()
-      if (!userData.user) return
+      // Respect the shop selected in the dashboard / storefront switcher so
+      // categories are always scoped to the right boutique (never another shop).
+      const { businessId, shops } = await resolveSelectedBusiness()
 
-      const { data: membership } = await supabase
-        .from('business_members')
-        .select('business_id, businesses(name)')
-        .eq('user_id', userData.user.id)
-        .limit(1)
-        .maybeSingle()
-
-      if (!membership?.business_id) {
+      if (!businessId) {
         setMessage('Aucune boutique trouvée.')
         setLoading(false)
         return
       }
 
-      const member: any = membership
-      setBusinessId(member.business_id)
-      setBusinessName(member.businesses?.name || 'Ma Boutique')
-      await Promise.all([loadCategories(member.business_id), loadProducts(member.business_id)])
+      setBusinessId(businessId)
+      setBusinessName(shops.find((s) => s.id === businessId)?.name || 'Ma Boutique')
+      await Promise.all([loadCategories(businessId), loadProducts(businessId)])
       setLoading(false)
     }
     init()
@@ -111,6 +105,7 @@ export default function CategoriesPage() {
       .from('product_categories')
       .update({ name: newName })
       .eq('id', category.id)
+      .eq('business_id', businessId)
 
     if (categoryError) {
       setSaving(false)
@@ -130,7 +125,7 @@ export default function CategoriesPage() {
     setEditingId('')
     setEditingName('')
     await Promise.all([loadCategories(businessId), loadProducts(businessId)])
-    setMessage('Catégorie mise à jour. Les produits liés ont été synchronisés.')
+    setMessage('Catégorie modifiée. Les produits liés ont été synchronisés.')
   }
 
   async function deleteCategory(category: Category) {
@@ -139,9 +134,10 @@ export default function CategoriesPage() {
     if (count > 0) return setMessage(`Impossible de supprimer: ${count} produit(s) utilisent cette catégorie.`)
     if (!confirm('Supprimer cette catégorie ?')) return
 
-    const { error } = await supabase.from('product_categories').delete().eq('id', category.id)
+    const { error } = await supabase.from('product_categories').delete().eq('id', category.id).eq('business_id', businessId)
     if (error) return setMessage(error.message)
     await loadCategories(businessId)
+    setMessage('Catégorie supprimée.')
   }
 
   if (loading) return <main className="flex min-h-screen items-center justify-center bg-slate-50"><p className="font-bold text-slate-600">Chargement des catégories...</p></main>

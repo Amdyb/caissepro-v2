@@ -33,6 +33,7 @@ import {
   Scissors,
   Settings,
   Share2,
+  Sparkles,
   ShoppingBag,
   ShoppingCart,
   Store,
@@ -85,7 +86,7 @@ const STAFF_ALLOWED_PATHS = [
 const MANAGER_ALLOWED_PATHS = [
   '/dashboard', '/pos', '/checkout',
   '/products', '/sales', '/refunds', '/register-shifts',
-  '/customers', '/expenses', '/reports', '/finances',
+  '/customers', '/expenses', '/reports', '/finances', '/coach',
   '/orders', '/debts', '/payment-links', '/purchases',
   '/stock-movements', '/activity',
   '/settings', '/payment-methods', '/employees', '/staff',
@@ -196,6 +197,7 @@ const MANAGER_RAPPORTS_SECTION: SectionConfig = {
   items: [
     { label: 'Rapports', href: '/reports', icon: TrendingUp },
     { label: 'Finances', href: '/finances', icon: DollarSign },
+    { label: 'Coach IA', href: '/coach', icon: Sparkles, lockedPlan: 'premium' },
   ],
 }
 
@@ -333,6 +335,7 @@ const RETAIL_SECTIONS: SectionConfig[] = [
       { label: 'Rapports', href: '/reports', icon: TrendingUp },
       { label: 'Depenses', href: '/expenses', icon: Receipt },
       { label: 'Finances', href: '/finances', icon: DollarSign, lockedPlan: 'business' },
+      { label: 'Coach IA', href: '/coach', icon: Sparkles, lockedPlan: 'premium' },
     ],
   },
 ]
@@ -374,6 +377,7 @@ function getNavSections(businessType: string): SectionConfig[] {
       { label: 'Rapports', href: '/reports', icon: TrendingUp },
       { label: 'Depenses', href: '/expenses', icon: Receipt },
       { label: 'Finances', href: '/finances', icon: DollarSign, lockedPlan: 'business' },
+      { label: 'Coach IA', href: '/coach', icon: Sparkles, lockedPlan: 'premium' },
     ],
   }
 
@@ -531,6 +535,7 @@ function getNavSections(businessType: string): SectionConfig[] {
         { ...RAPPORTS, items: [
           { label: 'Rapports', href: '/reports', icon: TrendingUp },
           { label: 'Finances', href: '/finances', icon: DollarSign, lockedPlan: 'business' },
+          { label: 'Coach IA', href: '/coach', icon: Sparkles, lockedPlan: 'premium' },
         ]},
         PROFILE_SECTION, SECURITY_SECTION,
       ]
@@ -552,6 +557,7 @@ function getNavSections(businessType: string): SectionConfig[] {
         { ...RAPPORTS, items: [
           { label: 'Rapports', href: '/reports', icon: TrendingUp },
           { label: 'Finances', href: '/finances', icon: DollarSign, lockedPlan: 'business' },
+          { label: 'Coach IA', href: '/coach', icon: Sparkles, lockedPlan: 'premium' },
         ]},
         PROFILE_SECTION, SECURITY_SECTION,
       ]
