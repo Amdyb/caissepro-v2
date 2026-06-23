@@ -13,6 +13,7 @@ import { usePlatformSettings } from '@/lib/usePlatformSettings'
 import { mutate as globalMutate } from 'swr'
 import {
   AlertTriangle,
+  BarChart3,
   ChevronDown,
   Plus,
   CreditCard,
@@ -315,6 +316,7 @@ const RETAIL_SECTIONS: SectionConfig[] = [
     defaultOpen: false,
     items: [
       { label: 'Produits', href: '/products', icon: Package, tourId: 'tour-nav-products' },
+      { label: 'Performance produits', href: '/products/performance', icon: BarChart3, lockedPlan: 'business' },
       { label: 'Fournisseurs', href: '/suppliers', icon: Truck, lockedPlan: 'business' },
       { label: 'Clients', href: '/customers', icon: Users },
       { label: 'Employés', href: '/employees', icon: UserCog, lockedPlan: 'starter' },
