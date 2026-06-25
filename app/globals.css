@@ -85,3 +85,12 @@ aside, header, footer, nav, section,
 .glow-emerald-strong {
   box-shadow: 0 0 80px rgba(16, 163, 74, 0.25), 0 0 160px rgba(16, 163, 74, 0.1);
 }
+
+/* ── Hide scrollbar but keep horizontal touch-scroll (storefront category rows) ── */
+.scrollbar-hide {
+  -ms-overflow-style: none; /* IE / old Edge */
+  scrollbar-width: none; /* Firefox */
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none; /* Chrome / Safari / WebKit */
+}

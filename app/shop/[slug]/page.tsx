@@ -73,13 +73,16 @@ const PAYMENT_METHODS = [
   { id: 'card', label: 'Carte bancaire', color: '#7c3aed', Icon: CreditCard },
 ]
 
-// Preferred Netflix-style rows, in display order. Matching is accent/case insensitive.
-const PREFERRED_ROWS: { title: string; norm: string }[] = [
-  { title: 'Puffs Jetables', norm: 'puffs jetables' },
-  { title: 'Appareils', norm: 'appareils' },
-  { title: 'Liquides', norm: 'liquides' },
-  { title: 'Résistances', norm: 'resistances' },
-  { title: 'Accessoires', norm: 'accessoires' },
+// Preferred Netflix-style category rows, in display order. Matching is
+// accent/case insensitive: a category matches when its normalized name contains
+// any of the (singular) tokens, so plurals and variants ("Puffs Jetables",
+// "E-Liquides", "Bobines") all land in the right row.
+const PREFERRED_ROWS: { key: string; title: string; match: string[] }[] = [
+  { key: 'jetables', title: 'Jetables', match: ['jetable', 'puff'] },
+  { key: 'appareils', title: 'Appareils', match: ['appareil'] },
+  { key: 'eliquides', title: 'E-Liquides', match: ['liquide'] },
+  { key: 'resistances', title: 'Résistances / Bobines', match: ['resistance', 'bobine', 'coil'] },
+  { key: 'accessoires', title: 'Accessoires', match: ['accessoire'] },
 ]
 
 const CACHE_TTL = 5 * 60 * 1000 // 5 minutes
@@ -294,16 +297,26 @@ export default function PublicShopPage() {
     if (!products.length) return []
 
     const byId = new Map(products.map((p) => [p.id, p]))
-    const used = new Set<string>()
     const out: Row[] = []
 
-    // 1. Les Plus Vendus (real sales ranking, falls back to nothing if no sales)
+    // 1. Les Plus Vendus — real sales ranking (kept in sales order, not shuffled).
+    //    Falls back to a brand-aware random selection when there are no sales yet.
     const top = topIds.map((id) => byId.get(id)).filter(Boolean) as Product[]
-    if (top.length) {
-      out.push({ key: 'top', title: 'Les Plus Vendus', products: brandAwareShuffle(top) })
+    const topSellers = top.length ? top.slice(0, 15) : brandAwareShuffle(products).slice(0, 15)
+    if (topSellers.length) {
+      out.push({ key: 'top', title: 'Les Plus Vendus', products: topSellers })
     }
 
-    // Group all products by normalized category for the remaining rows.
+    // 2. Produits Populaires — most available (highest stock first, not shuffled).
+    const popular = [...products]
+      .filter((p) => (p.stock ?? 0) > 0)
+      .sort((a, b) => (b.stock ?? 0) - (a.stock ?? 0))
+      .slice(0, 15)
+    if (popular.length) {
+      out.push({ key: 'popular', title: 'Produits Populaires', products: popular })
+    }
+
+    // Group all products by normalized category for the category rows.
     const byCat = new Map<string, { title: string; items: Product[] }>()
     for (const p of products) {
       const cat = (p.category || 'Autres').trim() || 'Autres'
@@ -312,17 +325,22 @@ export default function PublicShopPage() {
       byCat.get(norm)!.items.push(p)
     }
 
-    // 2. Preferred categories, in the requested order.
+    // 3. Preferred categories, in the requested order. Flexible match folds any
+    //    category whose normalized name contains a token into the right row.
     for (const pref of PREFERRED_ROWS) {
-      const group = byCat.get(pref.norm)
-      if (group && group.items.length) {
-        out.push({ key: pref.norm, title: pref.title, products: brandAwareShuffle(group.items) })
-        group.items.forEach((p) => used.add(p.id))
-        byCat.delete(pref.norm)
+      const items: Product[] = []
+      for (const norm of Array.from(byCat.keys())) {
+        if (pref.match.some((m) => norm.includes(m))) {
+          items.push(...byCat.get(norm)!.items)
+          byCat.delete(norm)
+        }
+      }
+      if (items.length) {
+        out.push({ key: pref.key, title: pref.title, products: brandAwareShuffle(items) })
       }
     }
 
-    // 3. Any remaining custom categories (alphabetical), skipping empties.
+    // 4. Any remaining custom categories (alphabetical), skipping empties.
     const rest = Array.from(byCat.values())
       .filter((g) => g.items.length)
       .sort((a, b) => a.title.localeCompare(b.title, 'fr'))
@@ -849,7 +867,8 @@ function CategoryRow({
         <h2 className="flex items-center gap-2 text-xl font-black tracking-tight md:text-2xl">
           <ShoppingBag size={18} style={{ color: primary }} /> {row.title}
         </h2>
-        <div className="hidden gap-2 md:flex">
+        {/* Arrows are a desktop affordance only — on mobile the row is touch-swiped. */}
+        <div className="hidden gap-2 sm:flex">
           <button onClick={() => scrollBy(-1)} className="rounded-full border border-white/10 bg-white/5 p-2 hover:bg-white/15"><ChevronLeft size={18} /></button>
           <button onClick={() => scrollBy(1)} className="rounded-full border border-white/10 bg-white/5 p-2 hover:bg-white/15"><ChevronRight size={18} /></button>
         </div>
@@ -857,10 +876,11 @@ function CategoryRow({
 
       <div
         ref={scrollerRef}
-        className="flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth px-3 pb-2 [-ms-overflow-style:none] [scrollbar-width:none] sm:px-0 [&::-webkit-scrollbar]:hidden"
+        className="scrollbar-hide flex gap-4 overflow-x-auto snap-x snap-mandatory scroll-smooth px-3 pb-2 sm:px-0"
+        style={{ WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
         {row.products.map((p) => (
-          <div key={p.id} className="w-[44vw] shrink-0 snap-start sm:w-52 md:w-56">
+          <div key={p.id} className="snap-start flex-shrink-0 w-40 sm:w-48">
             <ProductCard product={p} primary={primary} onAdd={() => onAdd(p)} onOpen={() => onOpen(p)} />
           </div>
         ))}
@@ -873,9 +893,9 @@ function RowSkeleton() {
   return (
     <div>
       <div className="mb-3 h-6 w-40 animate-pulse rounded-full bg-white/10" />
-      <div className="flex gap-3 overflow-hidden">
+      <div className="flex gap-4 overflow-hidden">
         {[0, 1, 2, 3, 4].map((i) => (
-          <div key={i} className="w-[44vw] shrink-0 sm:w-52 md:w-56">
+          <div key={i} className="w-40 shrink-0 sm:w-48">
             <div className="aspect-square w-full animate-pulse rounded-3xl bg-white/5" />
             <div className="mt-2 h-4 w-3/4 animate-pulse rounded-full bg-white/10" />
             <div className="mt-2 h-4 w-1/2 animate-pulse rounded-full bg-white/10" />
