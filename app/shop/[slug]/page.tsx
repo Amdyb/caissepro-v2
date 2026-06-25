@@ -79,7 +79,7 @@ const PAYMENT_METHODS = [
 // "E-Liquides", "Bobines") all land in the right row.
 const PREFERRED_ROWS: { key: string; title: string; match: string[] }[] = [
   { key: 'jetables', title: 'Jetables', match: ['jetable', 'puff'] },
-  { key: 'appareils', title: 'Appareils', match: ['appareil'] },
+  { key: 'appareils', title: 'Appareils / Pods', match: ['appareil', 'pod'] },
   { key: 'eliquides', title: 'E-Liquides', match: ['liquide'] },
   { key: 'resistances', title: 'Résistances / Bobines', match: ['resistance', 'bobine', 'coil'] },
   { key: 'accessoires', title: 'Accessoires', match: ['accessoire'] },
