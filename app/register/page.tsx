@@ -193,7 +193,7 @@ function RegisterForm() {
         }
       }
 
-      router.push('/welcome')
+      router.push('/onboarding')
     } catch (err: any) {
       setError(err.message || 'Erreur pendant la création du compte.')
     } finally {
