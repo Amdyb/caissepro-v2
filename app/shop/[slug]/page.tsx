@@ -78,11 +78,11 @@ const PAYMENT_METHODS = [
 // any of the (singular) tokens, so plurals and variants ("Puffs Jetables",
 // "E-Liquides", "Bobines") all land in the right row.
 const PREFERRED_ROWS: { key: string; title: string; match: string[] }[] = [
-  { key: 'jetables', title: 'Jetables', match: ['jetable', 'puff'] },
-  { key: 'appareils', title: 'Appareils / Pods', match: ['appareil', 'pod'] },
+  { key: 'jetables', title: 'Jetables / Disposable', match: ['jetable', 'disposable', 'puff'] },
+  { key: 'appareils', title: 'Appareils / Pods', match: ['appareil', 'pod', 'vape'] },
   { key: 'eliquides', title: 'E-Liquides', match: ['liquide'] },
   { key: 'resistances', title: 'Résistances / Bobines', match: ['resistance', 'bobine', 'coil'] },
-  { key: 'accessoires', title: 'Accessoires', match: ['accessoire'] },
+  { key: 'accessoires', title: 'Accessoires', match: ['accessoire', 'accessir'] },
 ]
 
 const CACHE_TTL = 5 * 60 * 1000 // 5 minutes
@@ -202,7 +202,6 @@ export default function PublicShopPage() {
 
   const [business, setBusiness] = useState<Business | null>(null)
   const [products, setProducts] = useState<Product[]>([])
-  const [topIds, setTopIds] = useState<string[]>([])
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -257,22 +256,18 @@ export default function PublicShopPage() {
 
         setBusiness(shop as Business)
 
-        const [{ data: productsData }, { data: top }] = await Promise.all([
-          supabase
-            .from('products')
-            .select('id,name,category,sell_price,stock,image')
-            .eq('business_id', shop.id)
-            .is('deleted_at', null)
-            .not('archived', 'is', true)
-            .not('is_active', 'is', false)
-            .order('created_at', { ascending: false }),
-          supabase.rpc('shop_top_products', { p_business_id: shop.id, p_limit: 14 }),
-        ])
+        const { data: productsData } = await supabase
+          .from('products')
+          .select('id,name,category,sell_price,stock,image')
+          .eq('business_id', shop.id)
+          .is('deleted_at', null)
+          .not('archived', 'is', true)
+          .not('is_active', 'is', false)
+          .order('created_at', { ascending: false })
 
         if (cancelled) return
         const prods = (productsData || []) as Product[]
         setProducts(prods)
-        setTopIds(((top || []) as { product_id: string }[]).map((r) => r.product_id))
         writeCache(slug, shop as Business, prods)
       } catch (err: any) {
         if (!cancelled && !cached) setError(err?.message || 'Erreur storefront')
@@ -296,18 +291,9 @@ export default function PublicShopPage() {
   const rows = useMemo<Row[]>(() => {
     if (!products.length) return []
 
-    const byId = new Map(products.map((p) => [p.id, p]))
     const out: Row[] = []
 
-    // 1. Les Plus Vendus — real sales ranking (kept in sales order, not shuffled).
-    //    Falls back to a brand-aware random selection when there are no sales yet.
-    const top = topIds.map((id) => byId.get(id)).filter(Boolean) as Product[]
-    const topSellers = top.length ? top.slice(0, 15) : brandAwareShuffle(products).slice(0, 15)
-    if (topSellers.length) {
-      out.push({ key: 'top', title: 'Les Plus Vendus', products: topSellers })
-    }
-
-    // 2. Produits Populaires — most available (highest stock first, not shuffled).
+    // 1. Produits Populaires — most available (highest stock first, not shuffled).
     const popular = [...products]
       .filter((p) => (p.stock ?? 0) > 0)
       .sort((a, b) => (b.stock ?? 0) - (a.stock ?? 0))
@@ -325,8 +311,9 @@ export default function PublicShopPage() {
       byCat.get(norm)!.items.push(p)
     }
 
-    // 3. Preferred categories, in the requested order. Flexible match folds any
-    //    category whose normalized name contains a token into the right row.
+    // 2. Preferred categories, in the requested order. Flexible match folds any
+    //    category whose normalized name contains a token into the right row, so
+    //    e.g. "Appareils" and "Pods" merge. Rows with zero products are skipped.
     for (const pref of PREFERRED_ROWS) {
       const items: Product[] = []
       for (const norm of Array.from(byCat.keys())) {
@@ -340,7 +327,7 @@ export default function PublicShopPage() {
       }
     }
 
-    // 4. Any remaining custom categories (alphabetical), skipping empties.
+    // 3. Any remaining custom categories (alphabetical), skipping empties.
     const rest = Array.from(byCat.values())
       .filter((g) => g.items.length)
       .sort((a, b) => a.title.localeCompare(b.title, 'fr'))
@@ -350,7 +337,7 @@ export default function PublicShopPage() {
 
     return out
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [products, topIds])
+  }, [products])
 
   const searchResults = useMemo(() => {
     const q = normalize(search)
