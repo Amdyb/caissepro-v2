@@ -13,6 +13,7 @@ const FOUNDER_EMAILS = ['infos@dakarvapes.com', 'azzideejay@gmail.com']
 // Types without an entry (e.g. 'agent', 'info') are always delivered.
 const PREF_COLUMN: Record<string, string> = {
   order: 'new_orders',
+  new_order: 'new_orders',
   low_stock: 'low_stock',
   subscription: 'subscription_reminders',
   ticket: 'ticket_replies',

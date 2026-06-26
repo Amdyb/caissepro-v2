@@ -7,6 +7,7 @@ const POSCheckoutDrawer = dynamic(() => import('@/components/POSCheckoutDrawer')
 const BarcodeScanner = dynamic(() => import('@/components/BarcodeScanner'), { ssr: false })
 import { supabase } from '@/lib/supabaseClient'
 import { notifySelf } from '@/lib/notifications'
+import { sendPushRequest } from '@/lib/push'
 import { useBusinessData } from '@/lib/hooks/useBusinessData'
 import useSWR from 'swr'
 import { ImageIcon, ReceiptText, ScanLine, ShoppingCart, Trash2, X, Zap } from 'lucide-react'
@@ -329,18 +330,14 @@ export default function POSPage() {
           type: 'low_stock',
           businessId,
         })
-        // Web push to the owner's devices (non-blocking).
-        fetch('/api/push/send', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            businessId,
-            type: 'low_stock',
-            title: 'Stock faible',
-            body: `Réassort nécessaire : ${lowStockProducts.join(', ')}`,
-            url: '/products',
-          }),
-        }).catch(() => {})
+        // Web push to the owner's devices (authenticated via session, non-blocking).
+        sendPushRequest({
+          businessId,
+          type: 'low_stock',
+          title: 'Stock faible',
+          body: `Réassort nécessaire : ${lowStockProducts.join(', ')}`,
+          url: '/products',
+        })
       }
 
       const receiptLines = cart.map((item) => `• ${item.product.name} x${item.quantity} - ${(item.price * item.quantity).toLocaleString('fr-FR')} CFA`).join('%0A')

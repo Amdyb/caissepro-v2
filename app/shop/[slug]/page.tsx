@@ -476,17 +476,12 @@ export default function PublicShopPage() {
       }))
       await supabase.from('online_orders').insert(orderRows)
 
-      // Web push to the merchant's devices (non-blocking).
+      // Web push to the merchant's devices. Anonymous storefront path: the send
+      // route validates a real order exists and templates the content server-side.
       fetch('/api/push/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          businessId: business.id,
-          type: 'order',
-          title: 'Nouvelle commande !',
-          body: `${formatCfa(cartTotal)} — ${customerName || 'Client en ligne'}`,
-          url: '/orders',
-        }),
+        body: JSON.stringify({ businessId: business.id, type: 'new_order' }),
       }).catch(() => {})
 
       // Notify the merchant (Twilio, non-blocking).

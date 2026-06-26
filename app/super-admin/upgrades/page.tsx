@@ -1,6 +1,7 @@
 'use client'
 
 import { supabase } from '@/lib/supabaseClient'
+import { sendPushRequest } from '@/lib/push'
 import { CheckCircle2, RefreshCw, XCircle } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
@@ -49,18 +50,14 @@ export default function SuperAdminUpgradesPage() {
         expires_at: expires.toISOString(),
       })
       await supabase.from('businesses').update({ plan: req.plan.toLowerCase() }).eq('id', req.business_id)
-      // Web push to the merchant (non-blocking).
-      fetch('/api/push/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          businessId: req.business_id,
-          type: 'subscription',
-          title: 'Abonnement activé',
-          body: `Votre plan ${req.plan} est maintenant actif. Merci !`,
-          url: '/subscription',
-        }),
-      }).catch(() => {})
+      // Web push to the merchant (authenticated via super-admin session, non-blocking).
+      sendPushRequest({
+        businessId: req.business_id,
+        type: 'subscription',
+        title: 'Abonnement activé',
+        body: `Votre plan ${req.plan} est maintenant actif. Merci !`,
+        url: '/subscription',
+      })
     }
     await fetch('/api/whatsapp/send', {
       method: 'POST',

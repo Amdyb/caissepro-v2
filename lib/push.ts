@@ -113,6 +113,35 @@ export async function unsubscribeFromPush(): Promise<void> {
   }
 }
 
+/**
+ * Fire a push from an in-app (authenticated) trigger. Attaches the user's
+ * Supabase access token so the send route can authorize by session — the
+ * server secret is never exposed to client code. Non-blocking.
+ */
+export async function sendPushRequest(payload: {
+  userIds?: string[]
+  businessId?: string | null
+  title: string
+  body: string
+  url?: string
+  type?: string
+}): Promise<void> {
+  try {
+    const { data } = await supabase.auth.getSession()
+    const token = data.session?.access_token
+    await fetch('/api/push/send', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify(payload),
+    })
+  } catch {
+    /* non-blocking */
+  }
+}
+
 // True when this device already has an active browser push subscription.
 export async function isSubscribed(): Promise<boolean> {
   try {
