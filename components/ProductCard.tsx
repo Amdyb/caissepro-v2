@@ -1,4 +1,5 @@
 import Image from 'next/image'
+import { memo } from 'react'
 
 type Product = {
   name: string
@@ -7,7 +8,7 @@ type Product = {
   image: string
 }
 
-export default function ProductCard({ product }: { product: Product }) {
+function ProductCard({ product }: { product: Product }) {
   return (
     <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-md">
       <div className="relative h-44 w-full bg-slate-100">
@@ -24,3 +25,5 @@ export default function ProductCard({ product }: { product: Product }) {
     </div>
   )
 }
+
+export default memo(ProductCard)

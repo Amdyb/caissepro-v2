@@ -12,7 +12,7 @@ import {
   UserPlus,
   Info,
 } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { memo, useEffect, useRef, useState } from 'react'
 
 const TYPE_ICON: Record<string, typeof Bell> = {
   sale: ReceiptText,
@@ -43,7 +43,7 @@ function timeAgo(iso: string): string {
   return `il y a ${days} j`
 }
 
-export default function NotificationBell() {
+function NotificationBell() {
   const [open, setOpen] = useState(false)
   const [items, setItems] = useState<AppNotification[]>([])
   const [loading, setLoading] = useState(false)
@@ -167,3 +167,5 @@ export default function NotificationBell() {
     </div>
   )
 }
+
+export default memo(NotificationBell)

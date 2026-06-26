@@ -2,8 +2,9 @@
 
 import { CreditCard, MessageCircle, ReceiptText, X } from 'lucide-react'
 import Link from 'next/link'
+import { memo } from 'react'
 
-export default function POSCheckoutDrawer({
+function POSCheckoutDrawer({
   open,
   onClose,
   total,
@@ -207,3 +208,5 @@ export default function POSCheckoutDrawer({
     </>
   )
 }
+
+export default memo(POSCheckoutDrawer)

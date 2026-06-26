@@ -14,7 +14,8 @@ function dispatch(event: string) { window.dispatchEvent(new Event(event)) }
 import { savePendingSale } from '@/lib/offlineStore'
 import { formatPhone, sendReceipt } from '@/lib/whatsapp'
 import Link from 'next/link'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import Image from 'next/image'
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 type Product = {
   id: string
@@ -27,6 +28,47 @@ type Product = {
   stock: number | null
   image: string | null
 }
+
+// Memoized so typing in search or updating the cart doesn't re-render every tile
+// in the grid — only tiles whose product/onAdd actually change re-render.
+const PosProductCard = memo(function PosProductCard({
+  product,
+  onAdd,
+}: {
+  product: Product
+  onAdd: (p: Product) => void
+}) {
+  const outOfStock = Number(product.stock ?? 1) <= 0
+  const lowStock = !outOfStock && Number(product.stock ?? 1) <= 5
+
+  return (
+    <button
+      onClick={() => onAdd(product)}
+      disabled={outOfStock}
+      className={`relative rounded-3xl border p-4 text-left shadow-sm transition dark:bg-slate-800 ${outOfStock ? 'cursor-not-allowed border-red-100 bg-white opacity-60 dark:border-red-900' : 'border-slate-200 bg-white hover:border-emerald-300 hover:shadow-md dark:border-slate-700 dark:hover:border-emerald-600'}`}
+    >
+      {outOfStock && (
+        <span className="absolute right-3 top-3 z-10 rounded-full bg-red-600 px-2 py-0.5 text-[10px] font-black text-white">Rupture</span>
+      )}
+      {lowStock && !outOfStock && (
+        <span className="absolute right-3 top-3 z-10 rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-black text-white">Stock faible</span>
+      )}
+      <div className="relative flex h-36 items-center justify-center overflow-hidden rounded-2xl bg-slate-50 dark:bg-slate-700">
+        {product.image ? (
+          <Image src={product.image} alt={product.name} fill sizes="(max-width: 640px) 50vw, (max-width: 1280px) 50vw, 25vw" className="object-cover" />
+        ) : (
+          <ImageIcon className="text-slate-300 dark:text-slate-500" size={40} />
+        )}
+      </div>
+      <h3 className="mt-4 text-lg font-black text-slate-950 dark:text-white">{product.name}</h3>
+      {product.category && <p className="mt-0.5 text-xs font-bold text-slate-400 dark:text-slate-500">{product.category}</p>}
+      <p className="mt-2 text-2xl font-black text-emerald-600">{Number(product.sell_price || 0).toLocaleString('fr-FR')} CFA</p>
+      {product.stock !== null && (
+        <p className="mt-1 text-xs font-bold text-slate-400">Stock : {product.stock}</p>
+      )}
+    </button>
+  )
+})
 
 export default function POSPage() {
   const barcodeInputRef = useRef<HTMLInputElement | null>(null)
@@ -93,7 +135,7 @@ export default function POSPage() {
   const total = cart.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 0)), 0)
   const totalItems = cart.reduce((sum, item) => sum + (item.quantity || 0), 0)
 
-  function addToCart(product: Product) {
+  const addToCart = useCallback((product: Product) => {
     dispatch('play-click')
     setCart((prev: any[]) => {
       const existing = prev.find((i) => i.product.id === product.id)
@@ -107,7 +149,7 @@ export default function POSPage() {
         price: Number(product.sell_price || 0)
       }]
     })
-  }
+  }, [])
 
   function removeItem(productId: string) {
     dispatch('play-click')
@@ -409,35 +451,9 @@ export default function POSPage() {
         </div>
 
         <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-          {filteredProducts.map((product) => {
-            const outOfStock = Number(product.stock ?? 1) <= 0
-            const lowStock = !outOfStock && Number(product.stock ?? 1) <= 5
-
-            return (
-              <button
-                key={product.id}
-                onClick={() => addToCart(product)}
-                disabled={outOfStock}
-                className={`relative rounded-3xl border p-4 text-left shadow-sm transition dark:bg-slate-800 ${outOfStock ? 'cursor-not-allowed border-red-100 bg-white opacity-60 dark:border-red-900' : 'border-slate-200 bg-white hover:border-emerald-300 hover:shadow-md dark:border-slate-700 dark:hover:border-emerald-600'}`}
-              >
-                {outOfStock && (
-                  <span className="absolute right-3 top-3 z-10 rounded-full bg-red-600 px-2 py-0.5 text-[10px] font-black text-white">Rupture</span>
-                )}
-                {lowStock && !outOfStock && (
-                  <span className="absolute right-3 top-3 z-10 rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-black text-white">Stock faible</span>
-                )}
-                <div className="flex h-36 items-center justify-center overflow-hidden rounded-2xl bg-slate-50 dark:bg-slate-700">
-                  {product.image ? <img src={product.image} alt={product.name} className="h-full w-full object-cover" /> : <ImageIcon className="text-slate-300 dark:text-slate-500" size={40} />}
-                </div>
-                <h3 className="mt-4 text-lg font-black text-slate-950 dark:text-white">{product.name}</h3>
-                {product.category && <p className="mt-0.5 text-xs font-bold text-slate-400 dark:text-slate-500">{product.category}</p>}
-                <p className="mt-2 text-2xl font-black text-emerald-600">{Number(product.sell_price || 0).toLocaleString('fr-FR')} CFA</p>
-                {product.stock !== null && (
-                  <p className="mt-1 text-xs font-bold text-slate-400">Stock : {product.stock}</p>
-                )}
-              </button>
-            )
-          })}
+          {filteredProducts.map((product) => (
+            <PosProductCard key={product.id} product={product} onAdd={addToCart} />
+          ))}
         </div>
 
         {cart.length > 0 && (

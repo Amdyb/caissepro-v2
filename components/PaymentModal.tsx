@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabaseClient'
 import { usePlatformSettings } from '@/lib/usePlatformSettings'
 import { PAYMENTS_CARD_ENABLED, PAYMENTS_PAYDUNYA_ENABLED, DEFAULT_PAYMENT_NUMBER } from '@/lib/paymentConfig'
 import { Check, CheckCircle2, Copy, CreditCard, Loader2, X } from 'lucide-react'
-import { useState } from 'react'
+import { memo, useState } from 'react'
 
 type Plan = { id: string; name: string; price: string; amount: number }
 
@@ -16,7 +16,7 @@ type Props = {
   onClose: () => void
 }
 
-export default function PaymentModal({ plan, businessId, businessName, userEmail, onClose }: Props) {
+function PaymentModal({ plan, businessId, businessName, userEmail, onClose }: Props) {
   const settings = usePlatformSettings()
   const waveNumber = settings.payment_wave_number || DEFAULT_PAYMENT_NUMBER
   const orangeNumber = settings.payment_orange_number || DEFAULT_PAYMENT_NUMBER
@@ -302,3 +302,5 @@ export default function PaymentModal({ plan, businessId, businessName, userEmail
     </div>
   )
 }
+
+export default memo(PaymentModal)

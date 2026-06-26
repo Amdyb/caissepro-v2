@@ -3,7 +3,8 @@
 import AppShell from '@/components/AppShell'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
-import { useEffect, useMemo, useState } from 'react'
+import Image from 'next/image'
+import { memo, useCallback, useEffect, useMemo, useState } from 'react'
 import { Edit, Eye, FileSpreadsheet, PackagePlus, Plus, RefreshCw, ScanLine, Search, ShoppingBag, Trash2, Upload, X } from 'lucide-react'
 import { supabase } from '@/lib/supabaseClient'
 import { useBusinessData } from '@/lib/hooks/useBusinessData'
@@ -37,6 +38,62 @@ function stockStatus(stockValue: number) {
   return { label: 'En stock', badge: 'bg-emerald-600 text-white' }
 }
 
+// Memoized grid tile: re-renders only when its product/handlers change, so search
+// typing and restock edits no longer re-render the whole catalogue grid.
+const ProductGridCard = memo(function ProductGridCard({
+  product,
+  isReadOnly,
+  onRestock,
+  onDelete,
+}: {
+  product: Product
+  isReadOnly: boolean
+  onRestock: (p: Product) => void
+  onDelete: (id: string) => void
+}) {
+  const status = stockStatus(Number(product.stock || 0))
+
+  return (
+    <div className="group overflow-hidden rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <span className={`rounded-full px-3 py-1.5 text-xs font-black ${status.badge}`}>{status.label}</span>
+
+        {!isReadOnly && (
+          <div className="flex gap-2 opacity-100 transition sm:opacity-0 sm:group-hover:opacity-100">
+            <button
+              onClick={() => onRestock(product)}
+              className="rounded-full border border-slate-200 bg-white p-2 text-slate-500 transition hover:text-blue-600 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-400"
+              title="Réassort"
+            >
+              <RefreshCw size={15} />
+            </button>
+            <Link href={`/products/${product.id}/edit`} className="rounded-full border border-slate-200 bg-white p-2 text-slate-500 transition hover:text-emerald-700 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-400">
+              <Edit size={15} />
+            </Link>
+            <button onClick={() => onDelete(product.id)} className="rounded-full border border-slate-200 bg-white p-2 text-slate-500 transition hover:text-red-600 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-400">
+              <Trash2 size={15} />
+            </button>
+          </div>
+        )}
+      </div>
+
+      {product.image ? (
+        <div className="relative mb-4 h-40 w-full overflow-hidden rounded-2xl">
+          <Image src={product.image} alt={product.name} fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw" className="object-cover" />
+        </div>
+      ) : (
+        <div className="mb-4 flex h-40 w-full items-center justify-center rounded-2xl bg-slate-100 dark:bg-slate-700">
+          <ShoppingBag className="text-slate-300" size={32} />
+        </div>
+      )}
+
+      <h3 className="text-base font-black text-slate-900 dark:text-white">{product.name}</h3>
+      <p className="mt-2 text-xl font-black text-emerald-600">{Number(product.sell_price || 0).toLocaleString('fr-FR')} CFA</p>
+      <p className="mt-1 text-sm font-bold text-slate-500 dark:text-slate-400">Stock: {product.stock || 0}</p>
+    </div>
+  )
+})
+
 export default function ProductsPage() {
   const { businessId, role: userRole } = useBusinessData()
   const { products, loading, mutate } = useProducts(businessId)
@@ -67,7 +124,7 @@ export default function ProductsPage() {
     })
   }, [products, search])
 
-  async function deleteProduct(id: string) {
+  const deleteProduct = useCallback(async (id: string) => {
     const confirmed = confirm('Supprimer ce produit ?')
     if (!confirmed) return
 
@@ -93,7 +150,12 @@ export default function ProductsPage() {
       ),
       { revalidate: false }
     )
-  }
+  }, [mutate])
+
+  const openRestock = useCallback((product: Product) => {
+    setRestockProduct(product)
+    setRestockQty(String(product.stock ?? 0))
+  }, [])
 
   async function saveRestock() {
     if (!restockProduct || restockQty === '') return
@@ -252,50 +314,15 @@ export default function ProductsPage() {
           </div>
         ) : (
           <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-            {filteredProducts.map((product) => {
-              const status = stockStatus(Number(product.stock || 0))
-
-              return (
-                <div key={product.id} className="group overflow-hidden rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-                  <div className="mb-4 flex items-center justify-between gap-3">
-                    <span className={`rounded-full px-3 py-1.5 text-xs font-black ${status.badge}`}>
-                      {status.label}
-                    </span>
-
-                    {!isReadOnly && (
-                      <div className="flex gap-2 opacity-100 transition sm:opacity-0 sm:group-hover:opacity-100">
-                        <button
-                          onClick={() => { setRestockProduct(product); setRestockQty(String(product.stock ?? 0)) }}
-                          className="rounded-full border border-slate-200 bg-white p-2 text-slate-500 transition hover:text-blue-600 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-400"
-                          title="Réassort"
-                        >
-                          <RefreshCw size={15} />
-                        </button>
-                        <Link href={`/products/${product.id}/edit`} className="rounded-full border border-slate-200 bg-white p-2 text-slate-500 transition hover:text-emerald-700 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-400">
-                          <Edit size={15} />
-                        </Link>
-
-                        <button onClick={() => deleteProduct(product.id)} className="rounded-full border border-slate-200 bg-white p-2 text-slate-500 transition hover:text-red-600 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-400">
-                          <Trash2 size={15} />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
-                  {product.image ? (
-                    <img src={product.image} alt={product.name} className="mb-4 w-full h-40 object-cover rounded-2xl" />
-                  ) : (
-                    <div className="mb-4 w-full h-40 bg-slate-100 dark:bg-slate-700 rounded-2xl flex items-center justify-center">
-                      <ShoppingBag className="text-slate-300" size={32} />
-                    </div>
-                  )}
-
-                  <h3 className="text-base font-black text-slate-900 dark:text-white">{product.name}</h3>
-                  <p className="mt-2 text-xl font-black text-emerald-600">{Number(product.sell_price || 0).toLocaleString('fr-FR')} CFA</p>
-                  <p className="mt-1 text-sm font-bold text-slate-500 dark:text-slate-400">Stock: {product.stock || 0}</p>
-                </div>
-              )
-            })}
+            {filteredProducts.map((product) => (
+              <ProductGridCard
+                key={product.id}
+                product={product}
+                isReadOnly={isReadOnly}
+                onRestock={openRestock}
+                onDelete={deleteProduct}
+              />
+            ))}
           </div>
         )}
       </div>
