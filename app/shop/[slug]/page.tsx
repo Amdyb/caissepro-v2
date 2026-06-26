@@ -4,10 +4,13 @@ import { createClient } from '@supabase/supabase-js'
 import { sendOrderNotification } from '@/lib/whatsapp'
 import Image from 'next/image'
 import {
+  AlertTriangle,
   Banknote,
+  Check,
   ChevronLeft,
   ChevronRight,
   CreditCard,
+  LogOut,
   MapPin,
   MessageCircle,
   Minus,
@@ -17,6 +20,7 @@ import {
   Plus,
   Search,
   Share2,
+  ShieldAlert,
   ShoppingBag,
   ShoppingCart,
   Smartphone,
@@ -49,6 +53,7 @@ type Business = {
   whatsapp?: string | null
   address?: string | null
   slogan?: string | null
+  age_verification_required?: boolean | null
 }
 
 type Product = {
@@ -206,6 +211,8 @@ export default function PublicShopPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  const [ageConfirmed, setAgeConfirmed] = useState(false)
+
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [detailQty, setDetailQty] = useState(1)
 
@@ -238,7 +245,7 @@ export default function PublicShopPage() {
         const { data: shop, error: bizError } = await supabase
           .from('businesses')
           .select(
-            'id,name,slug,logo_url,banner_url,primary_color,secondary_color,whatsapp_number,phone,whatsapp,address,slogan'
+            'id,name,slug,logo_url,banner_url,primary_color,secondary_color,whatsapp_number,phone,whatsapp,address,slogan,age_verification_required'
           )
           .eq('slug', slug)
           .eq('status', 'active')
@@ -281,6 +288,33 @@ export default function PublicShopPage() {
       cancelled = true
     }
   }, [slug])
+
+  // Age verification: skip the gate entirely unless the merchant has it enabled.
+  // If enabled, honour a prior confirmation stored per-business in this browser.
+  useEffect(() => {
+    if (!business) return
+    if (!business.age_verification_required) {
+      setAgeConfirmed(true)
+      return
+    }
+    try {
+      if (localStorage.getItem(`age_verified_${business.id}`) === 'true') {
+        setAgeConfirmed(true)
+      }
+    } catch {}
+  }, [business])
+
+  const confirmAge = useCallback(() => {
+    if (!business) return
+    try {
+      localStorage.setItem(`age_verified_${business.id}`, 'true')
+    } catch {}
+    setAgeConfirmed(true)
+  }, [business])
+
+  function rejectAge() {
+    window.location.href = 'https://www.google.com'
+  }
 
   const primary = business?.primary_color || '#16a34a'
   const secondary = business?.secondary_color || '#0f172a'
@@ -503,6 +537,12 @@ export default function PublicShopPage() {
     )
   }
 
+  // Gate everything behind the age check when the merchant requires it. We render
+  // a full replacement screen (not just an overlay) so no product is ever painted.
+  if (business.age_verification_required && !ageConfirmed) {
+    return <AgeGate businessName={business.name} primary={primary} onConfirm={confirmAge} onReject={rejectAge} />
+  }
+
   return (
     <main className="min-h-screen bg-[#050505] pb-28 text-white">
       {/* Hero */}
@@ -610,6 +650,11 @@ export default function PublicShopPage() {
 
       {/* Footer */}
       <footer className="border-t py-8 text-center" style={{ borderTopColor: secondary + '44', backgroundColor: secondary + '22' }}>
+        {business.age_verification_required && (
+          <p className="mx-auto mb-4 max-w-xl px-4 text-xs font-black uppercase tracking-wide text-amber-400/80">
+            Produits réservés aux adultes de 18 ans et plus. La nicotine crée une forte dépendance.
+          </p>
+        )}
         <p className="text-xs font-bold text-white/30">
           Propulsé par{' '}
           <a href="https://caissepro.app" target="_blank" rel="noopener noreferrer" className="text-white/50 hover:text-white/80">CaissePro</a>
@@ -873,6 +918,62 @@ function CategoryRow({
         ))}
       </div>
     </div>
+  )
+}
+
+function AgeGate({
+  businessName,
+  primary,
+  onConfirm,
+  onReject,
+}: {
+  businessName: string
+  primary: string
+  onConfirm: () => void
+  onReject: () => void
+}) {
+  return (
+    <main className="fixed inset-0 z-[2000] flex items-center justify-center bg-[#050505] px-5 text-white">
+      <div className="absolute inset-0 bg-gradient-to-b from-slate-900 via-[#050505] to-black" />
+      <div className="relative w-full max-w-md rounded-[2rem] border border-white/10 bg-white/5 p-8 text-center backdrop-blur-2xl shadow-2xl">
+        <div
+          className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full"
+          style={{ backgroundColor: primary + '22', color: primary }}
+        >
+          <ShieldAlert size={34} />
+        </div>
+
+        <h1 className="text-2xl font-black tracking-tight">Vérification d&apos;âge</h1>
+
+        <p className="mt-4 text-sm font-medium leading-relaxed text-white/75">
+          Ce site vend des produits de vapotage contenant de la nicotine. Vous devez avoir 18 ans
+          ou plus pour entrer.
+        </p>
+
+        <div className="mt-5 flex items-center justify-center gap-2 rounded-2xl border border-amber-400/30 bg-amber-400/10 px-4 py-3 text-xs font-black uppercase tracking-wide text-amber-400">
+          <AlertTriangle size={16} className="shrink-0" />
+          La nicotine est une substance addictive.
+        </div>
+
+        <div className="mt-7 space-y-3">
+          <button
+            onClick={onConfirm}
+            className="flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-base font-black text-white shadow-xl"
+            style={{ backgroundColor: primary }}
+          >
+            <Check size={18} /> J&apos;ai 18 ans ou plus - Entrer
+          </button>
+          <button
+            onClick={onReject}
+            className="flex w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 py-4 text-base font-black text-white/70 hover:bg-white/10"
+          >
+            <LogOut size={18} /> J&apos;ai moins de 18 ans - Quitter
+          </button>
+        </div>
+
+        <p className="mt-6 text-[11px] font-bold uppercase tracking-widest text-white/30">{businessName}</p>
+      </div>
+    </main>
   )
 }
 
