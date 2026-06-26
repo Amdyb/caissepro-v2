@@ -429,86 +429,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Conseil du jour — data-driven daily tip + entry to the advisor */}
-      {dailyTip && (
-        <div className="mb-4 rounded-[2rem] border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-5 shadow-sm dark:border-emerald-900/40 dark:from-emerald-900/20 dark:to-slate-800">
-          <div className="flex items-start gap-4">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-600 text-white">
-              <Lightbulb size={20} />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
-                Conseil du jour
-                {!isPremium && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-500 px-2 py-0.5 text-[9px] font-black text-white"><Crown size={9} /> Premium</span>
-                )}
-              </p>
-              <p className="mt-1 text-sm font-bold text-slate-700 dark:text-slate-200">{dailyTip}</p>
-              {isPremium ? (
-                <Link href="/conseiller" className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-4 py-2 text-xs font-black text-white transition hover:bg-emerald-700">
-                  Voir plus de conseils <ArrowRight size={14} />
-                </Link>
-              ) : (
-                <Link href="/upgrade" className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-amber-500 px-4 py-2 text-xs font-black text-white transition hover:bg-amber-600">
-                  <Crown size={13} /> Débloquez votre conseiller
-                </Link>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Platform-admin shortcut — founders & invited admins only */}
-      {adminAllowed && (
-        <Link
-          href="/super-admin"
-          className="mb-4 flex items-center justify-between gap-3 rounded-[2rem] border border-slate-800 bg-slate-950 px-5 py-4 text-white shadow-sm transition hover:bg-slate-800"
-        >
-          <span className="flex items-center gap-3">
-            <ShieldCheck size={20} className="text-emerald-400" />
-            <span className="text-sm font-black">Accéder à l&apos;administration</span>
-          </span>
-          <ArrowRight size={18} className="text-emerald-400" />
-        </Link>
-      )}
-
-      {/* Business switcher — shown only when user manages multiple businesses */}
-      {allBusinesses.length > 1 && (
-        <div className="mb-4 flex items-center gap-3 rounded-[2rem] border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-          <Store size={18} className="shrink-0 text-emerald-600" />
-          <p className="text-sm font-black text-slate-700 dark:text-slate-200 shrink-0">Boutique active :</p>
-          <select
-            value={businessId || ''}
-            onChange={(e) => switchBusiness(e.target.value)}
-            className="flex-1 rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-black text-slate-950 outline-none focus:border-emerald-600 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
-          >
-            {allBusinesses.map((b) => (
-              <option key={b.id} value={b.id}>{b.name}</option>
-            ))}
-          </select>
-        </div>
-      )}
-
-      {/* Multi-shop: create a new business (Premium feature) */}
-      <div className="mb-4">
-        {plan === 'premium' ? (
-          <a
-            href="/create-business"
-            className="flex items-center justify-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-3 text-sm font-black text-emerald-700 transition hover:bg-emerald-100 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-300"
-          >
-            <Plus size={18} /> Créer une nouvelle boutique
-          </a>
-        ) : (
-          <a
-            href="/upgrade"
-            className="flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-5 py-3 text-sm font-black text-slate-400 transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800"
-          >
-            <Lock size={16} /> Créer une nouvelle boutique — Premium requis
-          </a>
-        )}
-      </div>
-
-      {/* 1. Hero banner - flush edge to edge */}
+      {/* 1. Welcome header — hero banner, flush edge to edge */}
       <section className="-mx-5 -mt-8 relative overflow-hidden bg-slate-950">
         {business?.banner_url ? (
           <div
@@ -563,6 +484,56 @@ export default function DashboardPage() {
       </section>
 
       <div className="mx-auto max-w-[1600px]">
+        {/* Business switcher — shown only when user manages multiple businesses */}
+        {allBusinesses.length > 1 && (
+          <div className="mt-4 flex items-center gap-3 rounded-[2rem] border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+            <Store size={18} className="shrink-0 text-emerald-600" />
+            <p className="text-sm font-black text-slate-700 dark:text-slate-200 shrink-0">Boutique active :</p>
+            <select
+              value={businessId || ''}
+              onChange={(e) => switchBusiness(e.target.value)}
+              className="flex-1 rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-black text-slate-950 outline-none focus:border-emerald-600 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+            >
+              {allBusinesses.map((b) => (
+                <option key={b.id} value={b.id}>{b.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {/* Multi-shop: create a new business (Premium feature) */}
+        <div className="mt-4">
+          {plan === 'premium' ? (
+            <a
+              href="/create-business"
+              className="flex items-center justify-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-3 text-sm font-black text-emerald-700 transition hover:bg-emerald-100 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-300"
+            >
+              <Plus size={18} /> Créer une nouvelle boutique
+            </a>
+          ) : (
+            <a
+              href="/upgrade"
+              className="flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-5 py-3 text-sm font-black text-slate-400 transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800"
+            >
+              <Lock size={16} /> Créer une nouvelle boutique — Premium requis
+            </a>
+          )}
+        </div>
+
+        {/* Platform-admin shortcut — founders & invited admins only */}
+        {adminAllowed && (
+          <Link
+            href="/super-admin"
+            className="mt-4 flex items-center justify-between gap-3 rounded-[2rem] border border-slate-800 bg-slate-950 px-5 py-4 text-white shadow-sm transition hover:bg-slate-800"
+          >
+            <span className="flex items-center gap-3">
+              <ShieldCheck size={20} className="text-emerald-400" />
+              <span className="text-sm font-black">Accéder à l&apos;administration</span>
+            </span>
+            <ArrowRight size={18} className="text-emerald-400" />
+          </Link>
+        )}
+
         {/* 2. Subscription status card */}
         {(() => {
           const isPaid = plan && plan !== 'free'
@@ -590,35 +561,50 @@ export default function DashboardPage() {
           )
         })()}
 
-        {/* 3. Parrainage card */}
-        <div className="mt-4 rounded-[2rem] border border-violet-200 bg-violet-50 p-5 shadow-sm dark:border-violet-800 dark:bg-violet-900/20">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-black uppercase tracking-wide text-violet-700 dark:text-violet-400">Parrainage</p>
-              <p className="mt-0.5 text-xs font-bold text-violet-500 dark:text-violet-500">
-                {referralCount} filleul{referralCount !== 1 ? 's' : ''} &bull; {rewardCount} mois offert{rewardCount !== 1 ? 's' : ''}
-              </p>
+        {/* 3. Today's sales / key stats & performance */}
+        <div id="tour-stats" className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <Link href="/sales" className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-xl dark:border-slate-700 dark:bg-slate-800">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">Ventes aujourd'hui</p>
+                <p className="mt-2 text-3xl font-black text-slate-950 dark:text-white">{cfa(todayTotal)}</p>
+              </div>
+              <CalendarDays className="text-emerald-600" size={24} />
             </div>
-          </div>
+          </Link>
 
-          <div className="mt-3 flex flex-row gap-3">
-            <button
-              onClick={handleWhatsApp}
-              className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-green-500 py-3 text-sm font-black text-white shadow-lg shadow-green-500/20 transition hover:bg-green-600"
-            >
-              Partager sur WhatsApp
-            </button>
-            <button
-              onClick={handleCopy}
-              className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-violet-300 bg-transparent py-3 text-sm font-black text-violet-700 transition hover:bg-violet-100 dark:border-violet-600 dark:text-violet-400 dark:hover:bg-violet-900/20"
-            >
-              {copyDone ? <Check size={14} /> : null}
-              {copyDone ? 'Lien copié !' : 'Copier le lien'}
-            </button>
-          </div>
+          <Link href="/sales" className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-xl dark:border-slate-700 dark:bg-slate-800">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">Performance semaine</p>
+                <p className="mt-2 text-3xl font-black text-slate-950 dark:text-white">{cfa(weekTotal)}</p>
+              </div>
+              <Sparkles className="text-emerald-600" size={24} />
+            </div>
+          </Link>
+
+          <Link href="/products" className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-xl dark:border-slate-700 dark:bg-slate-800">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">Stock critique</p>
+                <p className="mt-2 text-3xl font-black text-amber-600">{lowStockCount}</p>
+              </div>
+              <Bell className="text-amber-500" size={24} />
+            </div>
+          </Link>
+
+          <Link href="/debts" className="rounded-[2rem] border border-red-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-xl dark:border-red-900 dark:bg-slate-800">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">Paiements a recuperer</p>
+                <p className="mt-2 text-3xl font-black text-red-600">{cfa(totalDebt)}</p>
+              </div>
+              <CreditCard className="text-red-500" size={24} />
+            </div>
+          </Link>
         </div>
 
-        {/* 4. Raccourcis section */}
+        {/* 4. Quick actions / raccourcis */}
         <div className="mt-4 rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
           <p className="mb-3 text-sm font-black uppercase tracking-wide text-slate-700 dark:text-slate-200">Raccourcis</p>
 
@@ -691,47 +677,61 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* 5. Stats cards */}
-        <div id="tour-stats" className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <Link href="/sales" className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-xl dark:border-slate-700 dark:bg-slate-800">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">Ventes aujourd'hui</p>
-                <p className="mt-2 text-3xl font-black text-slate-950 dark:text-white">{cfa(todayTotal)}</p>
+        {/* 6. Conseil du jour — data-driven daily tip + entry to the advisor */}
+        {dailyTip && (
+          <div className="mt-4 rounded-[2rem] border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-5 shadow-sm dark:border-emerald-900/40 dark:from-emerald-900/20 dark:to-slate-800">
+            <div className="flex items-start gap-4">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-600 text-white">
+                <Lightbulb size={20} />
               </div>
-              <CalendarDays className="text-emerald-600" size={24} />
+              <div className="min-w-0 flex-1">
+                <p className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
+                  Conseil du jour
+                  {!isPremium && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-500 px-2 py-0.5 text-[9px] font-black text-white"><Crown size={9} /> Premium</span>
+                  )}
+                </p>
+                <p className="mt-1 text-sm font-bold text-slate-700 dark:text-slate-200">{dailyTip}</p>
+                {isPremium ? (
+                  <Link href="/conseiller" className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-4 py-2 text-xs font-black text-white transition hover:bg-emerald-700">
+                    Voir plus de conseils <ArrowRight size={14} />
+                  </Link>
+                ) : (
+                  <Link href="/upgrade" className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-amber-500 px-4 py-2 text-xs font-black text-white transition hover:bg-amber-600">
+                    <Crown size={13} /> Débloquez votre conseiller
+                  </Link>
+                )}
+              </div>
             </div>
-          </Link>
+          </div>
+        )}
 
-          <Link href="/sales" className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-xl dark:border-slate-700 dark:bg-slate-800">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">Performance semaine</p>
-                <p className="mt-2 text-3xl font-black text-slate-950 dark:text-white">{cfa(weekTotal)}</p>
-              </div>
-              <Sparkles className="text-emerald-600" size={24} />
+        {/* 7. Parrainage — secondary option, kept at the very bottom */}
+        <div className="mt-4 rounded-[2rem] border border-violet-200 bg-violet-50 p-5 shadow-sm dark:border-violet-800 dark:bg-violet-900/20">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-black uppercase tracking-wide text-violet-700 dark:text-violet-400">Parrainage</p>
+              <p className="mt-0.5 text-xs font-bold text-violet-500 dark:text-violet-500">
+                {referralCount} filleul{referralCount !== 1 ? 's' : ''} &bull; {rewardCount} mois offert{rewardCount !== 1 ? 's' : ''}
+              </p>
             </div>
-          </Link>
+          </div>
 
-          <Link href="/products" className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-xl dark:border-slate-700 dark:bg-slate-800">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">Stock critique</p>
-                <p className="mt-2 text-3xl font-black text-amber-600">{lowStockCount}</p>
-              </div>
-              <Bell className="text-amber-500" size={24} />
-            </div>
-          </Link>
-
-          <Link href="/debts" className="rounded-[2rem] border border-red-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-xl dark:border-red-900 dark:bg-slate-800">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">Paiements a recuperer</p>
-                <p className="mt-2 text-3xl font-black text-red-600">{cfa(totalDebt)}</p>
-              </div>
-              <CreditCard className="text-red-500" size={24} />
-            </div>
-          </Link>
+          <div className="mt-3 flex flex-row gap-3">
+            <button
+              onClick={handleWhatsApp}
+              className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-green-500 py-3 text-sm font-black text-white shadow-lg shadow-green-500/20 transition hover:bg-green-600"
+            >
+              Partager sur WhatsApp
+            </button>
+            <button
+              onClick={handleCopy}
+              className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-violet-300 bg-transparent py-3 text-sm font-black text-violet-700 transition hover:bg-violet-100 dark:border-violet-600 dark:text-violet-400 dark:hover:bg-violet-900/20"
+            >
+              {copyDone ? <Check size={14} /> : null}
+              {copyDone ? 'Lien copié !' : 'Copier le lien'}
+            </button>
+          </div>
         </div>
       </div>
     </AppShell>
