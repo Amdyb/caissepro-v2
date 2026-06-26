@@ -476,6 +476,19 @@ export default function PublicShopPage() {
       }))
       await supabase.from('online_orders').insert(orderRows)
 
+      // Web push to the merchant's devices (non-blocking).
+      fetch('/api/push/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          businessId: business.id,
+          type: 'order',
+          title: 'Nouvelle commande !',
+          body: `${formatCfa(cartTotal)} — ${customerName || 'Client en ligne'}`,
+          url: '/orders',
+        }),
+      }).catch(() => {})
+
       // Notify the merchant (Twilio, non-blocking).
       const merchantPhone = business.whatsapp || business.whatsapp_number || business.phone
       if (merchantPhone) {

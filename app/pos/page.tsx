@@ -329,6 +329,18 @@ export default function POSPage() {
           type: 'low_stock',
           businessId,
         })
+        // Web push to the owner's devices (non-blocking).
+        fetch('/api/push/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            businessId,
+            type: 'low_stock',
+            title: 'Stock faible',
+            body: `Réassort nécessaire : ${lowStockProducts.join(', ')}`,
+            url: '/products',
+          }),
+        }).catch(() => {})
       }
 
       const receiptLines = cart.map((item) => `• ${item.product.name} x${item.quantity} - ${(item.price * item.quantity).toLocaleString('fr-FR')} CFA`).join('%0A')

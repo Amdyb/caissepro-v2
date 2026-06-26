@@ -1,6 +1,7 @@
 'use client'
 
 import AppShell from '@/components/AppShell'
+import PushPermissionPrompt from '@/components/PushPermissionPrompt'
 import { getBusinessTemplate } from '@/lib/businessTemplates'
 import { getDashboardCards } from '@/lib/dashboardCards'
 import { SkeletonDashboard } from '@/components/Skeleton'
@@ -423,6 +424,7 @@ export default function DashboardPage() {
 
   return (
     <AppShell title="Tableau de bord" subtitle={business?.name ? `Bienvenue sur ${business.name}` : "Vue d'ensemble de votre activite"}>
+      <PushPermissionPrompt businessId={businessId} />
       {message && (
         <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-bold text-red-700">
           {message}

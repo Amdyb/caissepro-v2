@@ -14,6 +14,7 @@ import { mutate as globalMutate } from 'swr'
 import {
   AlertTriangle,
   BarChart3,
+  Bell,
   ChevronDown,
   Plus,
   CreditCard,
@@ -372,6 +373,7 @@ function getNavSections(businessType: string): SectionConfig[] {
       defaultOpen: false,
       items: [
         { label: 'Profil', href: '/profile', icon: User },
+        { label: 'Notifications', href: '/settings/notifications', icon: Bell },
         { label: 'Mode de paiement', href: '/payment-methods', icon: CreditCard },
         { label: 'Intégration WhatsApp', href: '/settings/whatsapp', icon: MessageCircle },
       ],

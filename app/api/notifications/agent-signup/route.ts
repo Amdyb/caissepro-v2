@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { sendPushTo } from '@/lib/pushServer'
+
+export const runtime = 'nodejs'
 
 const FOUNDER_EMAILS = ['infos@dakarvapes.com', 'azzideejay@gmail.com']
 
@@ -59,6 +62,19 @@ export async function POST(req: NextRequest) {
   const { error } = await supabase.from('notifications').insert(rows)
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+
+  // Web push to admins/founders (non-blocking; type 'agent' is not user-gated).
+  try {
+    await sendPushTo({
+      userIds: Array.from(recipientIds),
+      type: 'agent',
+      title: 'Nouvelle candidature agent',
+      body: `${fullName}${location ? ` — ${location}` : ''} a postulé pour devenir agent.`,
+      url: '/super-admin/agents',
+    })
+  } catch {
+    /* non-blocking */
   }
 
   return NextResponse.json({ success: true, notified: rows.length })

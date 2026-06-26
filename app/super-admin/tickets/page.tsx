@@ -100,6 +100,21 @@ export default function SuperAdminTicketsPage() {
       .eq('id', selected.id)
     patchTicket(selected.id, { status: newStatus })
 
+    // Web push to the ticket creator (non-blocking).
+    if (selected.user_id) {
+      fetch('/api/push/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userIds: [selected.user_id],
+          type: 'ticket',
+          title: `Réponse à votre ticket ${selected.ticket_number || ''}`.trim(),
+          body: replyText.trim().slice(0, 140),
+          url: '/my-tickets',
+        }),
+      }).catch(() => {})
+    }
+
     // Notify the ticket creator by WhatsApp if a phone is on file.
     if (selected.phone) {
       fetch('/api/whatsapp/send', {
