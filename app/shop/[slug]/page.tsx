@@ -52,6 +52,8 @@ type Business = {
   phone?: string | null
   whatsapp?: string | null
   address?: string | null
+  business_address?: string | null
+  google_maps_url?: string | null
   slogan?: string | null
   age_verification_required?: boolean | null
 }
@@ -102,6 +104,22 @@ function priceOf(p: Product) {
 
 function imageOf(p: Product) {
   return p.image || p.image_url || null
+}
+
+// Build a Google Maps DIRECTIONS link to the shop (not just a search), so the
+// button opens turn-by-turn navigation in the Maps app on mobile and the web
+// app on desktop. Priority:
+//   1. An explicit saved Google Maps link (points to the exact pinned location).
+//   2. A directions link built from the address text (URL-encoded).
+// The DB has no latitude/longitude columns, so coordinates are not used.
+function directionsUrlOf(b: Business): string | null {
+  const saved = (b.google_maps_url || '').trim()
+  if (saved) return saved
+  const address = (b.address || b.business_address || '').trim()
+  if (address) {
+    return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address)}`
+  }
+  return null
 }
 
 function normalize(s: string) {
@@ -245,7 +263,7 @@ export default function PublicShopPage() {
         const { data: shop, error: bizError } = await supabase
           .from('businesses')
           .select(
-            'id,name,slug,logo_url,banner_url,primary_color,secondary_color,whatsapp_number,phone,whatsapp,address,slogan,age_verification_required'
+            'id,name,slug,logo_url,banner_url,primary_color,secondary_color,whatsapp_number,phone,whatsapp,address,business_address,google_maps_url,slogan,age_verification_required'
           )
           .eq('slug', slug)
           .eq('status', 'active')
@@ -498,9 +516,8 @@ export default function PublicShopPage() {
     } catch {}
   }
 
-  const mapsUrl = business?.address
-    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.address)}`
-    : null
+  const addressText = (business?.address || business?.business_address || '').trim()
+  const directionsUrl = business ? directionsUrlOf(business) : null
 
   if (loading && !business) {
     return (
@@ -603,10 +620,13 @@ export default function PublicShopPage() {
                   <Phone size={15} />{business.phone}
                 </a>
               )}
-              {mapsUrl && (
-                <a href={mapsUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-3 backdrop-blur-xl hover:bg-white/10">
-                  <MapPin size={15} />{business.address}
-                  <Navigation size={13} className="text-emerald-400" />
+              {directionsUrl && (
+                <a href={directionsUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-3 backdrop-blur-xl hover:bg-white/10">
+                  <MapPin size={15} />
+                  {addressText && <span className="max-w-[200px] truncate">{addressText}</span>}
+                  <span className="inline-flex items-center gap-1 font-black text-emerald-400">
+                    <Navigation size={13} /> {addressText ? 'Itinéraire' : "Obtenir l'itinéraire"}
+                  </span>
                 </a>
               )}
             </div>

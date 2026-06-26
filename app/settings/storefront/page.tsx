@@ -19,6 +19,7 @@ export default function StorefrontSettingsPage() {
   const [message, setMessage] = useState('')
   const [form, setForm] = useState({
     name: '', slug: '', slogan: '', phone: '', whatsapp: '', address: '',
+    google_maps_url: '',
     primary_color: '#16a34a', online_store_enabled: true,
     age_verification_required: false,
     logo_url: '', banner_url: ''
@@ -47,6 +48,7 @@ export default function StorefrontSettingsPage() {
         phone: business.phone || business.business_phone || '',
         whatsapp: business.whatsapp || business.whatsapp_number || '',
         address: business.address || business.business_address || '',
+        google_maps_url: business.google_maps_url || '',
         primary_color: business.primary_color || '#16a34a',
         online_store_enabled: business.online_store_enabled ?? true,
         age_verification_required: business.age_verification_required ?? false,
@@ -66,6 +68,7 @@ export default function StorefrontSettingsPage() {
     const { error } = await supabase.from('businesses').update({
       name: form.name, slug: cleanSlug, slogan: form.slogan,
       phone: form.phone, whatsapp: form.whatsapp, address: form.address,
+      business_address: form.address, google_maps_url: form.google_maps_url.trim() || null,
       primary_color: form.primary_color, online_store_enabled: form.online_store_enabled,
       age_verification_required: form.age_verification_required,
       logo_url: form.logo_url, banner_url: form.banner_url
@@ -199,6 +202,7 @@ export default function StorefrontSettingsPage() {
           <div><label className="mb-2 block text-sm font-black text-slate-700">Slogan</label><input value={form.slogan} onChange={(e) => setForm({ ...form, slogan: e.target.value })} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-semibold outline-none focus:border-emerald-500" placeholder="La boutique moderne de Dakar" /></div>
           <div className="grid gap-5 md:grid-cols-2"><div><label className="mb-2 block text-sm font-black text-slate-700">Téléphone</label><input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-semibold outline-none focus:border-emerald-500" placeholder="78 458 1111" /></div><div><label className="mb-2 block text-sm font-black text-slate-700">WhatsApp</label><input value={form.whatsapp} onChange={(e) => setForm({ ...form, whatsapp: e.target.value })} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-semibold outline-none focus:border-emerald-500" placeholder="78 458 1111" /></div></div>
           <div><label className="mb-2 block text-sm font-black text-slate-700">Adresse</label><input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-semibold outline-none focus:border-emerald-500" placeholder="Dakar, Sénégal" /></div>
+          <div><label className="mb-2 block text-sm font-black text-slate-700">Lien Google Maps (itinéraire)</label><input value={form.google_maps_url} onChange={(e) => setForm({ ...form, google_maps_url: e.target.value })} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 font-semibold outline-none focus:border-emerald-500" placeholder="https://maps.app.goo.gl/..." /><p className="mt-2 text-xs font-bold text-slate-500">Ouvrez votre boutique dans Google Maps, touchez « Partager » et collez le lien ici. Vos clients obtiendront l&apos;itinéraire exact. Sinon, l&apos;adresse ci-dessus est utilisée.</p></div>
           <div><label className="mb-2 block text-sm font-black text-slate-700">Couleur principale</label><input type="color" value={form.primary_color} onChange={(e) => setForm({ ...form, primary_color: e.target.value })} className="h-14 w-24 rounded-2xl border border-slate-200 bg-white p-2" /></div>
           <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-black text-slate-700"><input type="checkbox" checked={form.online_store_enabled} onChange={(e) => setForm({ ...form, online_store_enabled: e.target.checked })} />Publier ma boutique en ligne</label>
           <label className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-black text-slate-700"><input type="checkbox" className="mt-0.5" checked={form.age_verification_required} onChange={(e) => setForm({ ...form, age_verification_required: e.target.checked })} /><span>Exiger une vérification d&apos;âge (18 ans et plus)<span className="mt-1 block text-xs font-semibold text-slate-500">Pour les produits réservés aux adultes (vapotage, alcool…). Une page de confirmation s&apos;affiche avant la boutique.</span></span></label>
