@@ -2,9 +2,9 @@
 
 import AppShell from '@/components/AppShell'
 import { PlanName, getNumericLimit } from '@/lib/plans'
-import { canManageEmployees } from '@/lib/permissions'
+import { OWNER_ROLES, canManageEmployees } from '@/lib/permissions'
 import { supabase } from '@/lib/supabaseClient'
-import { AlertTriangle, ChevronDown, ChevronUp, Copy, Eye, MessageCircle, RefreshCw, UserMinus, UserPlus, Users, X } from 'lucide-react'
+import { AlertTriangle, ChevronDown, ChevronUp, Copy, Eye, MessageCircle, RefreshCw, ShieldCheck, UserCog, UserMinus, UserPlus, Users, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 type Member = {
@@ -24,14 +24,45 @@ type Member = {
 const roleLabels: Record<string, string> = {
   sales: 'Vendeur',
   cashier: 'Caissier',
+  caissier: 'Caissier',
   staff: 'Employé',
   employee: 'Employé',
   manager: 'Manager',
   admin: 'Administrateur',
   owner: 'Propriétaire',
+  proprietaire: 'Propriétaire',
 }
 
 const DEACTIVATION_REASONS = ['Fin de contrat', 'Licenciement', 'Démission', 'Autre']
+
+// Roles an owner can assign. Propriétaire is intentionally excluded — ownership
+// is fixed and cannot be granted or revoked from this screen.
+const ASSIGNABLE_ROLES = [
+  { value: 'manager', label: 'Manager', desc: 'Opérations quotidiennes. Produits et employés en lecture seule.' },
+  { value: 'caissier', label: 'Caissier', desc: 'Caisse : ventes, caisse du jour, dépenses. Produits en lecture seule.' },
+]
+
+// Visual identity for a role badge. Owner-level roles share the emerald/gold
+// look; manager is blue; everything else (cashier/staff) is neutral grey.
+function roleBadgeMeta(role?: string | null): { label: string; className: string } {
+  const r = role || ''
+  if (OWNER_ROLES.includes(r)) {
+    return { label: 'Propriétaire', className: 'border border-amber-300 bg-emerald-100 text-emerald-800' }
+  }
+  if (r === 'manager') {
+    return { label: 'Manager', className: 'bg-blue-100 text-blue-700' }
+  }
+  return { label: roleLabels[r] || r || 'Employé', className: 'bg-slate-100 text-slate-600' }
+}
+
+function RoleBadge({ role }: { role?: string | null }) {
+  const { label, className } = roleBadgeMeta(role)
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-black ${className}`}>
+      <ShieldCheck size={12} /> {label}
+    </span>
+  )
+}
 
 function generateTempPassword() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
@@ -45,6 +76,7 @@ function formatDate(iso: string | null | undefined) {
 
 export default function EmployeesPage() {
   const [businessId, setBusinessId] = useState('')
+  const [currentUserId, setCurrentUserId] = useState<string>('')
   const [currentRole, setCurrentRole] = useState<string>('')
   const [plan, setPlan] = useState<PlanName>('free')
   const [members, setMembers] = useState<Member[]>([])
@@ -65,10 +97,16 @@ export default function EmployeesPage() {
   const [deactivateCustom, setDeactivateCustom] = useState('')
   const [deactivating, setDeactivating] = useState(false)
 
+  // Role-change modal state
+  const [roleTarget, setRoleTarget] = useState<Member | null>(null)
+  const [newRole, setNewRole] = useState('')
+  const [changingRole, setChangingRole] = useState(false)
+
   useEffect(() => {
     async function init() {
       const { data: userData } = await supabase.auth.getUser()
       if (!userData.user) { setLoading(false); return }
+      setCurrentUserId(userData.user.id)
 
       // Read every membership and honour the user-selected business (multi-boutique),
       // so the role gating reflects the boutique actually being viewed — not just
@@ -260,6 +298,63 @@ export default function EmployeesPage() {
     window.open(`https://wa.me/?text=${text}`, '_blank')
   }
 
+  function openRoleChange(member: Member) {
+    setRoleTarget(member)
+    // Pre-select the first assignable role that isn't the member's current one.
+    const firstOther = ASSIGNABLE_ROLES.find((r) => r.value !== member.role)
+    setNewRole(firstOther?.value || ASSIGNABLE_ROLES[0].value)
+  }
+
+  async function confirmRoleChange() {
+    if (!roleTarget?.id || !businessId || !newRole) return
+    // Guard: never touch an owner-level account, and never change your own role.
+    if (OWNER_ROLES.includes(roleTarget.role || '') || roleTarget.user_id === currentUserId) {
+      setRoleTarget(null)
+      return
+    }
+
+    setChangingRole(true)
+    const { data: updated, error } = await supabase
+      .from('business_members')
+      .update({ role: newRole })
+      .eq('id', roleTarget.id)
+      .eq('business_id', businessId)
+      .select()
+
+    setChangingRole(false)
+
+    if (error) {
+      setMessage(`Erreur: ${error.message}`)
+      setIsError(true)
+      setRoleTarget(null)
+      return
+    }
+
+    if (!updated || updated.length === 0) {
+      setMessage('Employé introuvable dans cette boutique.')
+      setIsError(true)
+      setRoleTarget(null)
+      return
+    }
+
+    const name = roleTarget.full_name || roleTarget.email || "L'employé"
+    const roleLabel = roleLabels[newRole] || newRole
+    setRoleTarget(null)
+    await loadMembers(businessId)
+    setMessage('Rôle modifié avec succès')
+    setIsError(false)
+
+    notifyRoleChangeWhatsApp(name, roleLabel)
+  }
+
+  function notifyRoleChangeWhatsApp(name: string, roleLabel: string) {
+    const date = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })
+    const text = encodeURIComponent(
+      `✅ *CaissePro – Rôle mis à jour*\n\n👤 Employé : ${name}\n🛡️ Nouveau rôle : ${roleLabel}\n📅 Date : ${date}\n\nVotre accès a été ajusté en conséquence.`
+    )
+    window.open(`https://wa.me/?text=${text}`, '_blank')
+  }
+
   function shareWhatsApp(member: Member, pw: string) {
     const name = member.full_name || member.email || 'votre employé'
     const text = encodeURIComponent(
@@ -361,6 +456,81 @@ export default function EmployeesPage() {
                 className="flex-1 rounded-2xl bg-orange-500 py-3 text-sm font-black text-white hover:bg-orange-600 disabled:opacity-60"
               >
                 {deactivating ? 'Désactivation...' : 'Confirmer'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Role-change modal — owner only */}
+      {roleTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm">
+          <div className="relative w-full max-w-md rounded-[2rem] bg-white p-8 shadow-2xl dark:bg-slate-800">
+            <button
+              onClick={() => setRoleTarget(null)}
+              className="absolute right-4 top-4 rounded-full bg-slate-100 p-1.5 text-slate-500 hover:bg-slate-200 dark:bg-slate-700"
+            >
+              <X size={16} />
+            </button>
+
+            <div className="mb-6 flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-100 text-indigo-600">
+                <UserCog size={22} />
+              </div>
+              <div>
+                <h2 className="text-lg font-black text-slate-950 dark:text-white">Changer le rôle</h2>
+                <p className="text-sm font-semibold text-slate-500 truncate max-w-[220px]">
+                  {roleTarget.full_name || roleTarget.email}
+                </p>
+              </div>
+            </div>
+
+            <div className="mb-4 flex items-center gap-2 text-sm font-bold text-slate-600 dark:text-slate-300">
+              Rôle actuel : <RoleBadge role={roleTarget.role} />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-black text-slate-700 dark:text-slate-300">Nouveau rôle</label>
+              {ASSIGNABLE_ROLES.map((r) => {
+                const isCurrent = r.value === roleTarget.role
+                const selected = newRole === r.value
+                return (
+                  <button
+                    key={r.value}
+                    type="button"
+                    disabled={isCurrent}
+                    onClick={() => setNewRole(r.value)}
+                    className={`w-full rounded-2xl border px-4 py-3 text-left transition disabled:cursor-not-allowed disabled:opacity-50 ${
+                      selected
+                        ? 'border-indigo-400 bg-indigo-50 dark:border-indigo-500 dark:bg-indigo-900/30'
+                        : 'border-slate-200 bg-white hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-700'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-black text-slate-900 dark:text-white">{r.label}</span>
+                      {isCurrent && <span className="text-xs font-bold text-slate-400">Rôle actuel</span>}
+                    </div>
+                    <p className="mt-1 text-xs font-semibold text-slate-500 dark:text-slate-400">{r.desc}</p>
+                  </button>
+                )
+              })}
+            </div>
+
+            <div className="mt-6 flex gap-3">
+              <button
+                onClick={() => setRoleTarget(null)}
+                className="flex-1 rounded-2xl border border-slate-200 py-3 text-sm font-black text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={confirmRoleChange}
+                disabled={changingRole || !newRole || newRole === roleTarget.role}
+                className="flex-1 rounded-2xl bg-indigo-600 py-3 text-sm font-black text-white hover:bg-indigo-700 disabled:opacity-60"
+              >
+                {changingRole
+                  ? 'Modification...'
+                  : `Changer en ${roleLabels[newRole] || newRole}`}
               </button>
             </div>
           </div>
@@ -488,15 +658,19 @@ export default function EmployeesPage() {
                 Aucun employé actif pour l'instant.
               </p>
             ) : (
-              activeMembers.map((member) => (
+              activeMembers.map((member) => {
+                // Owner-level accounts are fixed; the owner can't act on their own row.
+                const isOwnerLevel = OWNER_ROLES.includes(member.role || '')
+                const isSelf = !!member.user_id && member.user_id === currentUserId
+                const canActOnMember = canManage && !isOwnerLevel && !isSelf
+                return (
                 <div key={member.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex-1 min-w-0">
                       <p className="font-black text-slate-950">{member.full_name || member.email}</p>
-                      <p className="text-xs font-bold text-slate-500">
-                        {member.email} · {roleLabels[member.role || ''] || member.role}
-                      </p>
-                      <div className="mt-1.5 flex flex-wrap gap-2">
+                      <p className="text-xs font-bold text-slate-500">{member.email}</p>
+                      <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                        <RoleBadge role={member.role} />
                         {!member.user_id ? (
                           <span className="inline-block rounded-full bg-amber-100 px-3 py-1 text-xs font-black text-amber-700">
                             Compte non activé
@@ -509,21 +683,30 @@ export default function EmployeesPage() {
                       </div>
                     </div>
 
-                    {canManage && member.role !== 'owner' && (
-                      <button
-                        onClick={() => {
-                          setDeactivateTarget(member)
-                          setDeactivateReason('Fin de contrat')
-                          setDeactivateCustom('')
-                        }}
-                        className="inline-flex items-center gap-2 rounded-2xl border border-orange-200 bg-orange-50 px-4 py-2 text-sm font-black text-orange-700 transition hover:bg-orange-100 shrink-0"
-                      >
-                        <UserMinus size={15} /> Désactiver
-                      </button>
+                    {canActOnMember && (
+                      <div className="flex shrink-0 flex-wrap gap-2">
+                        <button
+                          onClick={() => openRoleChange(member)}
+                          className="inline-flex items-center gap-2 rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-black text-indigo-700 transition hover:bg-indigo-100"
+                        >
+                          <UserCog size={15} /> Changer le rôle
+                        </button>
+                        <button
+                          onClick={() => {
+                            setDeactivateTarget(member)
+                            setDeactivateReason('Fin de contrat')
+                            setDeactivateCustom('')
+                          }}
+                          className="inline-flex items-center gap-2 rounded-2xl border border-orange-200 bg-orange-50 px-4 py-2 text-sm font-black text-orange-700 transition hover:bg-orange-100"
+                        >
+                          <UserMinus size={15} /> Désactiver
+                        </button>
+                      </div>
                     )}
                   </div>
                 </div>
-              ))
+                )
+              })
             )}
           </div>
         </div>
@@ -552,10 +735,9 @@ export default function EmployeesPage() {
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <div className="flex-1 min-w-0">
                         <p className="font-black text-slate-700">{member.full_name || member.email}</p>
-                        <p className="text-xs font-bold text-slate-400">
-                          {member.email} · {roleLabels[member.role || ''] || member.role}
-                        </p>
-                        <div className="mt-1.5 flex flex-wrap gap-2">
+                        <p className="text-xs font-bold text-slate-400">{member.email}</p>
+                        <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                          <RoleBadge role={member.role} />
                           <span className="inline-block rounded-full bg-red-100 px-3 py-1 text-xs font-black text-red-700">
                             Inactif
                           </span>
