@@ -4,6 +4,7 @@ import AppShell from '@/components/AppShell'
 import { PLAN_LIMITS, PlanName, getNumericLimit } from '@/lib/plans'
 import { supabase } from '@/lib/supabaseClient'
 import { uploadImage, validateImageFile, getSelectedBusinessId } from '@/lib/uploadImage'
+import { PRODUCT_READ_ONLY_ROLES, READ_ONLY_MESSAGE } from '@/lib/permissions'
 import { ArrowLeft, ImagePlus, Loader2, PackagePlus, Save, ScanLine } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
@@ -54,7 +55,8 @@ export default function NewProductPage() {
 
       if (!membership?.business_id) return
 
-      if (['sales', 'staff', 'employee', 'cashier', 'vendeur'].includes(membership.role ?? '')) {
+      if (PRODUCT_READ_ONLY_ROLES.includes(membership.role ?? '')) {
+        try { sessionStorage.setItem('products_flash', READ_ONLY_MESSAGE) } catch {}
         router.replace('/products')
         return
       }

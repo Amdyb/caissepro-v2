@@ -2,8 +2,9 @@
 
 import AppShell from '@/components/AppShell'
 import { PlanName, getNumericLimit } from '@/lib/plans'
+import { canManageEmployees } from '@/lib/permissions'
 import { supabase } from '@/lib/supabaseClient'
-import { AlertTriangle, ChevronDown, ChevronUp, Copy, MessageCircle, RefreshCw, UserMinus, UserPlus, Users, X } from 'lucide-react'
+import { AlertTriangle, ChevronDown, ChevronUp, Copy, Eye, MessageCircle, RefreshCw, UserMinus, UserPlus, Users, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 type Member = {
@@ -44,6 +45,7 @@ function formatDate(iso: string | null | undefined) {
 
 export default function EmployeesPage() {
   const [businessId, setBusinessId] = useState('')
+  const [currentRole, setCurrentRole] = useState<string>('')
   const [plan, setPlan] = useState<PlanName>('free')
   const [members, setMembers] = useState<Member[]>([])
   const [email, setEmail] = useState('')
@@ -70,7 +72,7 @@ export default function EmployeesPage() {
 
       const { data: membership } = await supabase
         .from('business_members')
-        .select('business_id')
+        .select('business_id, role')
         .eq('user_id', userData.user.id)
         .limit(1)
         .maybeSingle()
@@ -83,6 +85,7 @@ export default function EmployeesPage() {
       }
 
       setBusinessId(membership.business_id)
+      setCurrentRole(membership.role || '')
       const { data: sub } = await supabase
         .from('subscriptions')
         .select('plan')
@@ -267,6 +270,8 @@ export default function EmployeesPage() {
 
   const activeMembers = members.filter(m => m.is_active !== false)
   const inactiveMembers = members.filter(m => m.is_active === false)
+  // Only owners/admins manage the team. Managers & staff are view-only.
+  const canManage = canManageEmployees(currentRole)
 
   if (loading) {
     return (
@@ -361,7 +366,16 @@ export default function EmployeesPage() {
           </div>
         )}
 
-        {/* Add employee form */}
+        {/* Read-only notice for managers / staff */}
+        {!canManage && (
+          <div className="flex items-center gap-3 rounded-2xl border border-blue-200 bg-blue-50 px-5 py-3 text-sm font-bold text-blue-700">
+            <Eye size={16} className="shrink-0" />
+            Mode consultation — Vous pouvez voir l&apos;équipe mais pas la modifier.
+          </div>
+        )}
+
+        {/* Add employee form — owners/admins only */}
+        {canManage && (
         <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
           <div className="mb-6 flex items-center gap-3">
             <div className="rounded-2xl bg-emerald-50 p-3 text-emerald-700"><UserPlus /></div>
@@ -425,6 +439,7 @@ export default function EmployeesPage() {
             </button>
           </form>
         </div>
+        )}
 
         {/* Credentials card shown after adding */}
         {lastAdded && (
@@ -486,7 +501,7 @@ export default function EmployeesPage() {
                       </div>
                     </div>
 
-                    {member.role !== 'owner' && (
+                    {canManage && member.role !== 'owner' && (
                       <button
                         onClick={() => {
                           setDeactivateTarget(member)
@@ -549,12 +564,14 @@ export default function EmployeesPage() {
                         </div>
                       </div>
 
-                      <button
-                        onClick={() => reactivateEmployee(member)}
-                        className="inline-flex items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-black text-emerald-700 transition hover:bg-emerald-100 shrink-0"
-                      >
-                        <UserPlus size={15} /> Réactiver
-                      </button>
+                      {canManage && (
+                        <button
+                          onClick={() => reactivateEmployee(member)}
+                          className="inline-flex items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-black text-emerald-700 transition hover:bg-emerald-100 shrink-0"
+                        >
+                          <UserPlus size={15} /> Réactiver
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}

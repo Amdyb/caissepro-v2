@@ -4,11 +4,12 @@ import ProductBulkImporter from '@/components/ProductBulkImporter'
 import AppShell from '@/components/AppShell'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Edit, Eye, FileSpreadsheet, PackagePlus, Plus, RefreshCw, ScanLine, Search, ShoppingBag, Trash2, Upload, X } from 'lucide-react'
 import { supabase } from '@/lib/supabaseClient'
 import { useBusinessData } from '@/lib/hooks/useBusinessData'
 import { useProducts } from '@/lib/hooks/useProducts'
+import { PRODUCT_READ_ONLY_ROLES } from '@/lib/permissions'
 
 const BarcodeScanner = dynamic(() => import('@/components/BarcodeScanner'), { ssr: false })
 
@@ -45,6 +46,15 @@ export default function ProductsPage() {
   const [restockQty, setRestockQty] = useState('')
   const [restockSaving, setRestockSaving] = useState(false)
   const [showScanner, setShowScanner] = useState(false)
+  const [flash, setFlash] = useState('')
+
+  // Show the "read-only" notice after a blocked add/edit redirect lands here.
+  useEffect(() => {
+    try {
+      const msg = sessionStorage.getItem('products_flash')
+      if (msg) { setFlash(msg); sessionStorage.removeItem('products_flash') }
+    } catch {}
+  }, [])
 
   const filteredProducts = useMemo(() => {
     const q = search.toLowerCase().trim()
@@ -116,8 +126,7 @@ export default function ProductsPage() {
     document.body.removeChild(link)
   }
 
-  const READ_ONLY_ROLES = ['sales', 'staff', 'employee', 'cashier', 'vendeur']
-  const isReadOnly = READ_ONLY_ROLES.includes(userRole)
+  const isReadOnly = PRODUCT_READ_ONLY_ROLES.includes(userRole)
 
   if (loading) return <main className="flex min-h-screen items-center justify-center bg-slate-50"><p className="font-bold text-slate-700">Chargement...</p></main>
 
@@ -162,6 +171,12 @@ export default function ProductsPage() {
         </div>
       )}
       <div className="mx-auto max-w-[1500px]">
+        {flash && (
+          <div className="mb-5 flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-3 text-sm font-black text-amber-700 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-400">
+            <Eye size={16} className="shrink-0" />
+            {flash}
+          </div>
+        )}
         {isReadOnly && (
           <div className="mb-5 flex items-center gap-3 rounded-2xl border border-blue-200 bg-blue-50 px-5 py-3 text-sm font-bold text-blue-700 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-400">
             <Eye size={16} className="shrink-0" />

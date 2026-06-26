@@ -98,6 +98,21 @@ const MANAGER_ALLOWED_PATHS = [
   '/upgrade', '/pricing',
 ]
 
+// Narrowed list for the pure "manager" role (admins keep MANAGER_ALLOWED_PATHS).
+// No /categories, /suppliers, /coach, /conseiller, /backup. Product create/edit
+// routes are blocked separately (view-only) even though /products is allowed.
+const MANAGER_ONLY_ALLOWED_PATHS = [
+  '/dashboard', '/pos', '/checkout',
+  '/products', '/sales', '/refunds', '/register-shifts',
+  '/customers', '/debts', '/expenses',
+  '/reports', '/finances',
+  '/storefront', '/orders', '/payment-links',
+  '/employees',
+  '/profile', '/change-password', '/settings', '/payment-methods',
+  '/help', '/feedback', '/legal', '/language',
+  '/upgrade', '/pricing',
+]
+
 const STAFF_SECTION: SectionConfig = {
   key: 'staff',
   title: 'CAISSE',
@@ -166,10 +181,10 @@ const MANAGER_GESTION_SECTION: SectionConfig = {
   headerColor: 'text-violet-600 dark:text-violet-400',
   defaultOpen: false,
   items: [
-    { label: 'Produits', href: '/products', icon: Package },
+    { label: 'Produits', href: '/products', icon: Package, readOnly: true },
     { label: 'Clients', href: '/customers', icon: Users },
-    { label: 'Employés', href: '/employees', icon: UserCog },
     { label: 'Depenses', href: '/expenses', icon: Receipt },
+    { label: 'Employés', href: '/employees', icon: UserCog, readOnly: true },
   ],
 }
 
@@ -199,7 +214,6 @@ const MANAGER_RAPPORTS_SECTION: SectionConfig = {
   items: [
     { label: 'Rapports', href: '/reports', icon: TrendingUp },
     { label: 'Finances', href: '/finances', icon: DollarSign },
-    { label: 'Coach IA', href: '/coach', icon: Sparkles, lockedPlan: 'premium' },
   ],
 }
 
@@ -214,11 +228,22 @@ const MANAGER_PROFILE_SECTION: SectionConfig = {
   items: [
     { label: 'Mon profil', href: '/profile', icon: User },
     { label: 'Parametres', href: '/settings', icon: Settings },
-    { label: 'Sauvegarde', href: '/backup', icon: Database },
     { label: 'Modes de paiement', href: '/payment-methods', icon: CreditCard },
     { label: 'Aide', href: '/help', icon: HelpCircle },
   ],
 }
+
+// The exact, narrowed Manager sidebar: Vendre, Historique, Remboursements,
+// Caisse du jour, Produits (view), Clients, Dépenses, Employés (view), Boutique
+// en ligne, Rapports — and the account section. No Catégories, Fournisseurs,
+// Conseiller, Coach, or Zone de Sécurité.
+const MANAGER_SECTIONS: SectionConfig[] = [
+  MANAGER_CAISSE_SECTION,
+  MANAGER_GESTION_SECTION,
+  MANAGER_BOUTIQUE_SECTION,
+  MANAGER_RAPPORTS_SECTION,
+  MANAGER_PROFILE_SECTION,
+]
 
 const ROLE_LABELS: Record<string, string> = {
   sales: 'Vendeur',
@@ -694,6 +719,21 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
         pathname === '/products' ||
         STAFF_ALLOWED_PATHS.some((p) => pathname === p || pathname.startsWith(p + '/'))
       if (!allowed) router.replace('/pos')
+    } else if (userRole === 'manager') {
+      // Products are view-only: block the create/edit routes with a read-only notice.
+      const blockedProductRoute =
+        pathname === '/products/new' ||
+        pathname.startsWith('/products/new') ||
+        /^\/products\/[^/]+\/edit/.test(pathname)
+      if (blockedProductRoute) {
+        try { sessionStorage.setItem('products_flash', 'Accès en lecture seule') } catch {}
+        router.replace('/products')
+        return
+      }
+      const allowed = MANAGER_ONLY_ALLOWED_PATHS.some(
+        (p) => pathname === p || pathname.startsWith(p + '/')
+      )
+      if (!allowed) router.replace('/dashboard')
     } else if (MANAGER_ROLES.includes(userRole) && userRole !== 'owner') {
       const allowed = MANAGER_ALLOWED_PATHS.some(
         (p) => pathname === p || pathname.startsWith(p + '/')
@@ -786,16 +826,19 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
   const isStaff = STAFF_ROLES.includes(userRole)
   const isManager = MANAGER_ROLES.includes(userRole)
   const isOwner = userRole === 'owner'
+  const isManagerOnly = userRole === 'manager'
   const isEmployee = isStaff || isManager
   const baseSections = isStaff
     ? [STAFF_SECTION, STAFF_PROFILE_SECTION]
     : isOwner
     ? getNavSections(businessType)
+    : isManagerOnly
+    ? MANAGER_SECTIONS
     : isManager
     ? getNavSections(businessType).filter(s => s.key !== 'securite')
     : getNavSections(businessType)
-  // Conseiller Commercial is its own section for owners/managers (not cashiers).
-  const withConseiller = isStaff ? baseSections : [CONSEILLER_SECTION, ...baseSections]
+  // Conseiller Commercial is offered to owners/admins (not pure managers or cashiers).
+  const withConseiller = (isStaff || isManagerOnly) ? baseSections : [CONSEILLER_SECTION, ...baseSections]
   const navSections = isSuperAdmin ? [...withConseiller, SUPER_ADMIN_SECTION] : withConseiller
   const currentPlanLevel = PLAN_LEVELS[plan || 'free'] ?? 0
 
