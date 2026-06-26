@@ -20,6 +20,7 @@ import {
   DollarSign,
   FileText,
   Globe,
+  HandCoins,
   HelpCircle,
   LayoutDashboard,
   Menu,
@@ -32,7 +33,6 @@ import {
   Receipt,
   ReceiptText,
   RotateCcw,
-  Scissors,
   Settings,
   Share2,
   Sparkles,
@@ -50,7 +50,6 @@ import {
   Calendar,
   Droplets,
   HardHat,
-  Home,
   Lock,
   Megaphone,
   Wrench,
@@ -75,6 +74,10 @@ type SectionConfig = {
 }
 
 const PLAN_LEVELS: Record<string, number> = { free: 0, starter: 1, business: 2, premium: 3 }
+
+// Essentials shown by default (collapsed menu), in display order. Filtered against
+// the role's actual items, so staff/managers only get the ones they can reach.
+const ESSENTIAL_HREFS = ['/pos', '/products', '/register-shifts', '/storefront']
 
 // Includes both the French ('caissier') and English ('cashier') cashier values
 // so the POS-focused staff nav + route guard apply regardless of which was stored.
@@ -257,26 +260,6 @@ const ROLE_LABELS: Record<string, string> = {
   owner: 'Propriétaire',
 }
 
-const PROFILE_SECTION: SectionConfig = {
-  key: 'profil',
-  title: 'PROFIL & PARAMETRES',
-  borderColor: 'border-slate-400',
-  bgColor: 'bg-slate-100 dark:bg-slate-700',
-  textColor: 'text-slate-700 dark:text-slate-200',
-  headerColor: 'text-slate-500 dark:text-slate-400',
-  defaultOpen: false,
-  items: [
-    { label: 'Profil', href: '/profile', icon: User },
-    { label: 'Parametres', href: '/settings', icon: Settings },
-    { label: 'Sauvegarde', href: '/backup', icon: Database },
-    { label: 'Modes de paiement', href: '/payment-methods', icon: CreditCard },
-    { label: 'WhatsApp', href: '/settings/whatsapp', icon: MessageCircle },
-    { label: 'Langue', href: '/language', icon: Globe },
-    { label: 'Mentions legales', href: '/legal', icon: FileText },
-    { label: 'Aide', href: '/help', icon: HelpCircle },
-  ],
-}
-
 const SUPER_ADMIN_SECTION: SectionConfig = {
   key: 'super-admin',
   title: 'SUPER ADMIN',
@@ -290,380 +273,123 @@ const SUPER_ADMIN_SECTION: SectionConfig = {
   ],
 }
 
-const SECURITY_SECTION: SectionConfig = {
-  key: 'securite',
-  title: 'ZONE DE SECURITE',
-  borderColor: 'border-red-500',
-  bgColor: 'bg-red-50 dark:bg-red-900/30',
-  textColor: 'text-red-700 dark:text-red-400',
-  headerColor: 'text-red-600 dark:text-red-400',
-  defaultOpen: false,
-  items: [
-    { label: 'Reinitialiser produits', href: '/reset-products', icon: Trash2 },
-    { label: 'Supprimer boutique', href: '/delete-store', icon: AlertTriangle },
-  ],
-}
-
-const CONSEILLER_SECTION: SectionConfig = {
-  key: 'conseiller',
-  title: 'CONSEILLER COMMERCIAL',
-  borderColor: 'border-amber-500',
-  bgColor: 'bg-amber-50 dark:bg-amber-900/30',
-  textColor: 'text-amber-700 dark:text-amber-400',
-  headerColor: 'text-amber-600 dark:text-amber-400',
-  defaultOpen: false,
-  items: [
-    { label: 'Conseiller Commercial', href: '/conseiller', icon: Sparkles, lockedPlan: 'premium' },
-  ],
-}
-
-const RETAIL_SECTIONS: SectionConfig[] = [
-  {
-    key: 'caisse',
-    title: 'CAISSE',
-    borderColor: 'border-emerald-500',
-    bgColor: 'bg-emerald-50 dark:bg-emerald-900/30',
-    textColor: 'text-emerald-700 dark:text-emerald-400',
-    headerColor: 'text-emerald-600 dark:text-emerald-400',
-    defaultOpen: true,
-    items: [
-      { label: 'Vendre', href: '/pos', icon: ShoppingCart },
-      { label: 'Historique des ventes', href: '/sales', icon: ReceiptText, tourId: 'tour-nav-sales' },
-      { label: 'Remboursements', href: '/refunds', icon: RotateCcw },
-      { label: 'Caisse du jour', href: '/register-shifts', icon: Wallet },
-    ],
-  },
-  {
-    key: 'gestion',
-    title: 'GESTION',
-    borderColor: 'border-violet-500',
-    bgColor: 'bg-violet-50 dark:bg-violet-900/30',
-    textColor: 'text-violet-700 dark:text-violet-400',
-    headerColor: 'text-violet-600 dark:text-violet-400',
-    defaultOpen: false,
-    items: [
-      { label: 'Produits', href: '/products', icon: Package, tourId: 'tour-nav-products' },
-      { label: 'Performance produits', href: '/products/performance', icon: BarChart3, lockedPlan: 'business' },
-      { label: 'Fournisseurs', href: '/suppliers', icon: Truck, lockedPlan: 'business' },
-      { label: 'Clients', href: '/customers', icon: Users },
-      { label: 'Employés', href: '/employees', icon: UserCog, lockedPlan: 'starter' },
-      { label: 'Réassort', href: '/reassort', icon: PackagePlus, lockedPlan: 'business' },
-      { label: 'Categories', href: '/categories', icon: Tag },
-    ],
-  },
-  {
-    key: 'boutique',
-    title: 'BOUTIQUE EN LIGNE',
-    borderColor: 'border-orange-500',
-    bgColor: 'bg-orange-50 dark:bg-orange-900/30',
-    textColor: 'text-orange-700 dark:text-orange-400',
-    headerColor: 'text-orange-600 dark:text-orange-400',
-    defaultOpen: false,
-    items: [
-      { label: 'Ma boutique en ligne', href: '/storefront', icon: Globe, tourId: 'tour-nav-storefront' },
-      { label: 'Commandes clients', href: '/orders', icon: ShoppingBag },
-      { label: 'QR Code boutique', href: '/storefront/qr', icon: QrCode, lockedPlan: 'business' },
-      { label: 'Partager boutique', href: '/storefront/share', icon: Share2 },
-    ],
-  },
-  {
-    key: 'rapports',
-    title: 'RAPPORTS',
-    borderColor: 'border-teal-500',
-    bgColor: 'bg-teal-50 dark:bg-teal-900/30',
-    textColor: 'text-teal-700 dark:text-teal-400',
-    headerColor: 'text-teal-600 dark:text-teal-400',
-    defaultOpen: false,
-    items: [
-      { label: 'Rapports', href: '/reports', icon: TrendingUp },
-      { label: 'Depenses', href: '/expenses', icon: Receipt },
-      { label: 'Finances', href: '/finances', icon: DollarSign, lockedPlan: 'business' },
-      { label: 'Coach IA', href: '/coach', icon: Sparkles, lockedPlan: 'premium' },
-    ],
-  },
-]
-
-function getNavSections(businessType: string): SectionConfig[] {
-  const GESTION: SectionConfig = {
-    key: 'gestion',
-    title: 'GESTION',
-    borderColor: 'border-violet-500',
-    bgColor: 'bg-violet-50 dark:bg-violet-900/30',
-    textColor: 'text-violet-700 dark:text-violet-400',
-    headerColor: 'text-violet-600 dark:text-violet-400',
-    defaultOpen: false,
-    items: [],
-  }
-  const BOUTIQUE: SectionConfig = {
-    key: 'boutique',
-    title: 'BOUTIQUE EN LIGNE',
-    borderColor: 'border-orange-500',
-    bgColor: 'bg-orange-50 dark:bg-orange-900/30',
-    textColor: 'text-orange-700 dark:text-orange-400',
-    headerColor: 'text-orange-600 dark:text-orange-400',
-    defaultOpen: false,
-    items: [
-      { label: 'Ma boutique', href: '/storefront', icon: Globe },
-      { label: 'Commandes en ligne', href: '/orders', icon: ShoppingBag },
-      { label: 'QR Code boutique', href: '/storefront/qr', icon: QrCode, lockedPlan: 'business' },
-    ],
-  }
-  const RAPPORTS: SectionConfig = {
-    key: 'rapports',
-    title: 'RAPPORTS',
-    borderColor: 'border-teal-500',
-    bgColor: 'bg-teal-50 dark:bg-teal-900/30',
-    textColor: 'text-teal-700 dark:text-teal-400',
-    headerColor: 'text-teal-600 dark:text-teal-400',
-    defaultOpen: false,
-    items: [
-      { label: 'Rapports', href: '/reports', icon: TrendingUp },
-      { label: 'Depenses', href: '/expenses', icon: Receipt },
-      { label: 'Finances', href: '/finances', icon: DollarSign, lockedPlan: 'business' },
-      { label: 'Coach IA', href: '/coach', icon: Sparkles, lockedPlan: 'premium' },
-    ],
-  }
-
+function productsLabel(businessType: string): string {
   switch (businessType) {
-    case 'restaurant':
-      return [
-        {
-          key: 'caisse', title: 'CAISSE',
-          borderColor: 'border-orange-500', bgColor: 'bg-orange-50 dark:bg-orange-900/30',
-          textColor: 'text-orange-700 dark:text-orange-400', headerColor: 'text-orange-600 dark:text-orange-400',
-          defaultOpen: true,
-          items: [
-            { label: 'Caisse', href: '/pos', icon: ShoppingCart },
-            { label: 'Commandes', href: '/orders', icon: ShoppingBag },
-            { label: 'Historique', href: '/sales', icon: ReceiptText },
-            { label: 'Caisse du jour', href: '/register-shifts', icon: Wallet },
-          ],
-        },
-        { ...GESTION, items: [
-          { label: 'Menu & Produits', href: '/products', icon: Package },
-          { label: 'Clients', href: '/customers', icon: Users },
-          { label: 'Employés', href: '/employees', icon: UserCog, lockedPlan: 'starter' },
-          { label: 'Depenses', href: '/expenses', icon: Receipt },
-        ]},
-        BOUTIQUE,
-        RAPPORTS,
-        PROFILE_SECTION, SECURITY_SECTION,
-      ]
-
-    case 'beauty':
-      return [
-        {
-          key: 'caisse', title: 'CAISSE',
-          borderColor: 'border-pink-500', bgColor: 'bg-pink-50 dark:bg-pink-900/30',
-          textColor: 'text-pink-700 dark:text-pink-400', headerColor: 'text-pink-600 dark:text-pink-400',
-          defaultOpen: true,
-          items: [
-            { label: 'Caisse', href: '/pos', icon: ShoppingCart },
-            { label: 'Rendez-vous', href: '/appointments', icon: Calendar },
-            { label: 'Historique', href: '/sales', icon: ReceiptText },
-            { label: 'Caisse du jour', href: '/register-shifts', icon: Wallet },
-          ],
-        },
-        { ...GESTION, items: [
-          { label: 'Services', href: '/products', icon: Scissors },
-          { label: 'Clients', href: '/customers', icon: Users },
-          { label: 'Employés', href: '/employees', icon: UserCog, lockedPlan: 'starter' },
-          { label: 'Depenses', href: '/expenses', icon: Receipt },
-        ]},
-        { ...BOUTIQUE, items: [
-          { label: 'Ma boutique', href: '/storefront', icon: Globe },
-          { label: 'Reservations en ligne', href: '/appointments', icon: Calendar },
-          { label: 'QR Code boutique', href: '/storefront/qr', icon: QrCode, lockedPlan: 'business' },
-        ]},
-        RAPPORTS,
-        PROFILE_SECTION, SECURITY_SECTION,
-      ]
-
-    case 'pharmacy':
-      return [
-        {
-          key: 'caisse', title: 'CAISSE',
-          borderColor: 'border-blue-500', bgColor: 'bg-blue-50 dark:bg-blue-900/30',
-          textColor: 'text-blue-700 dark:text-blue-400', headerColor: 'text-blue-600 dark:text-blue-400',
-          defaultOpen: true,
-          items: [
-            { label: 'Caisse', href: '/pos', icon: ShoppingCart },
-            { label: 'Ordonnances', href: '/prescriptions', icon: FileText },
-            { label: 'Historique', href: '/sales', icon: ReceiptText },
-            { label: 'Caisse du jour', href: '/register-shifts', icon: Wallet },
-          ],
-        },
-        { ...GESTION, items: [
-          { label: 'Medicaments', href: '/products', icon: Package },
-          { label: 'Stock critique', href: '/products?filter=low', icon: AlertTriangle },
-          { label: 'Fournisseurs', href: '/suppliers', icon: Truck, lockedPlan: 'business' },
-          { label: 'Réassort', href: '/reassort', icon: PackagePlus, lockedPlan: 'business' },
-          { label: 'Clients', href: '/customers', icon: Users },
-        ]},
-        BOUTIQUE,
-        RAPPORTS,
-        PROFILE_SECTION, SECURITY_SECTION,
-      ]
-
-    case 'garage':
-      return [
-        {
-          key: 'caisse', title: 'CAISSE',
-          borderColor: 'border-slate-500', bgColor: 'bg-slate-100 dark:bg-slate-700',
-          textColor: 'text-slate-700 dark:text-slate-300', headerColor: 'text-slate-600 dark:text-slate-400',
-          defaultOpen: true,
-          items: [
-            { label: 'Caisse', href: '/pos', icon: ShoppingCart },
-            { label: 'Interventions', href: '/services', icon: Wrench },
-            { label: 'Historique', href: '/sales', icon: ReceiptText },
-            { label: 'Caisse du jour', href: '/register-shifts', icon: Wallet },
-          ],
-        },
-        { ...GESTION, items: [
-          { label: 'Pieces detachees', href: '/products', icon: Package },
-          { label: 'Clients', href: '/customers', icon: Users },
-          { label: 'Fournisseurs', href: '/suppliers', icon: Truck, lockedPlan: 'business' },
-          { label: 'Réassort', href: '/reassort', icon: PackagePlus, lockedPlan: 'business' },
-          { label: 'Depenses', href: '/expenses', icon: Receipt },
-        ]},
-        BOUTIQUE,
-        RAPPORTS,
-        PROFILE_SECTION, SECURITY_SECTION,
-      ]
-
-    case 'btp':
-      return [
-        {
-          key: 'caisse', title: 'CAISSE',
-          borderColor: 'border-yellow-500', bgColor: 'bg-yellow-50 dark:bg-yellow-900/30',
-          textColor: 'text-yellow-700 dark:text-yellow-400', headerColor: 'text-yellow-600 dark:text-yellow-400',
-          defaultOpen: true,
-          items: [
-            { label: 'Caisse', href: '/pos', icon: ShoppingCart },
-            { label: 'Chantiers', href: '/projects', icon: HardHat },
-            { label: 'Historique', href: '/sales', icon: ReceiptText },
-            { label: 'Caisse du jour', href: '/register-shifts', icon: Wallet },
-          ],
-        },
-        { ...GESTION, items: [
-          { label: 'Materiaux', href: '/products', icon: Package },
-          { label: 'Clients', href: '/customers', icon: Users },
-          { label: 'Fournisseurs', href: '/suppliers', icon: Truck, lockedPlan: 'business' },
-          { label: 'Réassort', href: '/reassort', icon: PackagePlus, lockedPlan: 'business' },
-          { label: 'Depenses', href: '/expenses', icon: Receipt },
-        ]},
-        { ...BOUTIQUE, items: [
-          { label: 'Ma boutique', href: '/storefront', icon: Globe },
-          { label: 'Devis & Commandes', href: '/orders', icon: ShoppingBag },
-          { label: 'QR Code boutique', href: '/storefront/qr', icon: QrCode, lockedPlan: 'business' },
-        ]},
-        RAPPORTS,
-        PROFILE_SECTION, SECURITY_SECTION,
-      ]
-
-    case 'tontine':
-      return [
-        {
-          key: 'tontine', title: 'TONTINE',
-          borderColor: 'border-violet-500', bgColor: 'bg-violet-50 dark:bg-violet-900/30',
-          textColor: 'text-violet-700 dark:text-violet-400', headerColor: 'text-violet-600 dark:text-violet-400',
-          defaultOpen: true,
-          items: [
-            { label: 'Tontines', href: '/tontines', icon: Users },
-            { label: 'Membres', href: '/employees', icon: UserCog },
-            { label: 'Historique', href: '/activity', icon: ReceiptText },
-            { label: 'Depenses', href: '/expenses', icon: Receipt },
-          ],
-        },
-        { ...RAPPORTS, items: [
-          { label: 'Rapports', href: '/reports', icon: TrendingUp },
-          { label: 'Finances', href: '/finances', icon: DollarSign, lockedPlan: 'business' },
-          { label: 'Coach IA', href: '/coach', icon: Sparkles, lockedPlan: 'premium' },
-        ]},
-        PROFILE_SECTION, SECURITY_SECTION,
-      ]
-
-    case 'rental':
-      return [
-        {
-          key: 'location', title: 'LOCATION & IMMOBILIER',
-          borderColor: 'border-emerald-500', bgColor: 'bg-emerald-50 dark:bg-emerald-900/30',
-          textColor: 'text-emerald-700 dark:text-emerald-400', headerColor: 'text-emerald-600 dark:text-emerald-400',
-          defaultOpen: true,
-          items: [
-            { label: 'Proprietes', href: '/real-estate', icon: Home },
-            { label: 'Locataires', href: '/customers', icon: Users },
-            { label: 'Contrats', href: '/contracts', icon: FileText },
-            { label: 'Depenses', href: '/expenses', icon: Receipt },
-          ],
-        },
-        { ...RAPPORTS, items: [
-          { label: 'Rapports', href: '/reports', icon: TrendingUp },
-          { label: 'Finances', href: '/finances', icon: DollarSign, lockedPlan: 'business' },
-          { label: 'Coach IA', href: '/coach', icon: Sparkles, lockedPlan: 'premium' },
-        ]},
-        PROFILE_SECTION, SECURITY_SECTION,
-      ]
-
-    case 'wholesale':
-      return [
-        {
-          key: 'caisse', title: 'CAISSE',
-          borderColor: 'border-teal-500', bgColor: 'bg-teal-50 dark:bg-teal-900/30',
-          textColor: 'text-teal-700 dark:text-teal-400', headerColor: 'text-teal-600 dark:text-teal-400',
-          defaultOpen: true,
-          items: [
-            { label: 'Caisse', href: '/pos', icon: ShoppingCart },
-            { label: 'Commandes B2B', href: '/orders', icon: ShoppingBag },
-            { label: 'Historique', href: '/sales', icon: ReceiptText },
-            { label: 'Caisse du jour', href: '/register-shifts', icon: Wallet },
-          ],
-        },
-        { ...GESTION, items: [
-          { label: 'Stock', href: '/products', icon: Package },
-          { label: 'Clients revendeurs', href: '/customers', icon: Users },
-          { label: 'Fournisseurs', href: '/suppliers', icon: Truck, lockedPlan: 'business' },
-          { label: 'Réassort', href: '/reassort', icon: PackagePlus, lockedPlan: 'business' },
-          { label: 'Depenses', href: '/expenses', icon: Receipt },
-        ]},
-        { ...BOUTIQUE, items: [
-          { label: 'Catalogue en ligne', href: '/storefront', icon: Globe },
-          { label: 'Commandes en ligne', href: '/orders', icon: ShoppingBag },
-          { label: 'QR Code boutique', href: '/storefront/qr', icon: QrCode, lockedPlan: 'business' },
-        ]},
-        RAPPORTS,
-        PROFILE_SECTION, SECURITY_SECTION,
-      ]
-
-    case 'laundry':
-      return [
-        {
-          key: 'caisse', title: 'CAISSE',
-          borderColor: 'border-cyan-500', bgColor: 'bg-cyan-50 dark:bg-cyan-900/30',
-          textColor: 'text-cyan-700 dark:text-cyan-400', headerColor: 'text-cyan-600 dark:text-cyan-400',
-          defaultOpen: true,
-          items: [
-            { label: 'Caisse', href: '/pos', icon: ShoppingCart },
-            { label: 'En cours', href: '/active-orders', icon: Droplets },
-            { label: 'Historique', href: '/sales', icon: ReceiptText },
-            { label: 'Caisse du jour', href: '/register-shifts', icon: Wallet },
-          ],
-        },
-        { ...GESTION, items: [
-          { label: 'Tarifs', href: '/products', icon: Package },
-          { label: 'Clients', href: '/customers', icon: Users },
-          { label: 'Employés', href: '/employees', icon: UserCog, lockedPlan: 'starter' },
-          { label: 'Depenses', href: '/expenses', icon: Receipt },
-        ]},
-        BOUTIQUE,
-        RAPPORTS,
-        PROFILE_SECTION, SECURITY_SECTION,
-      ]
-
-    default:
-      return [...RETAIL_SECTIONS, PROFILE_SECTION, SECURITY_SECTION]
+    case 'restaurant': return 'Menu & Produits'
+    case 'beauty': return 'Services'
+    case 'pharmacy': return 'Médicaments'
+    case 'garage': return 'Pièces détachées'
+    case 'btp': return 'Matériaux'
+    case 'laundry': return 'Tarifs'
+    default: return 'Produits'
   }
 }
+
+// Operational items unique to a business type, folded into VENTES so each shop
+// keeps its workflow (most route to "Coming Soon" placeholders for now).
+function operationalItems(businessType: string): SectionConfig['items'] {
+  switch (businessType) {
+    case 'beauty': return [{ label: 'Rendez-vous', href: '/appointments', icon: Calendar }]
+    case 'pharmacy': return [{ label: 'Ordonnances', href: '/prescriptions', icon: FileText }]
+    case 'garage': return [{ label: 'Interventions', href: '/services', icon: Wrench }]
+    case 'btp': return [{ label: 'Chantiers', href: '/projects', icon: HardHat }]
+    case 'laundry': return [{ label: 'En cours', href: '/active-orders', icon: Droplets }]
+    default: return []
+  }
+}
+
+// Unified owner navigation. Same section structure for every business type, with
+// type-specific operational items + product label injected. Progressive
+// disclosure (essentials vs full) is handled at render time.
+function getNavSections(businessType: string): SectionConfig[] {
+  return [
+    {
+      key: 'ventes', title: 'VENTES',
+      borderColor: 'border-emerald-500', bgColor: 'bg-emerald-50 dark:bg-emerald-900/30',
+      textColor: 'text-emerald-700 dark:text-emerald-400', headerColor: 'text-emerald-600 dark:text-emerald-400',
+      defaultOpen: true,
+      items: [
+        { label: 'Vendre', href: '/pos', icon: ShoppingCart },
+        ...operationalItems(businessType),
+        { label: 'Historique des ventes', href: '/sales', icon: ReceiptText, tourId: 'tour-nav-sales' },
+        { label: 'Remboursements', href: '/refunds', icon: RotateCcw },
+        { label: 'Caisse du jour', href: '/register-shifts', icon: Wallet },
+      ],
+    },
+    {
+      key: 'stock', title: 'STOCK',
+      borderColor: 'border-violet-500', bgColor: 'bg-violet-50 dark:bg-violet-900/30',
+      textColor: 'text-violet-700 dark:text-violet-400', headerColor: 'text-violet-600 dark:text-violet-400',
+      defaultOpen: false,
+      items: [
+        { label: productsLabel(businessType), href: '/products', icon: Package, tourId: 'tour-nav-products' },
+        { label: 'Ajouter produit', href: '/products/new', icon: Plus },
+        { label: 'Catégories', href: '/categories', icon: Tag },
+        { label: 'Fournisseurs', href: '/suppliers', icon: Truck, lockedPlan: 'business' },
+        { label: 'Réassort', href: '/reassort', icon: PackagePlus, lockedPlan: 'business' },
+        { label: 'Performance produits', href: '/products/performance', icon: BarChart3, lockedPlan: 'business' },
+      ],
+    },
+    {
+      key: 'gestion', title: 'GESTION',
+      borderColor: 'border-sky-500', bgColor: 'bg-sky-50 dark:bg-sky-900/30',
+      textColor: 'text-sky-700 dark:text-sky-400', headerColor: 'text-sky-600 dark:text-sky-400',
+      defaultOpen: false,
+      items: [
+        { label: 'Clients', href: '/customers', icon: Users },
+        { label: 'Employés', href: '/employees', icon: UserCog, lockedPlan: 'starter' },
+      ],
+    },
+    {
+      key: 'boutique', title: 'BOUTIQUE EN LIGNE',
+      borderColor: 'border-orange-500', bgColor: 'bg-orange-50 dark:bg-orange-900/30',
+      textColor: 'text-orange-700 dark:text-orange-400', headerColor: 'text-orange-600 dark:text-orange-400',
+      defaultOpen: false,
+      items: [
+        { label: 'Ma boutique en ligne', href: '/storefront', icon: Globe, tourId: 'tour-nav-storefront' },
+        { label: 'Commandes en ligne', href: '/orders', icon: ShoppingBag },
+        { label: 'QR Code boutique', href: '/storefront/qr', icon: QrCode, lockedPlan: 'business' },
+        { label: 'Partager boutique', href: '/storefront/share', icon: Share2 },
+      ],
+    },
+    {
+      key: 'rapports', title: 'RAPPORTS',
+      borderColor: 'border-teal-500', bgColor: 'bg-teal-50 dark:bg-teal-900/30',
+      textColor: 'text-teal-700 dark:text-teal-400', headerColor: 'text-teal-600 dark:text-teal-400',
+      defaultOpen: false,
+      items: [
+        { label: 'Rapports', href: '/reports', icon: TrendingUp },
+        { label: 'Dépenses', href: '/expenses', icon: Receipt },
+        { label: 'Finances', href: '/finances', icon: DollarSign, lockedPlan: 'business' },
+        { label: 'Client Doit', href: '/client-doit', icon: HandCoins },
+        { label: 'Coach Entrepreneur', href: '/conseiller', icon: Sparkles, lockedPlan: 'premium' },
+      ],
+    },
+    {
+      key: 'profils', title: 'PARAMÈTRES PROFILS',
+      borderColor: 'border-slate-400', bgColor: 'bg-slate-100 dark:bg-slate-700',
+      textColor: 'text-slate-700 dark:text-slate-200', headerColor: 'text-slate-500 dark:text-slate-400',
+      defaultOpen: false,
+      items: [
+        { label: 'Profil', href: '/profile', icon: User },
+        { label: 'Mode de paiement', href: '/payment-methods', icon: CreditCard },
+        { label: 'Intégration WhatsApp', href: '/settings/whatsapp', icon: MessageCircle },
+      ],
+    },
+    {
+      key: 'avances', title: 'PARAMÈTRES AVANCÉS',
+      borderColor: 'border-red-500', bgColor: 'bg-red-50 dark:bg-red-900/30',
+      textColor: 'text-red-700 dark:text-red-400', headerColor: 'text-red-600 dark:text-red-400',
+      defaultOpen: false,
+      items: [
+        { label: 'Sauvegarde', href: '/backup', icon: Database },
+        { label: 'Réinitialiser tout', href: '/reset-products', icon: Trash2 },
+        { label: 'Supprimer Mon Compte', href: '/delete-store', icon: AlertTriangle },
+      ],
+    },
+  ]
+}
+
 
 const BOTTOM_NAV = [
   { label: 'Accueil', href: '/dashboard', icon: LayoutDashboard },
@@ -677,12 +403,9 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
   const router = useRouter()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({})
-  // Progressive disclosure: reveal nav items as the merchant gathers real data.
-  // Defaults are all `true` so nothing is ever hidden before signals load or if
-  // a lookup fails — we never trap the merchant.
-  const [navSignals, setNavSignals] = useState({ hasProducts: true, hasSold: true, hasStorefront: true, hasTeam: true })
-  // "Tout afficher" escape hatch — reveals everything regardless of signals.
-  const [showAllNav, setShowAllNav] = useState(false)
+  // Progressive disclosure: collapsed shows only the essentials, expanded shows
+  // the full organized menu. The choice persists across sessions in localStorage.
+  const [navExpanded, setNavExpanded] = useState(false)
 
   const {
     businessId,
@@ -745,44 +468,15 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
     // owner has unrestricted access
   }, [loading, userRole, pathname, router])
 
-  // Restore the "Tout afficher" choice for this session.
+  // Restore the expanded/collapsed menu preference.
   useEffect(() => {
-    try { setShowAllNav(sessionStorage.getItem('nav_show_all') === '1') } catch {}
+    try { setNavExpanded(localStorage.getItem('caissepro_nav_expanded') === '1') } catch {}
   }, [])
 
-  // Compute the progressive-disclosure signals with a few lightweight count
-  // queries (parallel, head-only). RLS scopes each to the user's business via
-  // business_id IN (SELECT business_id FROM business_members WHERE user_id = auth.uid()).
-  // On any error we leave the signal at its default `true` (show the item).
-  useEffect(() => {
-    if (!businessId) return
-    let active = true
-    ;(async () => {
-      try {
-        const [products, sales, members, biz] = await Promise.all([
-          supabase.from('products').select('id', { count: 'exact', head: true }).eq('business_id', businessId).is('deleted_at', null),
-          supabase.from('sales').select('id', { count: 'exact', head: true }).eq('business_id', businessId),
-          supabase.from('business_members').select('id', { count: 'exact', head: true }).eq('business_id', businessId),
-          supabase.from('businesses').select('online_store_enabled').eq('id', businessId).maybeSingle(),
-        ])
-        if (!active) return
-        setNavSignals({
-          hasProducts: products.error ? true : (products.count ?? 0) > 0,
-          hasSold: sales.error ? true : (sales.count ?? 0) > 0,
-          hasTeam: members.error ? true : (members.count ?? 0) > 1,
-          hasStorefront: biz.error ? true : !!biz.data?.online_store_enabled,
-        })
-      } catch {
-        /* keep defaults (all visible) — never trap the merchant */
-      }
-    })()
-    return () => { active = false }
-  }, [businessId])
-
-  function toggleShowAllNav() {
-    setShowAllNav((prev) => {
+  function toggleNavExpanded() {
+    setNavExpanded((prev) => {
       const next = !prev
-      try { sessionStorage.setItem('nav_show_all', next ? '1' : '0') } catch {}
+      try { localStorage.setItem('caissepro_nav_expanded', next ? '1' : '0') } catch {}
       return next
     })
   }
@@ -837,29 +531,20 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
     : isManagerOnly
     ? MANAGER_SECTIONS
     : isManager
-    ? getNavSections(businessType).filter(s => s.key !== 'securite')
+    ? getNavSections(businessType).filter(s => s.key !== 'avances')
     : getNavSections(businessType)
-  // Conseiller Commercial is offered to owners/admins (not pure managers or cashiers).
-  const withConseiller = (isStaff || isManagerOnly) ? baseSections : [CONSEILLER_SECTION, ...baseSections]
-  const navSections = isSuperAdmin ? [...withConseiller, SUPER_ADMIN_SECTION] : withConseiller
+  // Coach Entrepreneur now lives inside the RAPPORTS section, so no separate
+  // section is prepended.
+  const navSections = isSuperAdmin ? [...baseSections, SUPER_ADMIN_SECTION] : baseSections
   const currentPlanLevel = PLAN_LEVELS[plan || 'free'] ?? 0
 
-  // Progressive disclosure rules (overridden by the "Tout afficher" toggle).
-  // Item-level gating keyed by route; anything not listed is always visible.
-  function navItemVisible(href: string): boolean {
-    if (showAllNav) return true
-    if (href === '/refunds' || href === '/customers') return navSignals.hasSold
-    if (href === '/suppliers' || href === '/reassort' || href === '/categories' || href === '/stock-movements') return navSignals.hasProducts
-    if (href === '/employees' || href === '/users') return navSignals.hasTeam
-    return true
-  }
-  // Section-level gating keyed by section key (hides the whole block).
-  function navSectionVisible(key: string): boolean {
-    if (showAllNav) return true
-    if (key === 'boutique' || key === 'manager-boutique') return navSignals.hasStorefront
-    if (key === 'rapports' || key === 'manager-rapports') return navSignals.hasSold
-    return true
-  }
+  // Collapsed view = just the essentials, drawn from whatever sections this role
+  // actually has, so each role only ever sees items it can access. Order follows
+  // ESSENTIAL_HREFS (Vendre, Produits, Caisse du jour, Boutique en ligne).
+  const allNavItems = navSections.flatMap((s) => s.items)
+  const essentialItems = ESSENTIAL_HREFS
+    .map((href) => allNavItems.find((it) => it.href === href))
+    .filter((it): it is SectionConfig['items'][number] => Boolean(it))
 
   const sidebarContent = (
     <div className="flex h-full flex-col">
@@ -960,74 +645,39 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
         </div>
       )}
 
-      {/* Collapsible sections */}
+      {/* Navigation: essentials by default, full organized menu when expanded */}
       <nav className="flex-1 space-y-2 overflow-y-auto px-4 py-3">
-        {navSections.map((section) => {
-          // Progressive disclosure: hide whole sections gated by the merchant's data.
-          if (!navSectionVisible(section.key)) return null
+        {!navExpanded && (
+          <div className="overflow-hidden rounded-2xl border-l-4 border-emerald-500 bg-white shadow-sm dark:bg-slate-800 dark:shadow-none">
+            <div className="space-y-0.5 p-2">
+              {essentialItems.map((item) => {
+                const Icon = item.icon
+                const active = pathname === item.href
+                return (
+                  <Link
+                    key={`essential-${item.href}`}
+                    href={item.href}
+                    onClick={() => { setMobileMenuOpen(false); window.dispatchEvent(new Event('play-navigation')) }}
+                    className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold transition-colors ${
+                      active
+                        ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                        : 'text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700'
+                    }`}
+                  >
+                    <Icon size={16} />
+                    <span className="flex-1">{item.label}</span>
+                  </Link>
+                )
+              })}
+            </div>
+          </div>
+        )}
 
-          // "Boutique en ligne" is a single direct link to /storefront — the page
-          // itself surfaces all options (Voir, Personnaliser, Partager, Commandes,
-          // Paiement) as cards, so no submenu is needed here.
-          // Conseiller Commercial: single direct link with a premium badge/lock.
-          if (section.key === 'conseiller') {
-            const isLocked = currentPlanLevel < (PLAN_LEVELS['premium'] ?? 3)
-            const active = pathname === '/conseiller' || pathname.startsWith('/conseiller/')
-            return (
-              <div
-                key={section.key}
-                className={`overflow-hidden rounded-2xl border-l-4 bg-white shadow-sm dark:bg-slate-800 dark:shadow-none ${section.borderColor}`}
-              >
-                <Link
-                  href="/conseiller"
-                  onClick={() => { setMobileMenuOpen(false); window.dispatchEvent(new Event('play-navigation')) }}
-                  className={`flex items-center gap-3 px-4 py-3 text-sm font-bold transition-colors ${
-                    active
-                      ? `${section.bgColor} ${section.textColor}`
-                      : 'text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700'
-                  }`}
-                >
-                  <Sparkles size={16} />
-                  <span className="flex-1">Conseiller Commercial</span>
-                  {isLocked && (
-                    <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-[9px] font-black uppercase tracking-wide text-amber-700 dark:bg-amber-900/40 dark:text-amber-400">
-                      Premium
-                    </span>
-                  )}
-                </Link>
-              </div>
-            )
-          }
-
-          if (section.key === 'boutique' || section.key === 'manager-boutique') {
-            const active = pathname === '/storefront' || pathname.startsWith('/storefront/')
-            return (
-              <div
-                key={section.key}
-                className={`overflow-hidden rounded-2xl border-l-4 bg-white shadow-sm dark:bg-slate-800 dark:shadow-none ${section.borderColor}`}
-              >
-                <Link
-                  href="/storefront"
-                  id="tour-nav-storefront"
-                  onClick={() => { setMobileMenuOpen(false); window.dispatchEvent(new Event('play-navigation')) }}
-                  className={`flex items-center gap-3 px-4 py-3 text-sm font-bold transition-colors ${
-                    active
-                      ? `${section.bgColor} ${section.textColor}`
-                      : 'text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700'
-                  }`}
-                >
-                  <Store size={16} />
-                  <span className="flex-1">Boutique en ligne</span>
-                </Link>
-              </div>
-            )
-          }
-
+        {navExpanded && navSections.map((section) => {
           const isOpen = openSections[section.key] ?? (section.defaultOpen ?? false)
           const itemHeight = 48
 
-          // Filter items by progressive-disclosure rules; hide the section if empty.
-          const visibleItems = section.items.filter((item) => navItemVisible(item.href))
+          const visibleItems = section.items
           if (visibleItems.length === 0) return null
 
           return (
@@ -1088,16 +738,15 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
         })}
       </nav>
 
-      {/* "Tout afficher" — escape hatch so advanced users always reach everything */}
+      {/* Afficher tout / Afficher moins — progressive disclosure toggle */}
       <div className="px-4 pb-1 pt-2">
         <button
-          onClick={toggleShowAllNav}
-          className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-xs font-bold text-slate-500 transition-colors hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-700"
+          onClick={toggleNavExpanded}
+          className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 py-2.5 text-xs font-black text-slate-600 transition-colors hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
         >
-          <span className="flex items-center gap-2"><Eye size={14} /> Tout afficher</span>
-          <span className={`relative h-5 w-9 rounded-full transition-colors ${showAllNav ? 'bg-emerald-600' : 'bg-slate-300 dark:bg-slate-600'}`}>
-            <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-all ${showAllNav ? 'left-[18px]' : 'left-0.5'}`} />
-          </span>
+          {navExpanded
+            ? (<><ChevronDown size={14} className="rotate-180" /> Afficher moins</>)
+            : (<><Eye size={14} /> Afficher tout</>)}
         </button>
       </div>
 

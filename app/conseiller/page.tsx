@@ -96,7 +96,7 @@ export default function ConseillerPage() {
 
   if (loading) {
     return (
-      <AppShell title="Votre Conseiller Commercial" subtitle="Des conseils adaptés à votre commerce.">
+      <AppShell title="Coach Entrepreneur" subtitle="Des conseils adaptés à votre commerce.">
         <div className="mx-auto max-w-3xl"><p className="font-bold text-slate-600">Chargement...</p></div>
       </AppShell>
     )
@@ -105,7 +105,7 @@ export default function ConseillerPage() {
   const prompts = tab === 'business' ? BUSINESS_PROMPTS : MARKETING_PROMPTS
 
   return (
-    <AppShell title="Votre Conseiller Commercial" subtitle="Des conseils adaptés à votre commerce.">
+    <AppShell title="Coach Entrepreneur" subtitle="Des conseils adaptés à votre commerce.">
       <div className="mx-auto max-w-3xl space-y-5">
         {/* Welcome */}
         <div className="rounded-[2rem] border border-slate-200 bg-gradient-to-br from-emerald-50 to-white p-6 shadow-sm">
@@ -226,7 +226,7 @@ export default function ConseillerPage() {
               <Crown className="text-amber-600" size={28} />
             </div>
             <h3 className="text-center text-xl font-black text-slate-950">
-              Le Conseiller Commercial est réservé aux abonnés Premium
+              Le Coach Entrepreneur est réservé aux abonnés Premium
             </h3>
             <p className="mt-2 text-center text-sm font-semibold text-slate-500">
               Débloquez votre conseiller business personnel qui analyse vos ventes et vous aide à gagner plus.

@@ -79,20 +79,25 @@ export default function DebtsPage() {
       const { data: userData } = await supabase.auth.getUser()
       if (!userData.user) return
 
-      const { data: membership } = await supabase
+      // Honour the user-selected business (multi-boutique) instead of an
+      // arbitrary first membership.
+      const { data: memberships } = await supabase
         .from('business_members')
         .select('business_id, businesses(name)')
         .eq('user_id', userData.user.id)
-        .limit(1)
-        .maybeSingle()
 
-      if (!membership?.business_id) {
+      if (!memberships || memberships.length === 0) {
         setMessage('Aucune boutique trouvée.')
         setLoading(false)
         return
       }
 
-      const member: any = membership
+      let member: any = memberships[0]
+      const savedId = typeof window !== 'undefined' ? localStorage.getItem('caissepro_selected_business_id') : null
+      if (savedId) {
+        const found = memberships.find((m: any) => m.business_id === savedId)
+        if (found) member = found
+      }
       setBusinessId(member.business_id)
       setBusinessName(member.businesses?.name || 'Ma Boutique')
 
