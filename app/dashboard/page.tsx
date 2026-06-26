@@ -13,6 +13,7 @@ import {
   CalendarDays,
   Check,
   CreditCard,
+  Crown,
   DollarSign,
   Globe,
   Lightbulb,
@@ -148,6 +149,7 @@ export default function DashboardPage() {
   }
 
   const loading = bdLoading || statsLoading
+  const isPremium = plan === 'premium'
 
   // Raccourcis state
   const [shortcutSearch, setShortcutSearch] = useState('')
@@ -286,6 +288,8 @@ export default function DashboardPage() {
   // Conseil du jour: one tip per shop per day, stored in daily_tips.
   // DB hit first (no API). If none today, generate once via /api/conseiller,
   // save it, then show — so the AI is called at most once per day per shop.
+  // Non-premium shops NEVER call the API: they get a generic teaser tip plus an
+  // "unlock" CTA, so the Conseiller's Anthropic cost is Premium-only.
   useEffect(() => {
     if (!businessId || statsLoading) return
     let active = true
@@ -299,6 +303,12 @@ export default function DashboardPage() {
       tips.push(`Offrez une petite remise à vos clients fidèles — ils reviendront et parleront de vous.`)
       tips.push(`Demandez à vos clients satisfaits de recommander votre boutique autour d'eux.`)
       return tips[Math.floor(Date.now() / 86400000) % tips.length]
+    }
+
+    // Non-premium: show a generic teaser, never hit the AI.
+    if (!isPremium) {
+      setDailyTip(fallbackTip())
+      return () => { active = false }
     }
 
     ;(async () => {
@@ -348,7 +358,7 @@ export default function DashboardPage() {
     })()
 
     return () => { active = false }
-  }, [businessId, statsLoading, totalDebt, lowStockCount, todayTotal])
+  }, [businessId, statsLoading, totalDebt, lowStockCount, todayTotal, isPremium])
 
   // Load pinned shortcuts from localStorage once userId is known
   useEffect(() => {
@@ -427,11 +437,22 @@ export default function DashboardPage() {
               <Lightbulb size={20} />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-xs font-black uppercase tracking-wide text-emerald-600 dark:text-emerald-400">Conseil du jour</p>
+              <p className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
+                Conseil du jour
+                {!isPremium && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-500 px-2 py-0.5 text-[9px] font-black text-white"><Crown size={9} /> Premium</span>
+                )}
+              </p>
               <p className="mt-1 text-sm font-bold text-slate-700 dark:text-slate-200">{dailyTip}</p>
-              <Link href="/conseiller" className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-4 py-2 text-xs font-black text-white transition hover:bg-emerald-700">
-                Voir plus de conseils <ArrowRight size={14} />
-              </Link>
+              {isPremium ? (
+                <Link href="/conseiller" className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-4 py-2 text-xs font-black text-white transition hover:bg-emerald-700">
+                  Voir plus de conseils <ArrowRight size={14} />
+                </Link>
+              ) : (
+                <Link href="/upgrade" className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-amber-500 px-4 py-2 text-xs font-black text-white transition hover:bg-amber-600">
+                  <Crown size={13} /> Débloquez votre conseiller
+                </Link>
+              )}
             </div>
           </div>
         </div>

@@ -33,6 +33,7 @@ const cfa = (n: number) => `${Math.round(Number(n || 0)).toLocaleString('fr-FR')
 export default function CoachPage() {
   const [loading, setLoading] = useState(true)
   const [plan, setPlan] = useState<string>('free')
+  const [businessId, setBusinessId] = useState<string | null>(null)
   const [metrics, setMetrics] = useState<Metrics | null>(null)
   const [advice, setAdvice] = useState('')
   const [analyzing, setAnalyzing] = useState(false)
@@ -42,6 +43,7 @@ export default function CoachPage() {
     async function init() {
       const { businessId, shops } = await resolveSelectedBusiness()
       if (!businessId) { setLoading(false); return }
+      setBusinessId(businessId)
 
       const businessName = shops.find((s) => s.id === businessId)?.name || 'Ma boutique'
 
@@ -118,10 +120,11 @@ export default function CoachPage() {
     setError('')
     setAdvice('')
     try {
+      const { data: { session } } = await supabase.auth.getSession()
       const res = await fetch('/api/coach', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(metrics),
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` },
+        body: JSON.stringify({ ...metrics, businessId }),
       })
       const data = await res.json()
       if (!res.ok) { setError(data.error || 'Analyse impossible pour le moment.'); return }

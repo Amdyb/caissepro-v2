@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
 
 export const runtime = 'nodejs'
 
 type Metrics = {
+  businessId?: string
   businessName?: string
   period?: string
   revenue?: number
@@ -54,6 +56,47 @@ export async function POST(req: NextRequest) {
     metrics = await req.json()
   } catch {
     return NextResponse.json({ error: 'Requête invalide.' }, { status: 400 })
+  }
+
+  // Authenticate and confirm Premium BEFORE any Anthropic call — the Coach IA is
+  // Premium-only, so non-premium plans never incur API cost even if the endpoint
+  // is hit directly.
+  const authHeader = req.headers.get('authorization') || ''
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : ''
+  const businessId = metrics.businessId
+  if (!token) return NextResponse.json({ error: 'Non authentifié.' }, { status: 401 })
+  if (!businessId) return NextResponse.json({ error: 'Boutique manquante.' }, { status: 400 })
+
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { global: { headers: { Authorization: `Bearer ${token}` } }, auth: { persistSession: false } }
+  )
+
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'Session expirée.' }, { status: 401 })
+
+  const { data: membership } = await supabase
+    .from('business_members')
+    .select('business_id')
+    .eq('user_id', user.id)
+    .eq('business_id', businessId)
+    .maybeSingle()
+  if (!membership) return NextResponse.json({ error: 'Accès refusé à cette boutique.' }, { status: 403 })
+
+  const { data: sub } = await supabase
+    .from('subscriptions')
+    .select('plan')
+    .eq('business_id', businessId)
+    .eq('status', 'active')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  if ((sub?.plan || 'free') !== 'premium') {
+    return NextResponse.json(
+      { error: 'Le Coach IA est réservé aux abonnés Premium.', upgrade: true },
+      { status: 402 }
+    )
   }
 
   try {

@@ -96,6 +96,24 @@ export async function POST(req: NextRequest) {
     .maybeSingle()
   if (!membership) return NextResponse.json({ error: 'Accès refusé à cette boutique.' }, { status: 403 })
 
+  // Premium gate (defense in depth): the Conseiller is Premium-only. Reject
+  // non-premium plans BEFORE any Anthropic call so they never incur API cost,
+  // even if someone hits this endpoint directly.
+  const { data: sub } = await supabase
+    .from('subscriptions')
+    .select('plan')
+    .eq('business_id', businessId)
+    .eq('status', 'active')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  if ((sub?.plan || 'free') !== 'premium') {
+    return NextResponse.json(
+      { error: 'Le Conseiller Commercial est réservé aux abonnés Premium.', upgrade: true },
+      { status: 402 }
+    )
+  }
+
   const since = new Date(Date.now() - 30 * 86400000).toISOString()
 
   const [bizRes, prodRes, salesRes, custRes, expRes] = await Promise.all([

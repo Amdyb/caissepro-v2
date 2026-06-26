@@ -934,7 +934,7 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
                 className={`overflow-hidden rounded-2xl border-l-4 bg-white shadow-sm dark:bg-slate-800 dark:shadow-none ${section.borderColor}`}
               >
                 <Link
-                  href={isLocked ? '/upgrade' : '/conseiller'}
+                  href="/conseiller"
                   onClick={() => { setMobileMenuOpen(false); window.dispatchEvent(new Event('play-navigation')) }}
                   className={`flex items-center gap-3 px-4 py-3 text-sm font-bold transition-colors ${
                     active
