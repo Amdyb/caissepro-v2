@@ -9,7 +9,7 @@ import { supabase } from '@/lib/supabaseClient'
 import { notifySelf } from '@/lib/notifications'
 import { useBusinessData } from '@/lib/hooks/useBusinessData'
 import useSWR from 'swr'
-import { ImageIcon, Lock, ReceiptText, ScanLine, ShoppingCart, Trash2, X, Zap } from 'lucide-react'
+import { ImageIcon, ReceiptText, ScanLine, ShoppingCart, Trash2, X, Zap } from 'lucide-react'
 function dispatch(event: string) { window.dispatchEvent(new Event(event)) }
 import { savePendingSale } from '@/lib/offlineStore'
 import { formatPhone, sendReceipt } from '@/lib/whatsapp'

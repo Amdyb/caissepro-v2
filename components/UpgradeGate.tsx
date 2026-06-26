@@ -1,6 +1,6 @@
 'use client'
 
-import { PLAN_LIMITS, PlanFeature, PlanName, canAccessFeature } from '@/lib/plans'
+import { PlanFeature, PlanName, canAccessFeature } from '@/lib/plans'
 import { Lock, X } from 'lucide-react'
 import Link from 'next/link'
 import { ReactNode, useState } from 'react'

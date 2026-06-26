@@ -2,7 +2,7 @@
 
 import { generateUniqueSlug } from '@/lib/generateUniqueSlug'
 import { supabase } from '@/lib/supabaseClient'
-import { ArrowLeft, ArrowRight, Briefcase, Check, Package, Palette, PiggyBank, Scissors, Shirt, ShoppingBasket, Store, Tv, Utensils } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Briefcase, Check, Palette, PiggyBank, Scissors, Shirt, ShoppingBasket, Store, Tv, Utensils } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 

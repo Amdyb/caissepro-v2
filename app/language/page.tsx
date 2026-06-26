@@ -1,7 +1,6 @@
 'use client'
 
 import AppShell from '@/components/AppShell'
-import DarkModeToggle from '@/components/DarkModeToggle'
 import { Check, Moon, Sun } from 'lucide-react'
 import { useEffect, useState } from 'react'
 

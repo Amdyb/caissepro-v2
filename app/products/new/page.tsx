@@ -1,7 +1,7 @@
 'use client'
 
 import AppShell from '@/components/AppShell'
-import { PLAN_LIMITS, PlanName, getNumericLimit } from '@/lib/plans'
+import { PlanName, getNumericLimit } from '@/lib/plans'
 import { supabase } from '@/lib/supabaseClient'
 import { uploadImage, validateImageFile, getSelectedBusinessId } from '@/lib/uploadImage'
 import { PRODUCT_READ_ONLY_ROLES, READ_ONLY_MESSAGE } from '@/lib/permissions'

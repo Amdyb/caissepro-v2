@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { ArrowLeft, MessageCircle, Minus, Plus, ShoppingCart, Sparkles, Star, Wallet, Smartphone, Banknote } from 'lucide-react'
+import { ArrowLeft, MessageCircle, Minus, Plus, Sparkles, Star, Wallet, Smartphone, Banknote } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 const products = [

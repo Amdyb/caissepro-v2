@@ -1,7 +1,7 @@
 'use client'
 
 import { supabase } from '@/lib/supabaseClient'
-import { CheckCircle2, Circle, Package, Palette, Share2, ShoppingCart, Store, ArrowRight } from 'lucide-react'
+import { CheckCircle2, Package, Palette, Share2, ShoppingCart, Store, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'

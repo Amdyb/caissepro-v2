@@ -2,7 +2,7 @@
 
 import { supabase } from '@/lib/supabaseClient'
 import { getAdminContext } from '@/lib/superAdmin'
-import { Activity, AlertTriangle, Building2, CheckCircle2, Clock3, HeartPulse, Search, Shield, Store, TrendingUp, Users } from 'lucide-react'
+import { Activity, AlertTriangle, Building2, Clock3, HeartPulse, Search, Shield, TrendingUp } from 'lucide-react'
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 
