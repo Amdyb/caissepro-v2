@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import BrandingImageUploader from '@/components/BrandingImageUploader'
-import { getThemePreference, setThemePreference } from '@/components/DarkModeProvider'
+import { DEFAULT_THEME, getThemePreference, setThemePreference } from '@/components/DarkModeProvider'
 import {
   ArrowLeft,
   BriefcaseBusiness,
@@ -73,13 +73,13 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
-  const [themePref, setThemePrefState] = useState<'auto' | 'light' | 'dark'>('auto')
+  const [themePref, setThemePrefState] = useState<'auto' | 'light' | 'dark'>(DEFAULT_THEME)
   const [soundsEnabled, setSoundsEnabled] = useState(false)
   const [soundNav, setSoundNav] = useState(true)
   const [soundSale, setSoundSale] = useState(true)
 
   useEffect(() => {
-    setThemePrefState((getThemePreference() as 'auto' | 'light' | 'dark') || 'auto')
+    setThemePrefState((getThemePreference() as 'auto' | 'light' | 'dark') || DEFAULT_THEME)
     setSoundsEnabled(localStorage.getItem('caissepro-sounds-enabled') !== '0')
     setSoundNav(localStorage.getItem('caissepro-sounds-nav') !== '0')
     setSoundSale(localStorage.getItem('caissepro-sounds-sale') !== '0')
@@ -258,9 +258,9 @@ export default function SettingsPage() {
           <h2 className="mb-5 text-xl font-black text-slate-950 dark:text-white">Thème de l'interface</h2>
           <div className="grid grid-cols-3 gap-3">
             {([
-              { key: 'auto', icon: Clock, label: 'Automatique', desc: 'Sombre 19h–6h, clair sinon' },
-              { key: 'light', icon: Sun, label: 'Clair', desc: 'Toujours en mode clair' },
-              { key: 'dark', icon: Moon, label: 'Sombre', desc: 'Toujours en mode sombre' },
+              { key: 'dark', icon: Moon, label: 'Sombre', desc: 'Par défaut — look premium' },
+              { key: 'light', icon: Sun, label: 'Clair', desc: 'Lisible en plein jour' },
+              { key: 'auto', icon: Clock, label: 'Auto', desc: 'Sombre 19h–6h, clair sinon' },
             ] as const).map(({ key, icon: Icon, label, desc }) => (
               <button
                 key={key}

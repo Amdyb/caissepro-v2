@@ -4,12 +4,18 @@ import { useEffect } from 'react'
 
 export const THEME_KEY = 'theme-preference'
 
+// Dark is the base default for anyone who hasn't chosen a theme yet.
+export const DEFAULT_THEME: 'auto' | 'light' | 'dark' = 'dark'
+
 export function computeIsDark(preference: string | null): boolean {
-  if (preference === 'dark') return true
   if (preference === 'light') return false
-  // auto: dark between 19:00 and 06:00
-  const hour = new Date().getHours()
-  return hour >= 19 || hour < 6
+  if (preference === 'auto') {
+    // auto: dark between 19:00 and 06:00
+    const hour = new Date().getHours()
+    return hour >= 19 || hour < 6
+  }
+  // 'dark' or no/unknown preference → dark default
+  return true
 }
 
 export function applyTheme(isDark: boolean) {
@@ -21,8 +27,8 @@ export function applyTheme(isDark: boolean) {
 }
 
 export function getThemePreference(): string {
-  if (typeof window === 'undefined') return 'auto'
-  return localStorage.getItem(THEME_KEY) || 'auto'
+  if (typeof window === 'undefined') return DEFAULT_THEME
+  return localStorage.getItem(THEME_KEY) || DEFAULT_THEME
 }
 
 export function setThemePreference(preference: 'auto' | 'light' | 'dark') {

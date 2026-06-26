@@ -1,21 +1,22 @@
 'use client'
 
-import { getThemePreference, setThemePreference } from '@/components/DarkModeProvider'
+import { DEFAULT_THEME, getThemePreference, setThemePreference } from '@/components/DarkModeProvider'
 import { Clock, Moon, Sun } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 type ThemePref = 'auto' | 'light' | 'dark'
 
-const CYCLE: ThemePref[] = ['auto', 'light', 'dark']
+// Cycle order starts at the default (dark) so the first tap moves to light.
+const CYCLE: ThemePref[] = ['dark', 'light', 'auto']
 
 const ICONS: Record<ThemePref, typeof Sun> = { auto: Clock, light: Sun, dark: Moon }
 const LABELS: Record<ThemePref, string> = { auto: 'Auto', light: 'Clair', dark: 'Sombre' }
 
 export default function DarkModeToggle({ className = '' }: { className?: string }) {
-  const [pref, setPref] = useState<ThemePref>('auto')
+  const [pref, setPref] = useState<ThemePref>(DEFAULT_THEME)
 
   useEffect(() => {
-    setPref((getThemePreference() as ThemePref) || 'auto')
+    setPref((getThemePreference() as ThemePref) || DEFAULT_THEME)
 
     function onThemeChanged(e: Event) {
       const detail = (e as CustomEvent).detail

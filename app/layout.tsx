@@ -44,6 +44,14 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="CaissePro" />
+
+        {/* Apply the theme before first paint to avoid a flash. Dark is the
+            default when no preference is saved; a saved choice always wins. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var p=localStorage.getItem('theme-preference')||'dark';var d;if(p==='light'){d=false;}else if(p==='auto'){var h=new Date().getHours();d=h>=19||h<6;}else{d=true;}if(d){document.documentElement.classList.add('dark');}else{document.documentElement.classList.remove('dark');}}catch(e){document.documentElement.classList.add('dark');}})();`,
+          }}
+        />
       </head>
 
       <body>
