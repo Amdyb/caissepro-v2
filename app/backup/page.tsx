@@ -4,8 +4,6 @@ import AppShell from '@/components/AppShell'
 import { supabase } from '@/lib/supabaseClient'
 import { Archive, FileSpreadsheet, Download, Mail, ShieldCheck, Users, Receipt, Package } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import Papa from 'papaparse'
-import JSZip from 'jszip'
 
 type Row = Record<string, string | number | null>
 
@@ -95,7 +93,9 @@ export default function BackupPage() {
     }))
   }
 
-  function csvFor(rows: Row[]): string {
+  // Lazy-load papaparse only when an export is actually requested.
+  async function csvFor(rows: Row[]): Promise<string> {
+    const Papa = (await import('papaparse')).default
     return Papa.unparse(rows.length ? rows : [{ info: 'Aucune donnée' }])
   }
 
@@ -119,7 +119,7 @@ export default function BackupPage() {
     setBusy(key)
     try {
       const rows = await fetchRows(key, businessId)
-      triggerDownload(`${slug}-${key}-${stamp}.csv`, '﻿' + csvFor(rows), 'text/csv;charset=utf-8;')
+      triggerDownload(`${slug}-${key}-${stamp}.csv`, '﻿' + (await csvFor(rows)), 'text/csv;charset=utf-8;')
       flash(`Export ${key} téléchargé (${rows.length} ligne${rows.length > 1 ? 's' : ''}).`)
     } catch (e: any) {
       flash(e?.message || 'Erreur export', true)
@@ -133,7 +133,7 @@ export default function BackupPage() {
     const out: { filename: string; content: string }[] = []
     for (const d of DATASETS) {
       const rows = await fetchRows(d.key, businessId)
-      out.push({ filename: `${slug}-${d.key}-${stamp}.csv`, content: '﻿' + csvFor(rows) })
+      out.push({ filename: `${slug}-${d.key}-${stamp}.csv`, content: '﻿' + (await csvFor(rows)) })
     }
     return out
   }
@@ -143,6 +143,7 @@ export default function BackupPage() {
     setBusy('zip')
     try {
       const files = await buildAllCsvs()
+      const JSZip = (await import('jszip')).default
       const zip = new JSZip()
       files.forEach((f) => zip.file(f.filename, f.content))
       const blob = await zip.generateAsync({ type: 'blob' })

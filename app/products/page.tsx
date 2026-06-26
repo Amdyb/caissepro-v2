@@ -1,6 +1,5 @@
 'use client'
 
-import ProductBulkImporter from '@/components/ProductBulkImporter'
 import AppShell from '@/components/AppShell'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
@@ -12,6 +11,8 @@ import { useProducts } from '@/lib/hooks/useProducts'
 import { PRODUCT_READ_ONLY_ROLES } from '@/lib/permissions'
 
 const BarcodeScanner = dynamic(() => import('@/components/BarcodeScanner'), { ssr: false })
+// Lazy-loaded: pulls in the heavy xlsx parser only when the importer is opened.
+const ProductBulkImporter = dynamic(() => import('@/components/ProductBulkImporter'), { ssr: false })
 
 type Product = {
   id: string
