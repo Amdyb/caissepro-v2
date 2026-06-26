@@ -76,7 +76,9 @@ type SectionConfig = {
 
 const PLAN_LEVELS: Record<string, number> = { free: 0, starter: 1, business: 2, premium: 3 }
 
-const STAFF_ROLES = ['sales', 'staff', 'employee', 'cashier']
+// Includes both the French ('caissier') and English ('cashier') cashier values
+// so the POS-focused staff nav + route guard apply regardless of which was stored.
+const STAFF_ROLES = ['sales', 'staff', 'employee', 'cashier', 'caissier']
 const MANAGER_ROLES = ['manager', 'admin', 'owner']
 
 const STAFF_ALLOWED_PATHS = [
