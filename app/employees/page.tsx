@@ -70,18 +70,26 @@ export default function EmployeesPage() {
       const { data: userData } = await supabase.auth.getUser()
       if (!userData.user) { setLoading(false); return }
 
-      const { data: membership } = await supabase
+      // Read every membership and honour the user-selected business (multi-boutique),
+      // so the role gating reflects the boutique actually being viewed — not just
+      // an arbitrary first row.
+      const { data: memberships } = await supabase
         .from('business_members')
         .select('business_id, role')
         .eq('user_id', userData.user.id)
-        .limit(1)
-        .maybeSingle()
 
-      if (!membership?.business_id) {
+      if (!memberships || memberships.length === 0) {
         setMessage('Aucune boutique trouvée pour ce compte.')
         setIsError(true)
         setLoading(false)
         return
+      }
+
+      let membership: any = memberships[0]
+      const savedId = typeof window !== 'undefined' ? localStorage.getItem('caissepro_selected_business_id') : null
+      if (savedId) {
+        const found = memberships.find((m: any) => m.business_id === savedId)
+        if (found) membership = found
       }
 
       setBusinessId(membership.business_id)

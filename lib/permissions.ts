@@ -6,8 +6,12 @@
 //                     VIEW ONLY, and no categories/suppliers/security zone
 //   sales/cashier/staff/employee/vendeur → Caissier — POS-focused, view-only catalog
 
-export const OWNER_ROLES = ['owner', 'admin']
-export const STAFF_ROLES = ['sales', 'staff', 'employee', 'cashier', 'vendeur']
+// 'proprietaire' is the French role stored for owners in business_members and is
+// the value used by the vast majority of accounts — it MUST grant full access.
+export const OWNER_ROLES = ['owner', 'admin', 'proprietaire']
+// Includes both the French ('caissier') and English ('cashier') cashier values
+// so view-only gating applies consistently regardless of which was stored.
+export const STAFF_ROLES = ['sales', 'staff', 'employee', 'cashier', 'caissier', 'vendeur']
 
 // Read-only message shown when a view-only role hits a write action/route.
 export const READ_ONLY_MESSAGE = 'Accès en lecture seule'
