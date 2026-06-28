@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<style>
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: #070b09; color: #f2f5f3; font-family: 'Manrope', system-ui, sans-serif; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+  ::selection { background: #16a34a; color: #fff; }
+  i[data-lucide] { display: inline-flex; }
+  svg.lucide { stroke-width: 2; }
+  @keyframes floaty { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-14px); } }
+  @keyframes floaty2 { 0%,100% { transform: translateY(0); } 50% { transform: translateY(10px); } }
+  @keyframes pulseGlow { 0%,100% { opacity: .55; } 50% { opacity: .9; } }
+  @keyframes barRise { from { transform: scaleY(.2); } to { transform: scaleY(1); } }
+  @keyframes revealUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: none; } }
+</style>
+</helmet>
+<div style="position:relative; min-height:100vh; background:#070b09; overflow:hidden;">
+
+  <!-- ambient background -->
+  <div style="position:fixed; inset:0; pointer-events:none; z-index:0; background:
+      radial-gradient(900px 500px at 78% -5%, rgba(22,163,74,.20), transparent 60%),
+      radial-gradient(700px 600px at 10% 12%, rgba(22,163,74,.10), transparent 55%),
+      radial-gradient(800px 700px at 90% 90%, rgba(139,92,246,.07), transparent 55%);"></div>
+  <div style="position:fixed; inset:0; pointer-events:none; z-index:0; opacity:.5; background-image:linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px); background-size:64px 64px; mask-image:radial-gradient(circle at 50% 0%, #000 0%, transparent 70%);"></div>
+
+  <div style="position:relative; z-index:2;">
+
+  <!-- ================= NAV ================= -->
+  <nav style="position:sticky; top:0; z-index:50; backdrop-filter:blur(18px); background:rgba(7,11,9,.72); border-bottom:1px solid rgba(255,255,255,.06);">
+    <div style="max-width:1240px; margin:0 auto; padding:14px clamp(18px,4vw,36px); display:flex; align-items:center; gap:18px;">
+      <div style="display:flex; align-items:center; gap:11px; margin-right:auto;">
+        <div style="width:40px; height:40px; border-radius:12px; background:#fff; display:grid; place-items:center; box-shadow:0 8px 24px rgba(22,163,74,.28), 0 0 0 1px rgba(255,255,255,.1); overflow:hidden;">
+          <img src="assets/logo-mark.png" alt="CaissePro" style="width:100%; height:100%; object-fit:cover;">
+        </div>
+        <span style="font-family:'Sora'; font-weight:800; font-size:1.28rem; letter-spacing:-.02em;">Caisse<span style="color:#22c55e;">Pro</span></span>
+      </div>
+      <div style="display:flex; gap:26px; align-items:center;">
+        <a href="#fonctionnalites" style="color:#c4cec9; text-decoration:none; font-size:.95rem; font-weight:600;">Fonctionnalités</a>
+        <a href="#metiers" style="color:#c4cec9; text-decoration:none; font-size:.95rem; font-weight:600;">Métiers</a>
+        <a href="#tarifs" style="color:#c4cec9; text-decoration:none; font-size:.95rem; font-weight:600;">Tarifs</a>
+        <a href="#agent" style="color:#c4cec9; text-decoration:none; font-size:.95rem; font-weight:600;">Agents</a>
+      </div>
+      <a href="#" style="color:#e7ece9; text-decoration:none; font-size:.95rem; font-weight:700; padding:9px 8px;">Connexion</a>
+      <a href="#tarifs" style="background:#16a34a; color:#fff; text-decoration:none; font-size:.92rem; font-weight:700; padding:11px 18px; border-radius:14px; box-shadow:0 8px 22px rgba(22,163,74,.4); white-space:nowrap;">Commencer</a>
+    </div>
+  </nav>
+
+  <!-- ================= HERO ================= -->
+  <header data-screen-label="Hero" style="max-width:1240px; margin:0 auto; padding:clamp(48px,7vw,90px) clamp(18px,4vw,36px) clamp(40px,6vw,70px); display:flex; flex-wrap:wrap; gap:clamp(36px,5vw,60px); align-items:center;">
+    <div style="flex:1 1 460px; min-width:300px;">
+      <div style="display:inline-flex; align-items:center; gap:9px; padding:7px 14px; border-radius:999px; background:rgba(22,163,74,.12); border:1px solid rgba(22,163,74,.32); margin-bottom:26px;">
+        <span style="width:7px;height:7px;border-radius:50%;background:#22c55e;box-shadow:0 0 10px #22c55e;"></span>
+        <span style="font-size:.78rem; font-weight:700; letter-spacing:.04em; color:#7fe6a3;">La caisse #1 de l'Afrique de l'Ouest</span>
+      </div>
+      <h1 style="font-family:'Sora'; font-weight:800; font-size:clamp(2.5rem,5.4vw,4.4rem); line-height:1.03; letter-spacing:-.03em; margin:0 0 22px;">
+        La caisse enregistreuse <span style="background:linear-gradient(120deg,#22c55e,#16a34a); -webkit-background-clip:text; background-clip:text; color:transparent;">intelligente</span> de l'Afrique
+      </h1>
+      <p style="font-size:clamp(1.05rem,1.4vw,1.25rem); line-height:1.65; color:#9fb0a8; max-width:540px; margin:0 0 34px;">
+        Vendez, encaissez et gérez votre stock depuis votre <strong style="color:#e7ece9;">tablette, ordinateur ou téléphone</strong>. Mobile Money à 0% de commission, reçus WhatsApp et boutique en ligne gratuite.
+      </p>
+      <div style="display:flex; flex-wrap:wrap; gap:14px; margin-bottom:30px;">
+        <a href="#tarifs" style="display:inline-flex; align-items:center; gap:10px; background:#16a34a; color:#fff; text-decoration:none; font-weight:700; font-size:1.02rem; padding:16px 28px; border-radius:16px; box-shadow:0 14px 36px rgba(22,163,74,.42);">
+          Commencer gratuitement <i data-lucide="arrow-right" style="width:19px;height:19px;"></i>
+        </a>
+        <a href="#" style="display:inline-flex; align-items:center; gap:11px; color:#f2f5f3; text-decoration:none; font-weight:700; font-size:1.02rem; padding:16px 24px; border-radius:16px; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.12);">
+          <span style="width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.1);display:grid;place-items:center;"><i data-lucide="play" style="width:15px;height:15px;"></i></span>
+          Voir la démo
+        </a>
+      </div>
+      <div style="display:flex; flex-wrap:wrap; gap:22px; color:#8a9a92; font-size:.9rem; font-weight:600;">
+        <span style="display:inline-flex; align-items:center; gap:7px;"><i data-lucide="check-circle-2" style="width:17px;height:17px;color:#22c55e;"></i> Sans engagement</span>
+        <span style="display:inline-flex; align-items:center; gap:7px;"><i data-lucide="check-circle-2" style="width:17px;height:17px;color:#22c55e;"></i> 0% de commission</span>
+        <span style="display:inline-flex; align-items:center; gap:7px;"><i data-lucide="check-circle-2" style="width:17px;height:17px;color:#22c55e;"></i> Mode hors-ligne</span>
+      </div>
+    </div>
+
+    <!-- visual cluster -->
+    <div style="flex:1 1 380px; min-width:300px; display:flex; justify-content:center; position:relative;">
+      <div style="position:relative; width:clamp(260px,30vw,330px);">
+        <div style="position:absolute; inset:-16% -22%; background:radial-gradient(closest-side, rgba(22,163,74,.42), transparent 72%); filter:blur(14px); animation:pulseGlow 5s ease-in-out infinite;"></div>
+        <!-- phone -->
+        <div style="position:relative; border-radius:42px; padding:9px; background:linear-gradient(160deg,#191d1b,#0a0c0b); box-shadow:0 40px 90px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.05), inset 0 0 0 1px rgba(255,255,255,.04); animation:floaty 7s ease-in-out infinite;">
+          <div style="border-radius:34px; overflow:hidden; aspect-ratio:1144/1928; background:#0d1310;">
+            <img src="uploads/check%20out.png" alt="CaissePro — Checkout, paiement Wave & reçu WhatsApp" style="width:100%; height:100%; object-fit:cover; object-position:top;">
+          </div>
+        </div>
+        <!-- glass fragment: payment -->
+        <div style="position:absolute; top:8%; right:-30%; width:230px; max-width:60vw; padding:15px 16px; border-radius:20px; background:rgba(16,22,19,.82); backdrop-filter:blur(16px); border:1px solid rgba(255,255,255,.1); box-shadow:0 20px 50px rgba(0,0,0,.5); animation:floaty2 6s ease-in-out infinite;">
+          <div style="display:flex; align-items:center; gap:11px;">
+            <div style="width:36px;height:36px;border-radius:11px;background:#1a8cff;display:grid;place-items:center;color:#fff;font-weight:800;font-size:.7rem;font-family:'Sora';">Wave</div>
+            <div style="flex:1;">
+              <div style="font-size:.72rem; color:#8a9a92; font-weight:600;">Paiement reçu</div>
+              <div style="font-size:1rem; font-weight:800; font-family:'Sora'; color:#f2f5f3;">+12 500 FCFA</div>
+            </div>
+            <i data-lucide="check-circle-2" style="width:22px;height:22px;color:#22c55e;"></i>
+          </div>
+        </div>
+        <!-- glass fragment: whatsapp -->
+        <div style="position:absolute; top:46%; left:-32%; width:210px; max-width:58vw; padding:13px 15px; border-radius:18px; background:rgba(16,22,19,.82); backdrop-filter:blur(16px); border:1px solid rgba(255,255,255,.1); box-shadow:0 20px 50px rgba(0,0,0,.5); animation:floaty 8s ease-in-out infinite;">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <div style="width:34px;height:34px;border-radius:10px;background:#25D366;display:grid;place-items:center;color:#fff;"><i data-lucide="message-circle" style="width:18px;height:18px;"></i></div>
+            <div>
+              <div style="font-size:.86rem; font-weight:700; color:#f2f5f3;">Reçu envoyé</div>
+              <div style="font-size:.72rem; color:#8a9a92; font-weight:600;">sur WhatsApp · maintenant</div>
+            </div>
+          </div>
+        </div>
+        <!-- glass fragment: sales -->
+        <div style="position:absolute; bottom:-6%; right:-26%; width:200px; max-width:56vw; padding:15px 16px; border-radius:18px; background:rgba(16,22,19,.82); backdrop-filter:blur(16px); border:1px solid rgba(255,255,255,.1); box-shadow:0 20px 50px rgba(0,0,0,.5); animation:floaty2 7.5s ease-in-out infinite;">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:9px;">
+            <span style="font-size:.72rem; color:#8a9a92; font-weight:600;">Ventes du jour</span>
+            <span style="font-size:.72rem; font-weight:800; color:#22c55e;">+27%</span>
+          </div>
+          <div style="font-size:1.15rem; font-weight:800; font-family:'Sora'; margin-bottom:10px;">125 000 FCFA</div>
+          <div style="display:flex; align-items:flex-end; gap:4px; height:30px;">
+            <sc-for list="{{ bars }}" as="b" hint-placeholder-count="7">
+              <div style="flex:1; height:{{ b.h }}; background:linear-gradient(180deg,#22c55e,#16a34a); border-radius:3px; transform-origin:bottom; animation:barRise .6s ease both;"></div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- payment partners strip -->
+  <div style="max-width:1240px; margin:0 auto; padding:8px clamp(18px,4vw,36px) clamp(40px,5vw,64px);">
+    <p style="text-align:center; font-size:.78rem; letter-spacing:.18em; text-transform:uppercase; color:#6f7e77; font-weight:700; margin:0 0 20px;">Encaissez par tous les moyens de paiement</p>
+    <div style="display:flex; flex-wrap:wrap; justify-content:center; gap:12px;">
+      <sc-for list="{{ paiements }}" as="p" hint-placeholder-count="5">
+        <div style="display:inline-flex; align-items:center; gap:8px; padding:10px 18px; border-radius:14px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08);">
+          <span style="width:8px;height:8px;border-radius:50%; background:{{ p.color }};"></span>
+          <span style="font-weight:700; font-size:.95rem; color:#d8e0dc;">{{ p.name }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <!-- ================= ALL DEVICES ================= -->
+  <section data-screen-label="Tous vos appareils" data-reveal style="max-width:1240px; margin:0 auto; padding:clamp(40px,6vw,80px) clamp(18px,4vw,36px); text-align:center; animation:revealUp .9s cubic-bezier(.2,.7,.2,1) both; animation-timeline:view(); animation-range:entry 4% cover 34%;">
+    <p style="font-size:.8rem; letter-spacing:.16em; text-transform:uppercase; color:#22c55e; font-weight:800; margin:0 0 14px;">Compatible partout</p>
+    <h2 style="font-family:'Sora'; font-weight:800; font-size:clamp(2rem,3.8vw,3.1rem); line-height:1.06; letter-spacing:-.02em; margin:0 0 16px;">Une seule app, tous vos appareils</h2>
+    <p style="color:#9fb0a8; font-size:1.1rem; line-height:1.6; max-width:600px; margin:0 auto;">Tablette de comptoir, ordinateur, smartphone ou imprimante de reçus — CaissePro s'adapte à tout votre matériel, en ligne comme hors-ligne.</p>
+    <div style="position:relative; max-width:940px; margin:clamp(28px,4vw,48px) auto 0;">
+      <div style="position:absolute; left:50%; top:46%; width:78%; height:62%; transform:translate(-50%,-50%); background:radial-gradient(closest-side, rgba(22,163,74,.32), transparent 72%); filter:blur(22px); animation:pulseGlow 6s ease-in-out infinite; pointer-events:none;"></div>
+      <div style="position:relative; width:100%; aspect-ratio:1010/595; animation:floaty 8s ease-in-out infinite;">
+        <img src="assets/device-family.png" alt="CaissePro sur tablette, ordinateur et imprimante de reçus" style="position:absolute; inset:0; width:100%; height:100%; object-fit:contain; filter:drop-shadow(0 38px 55px rgba(0,0,0,.5));">
+        <div style="position:absolute; left:42.2%; top:6.8%; width:17.6%; height:10.8%; background:#080b0a; border-radius:9px; display:flex; align-items:center; justify-content:center; box-shadow:0 0 0 1px rgba(255,255,255,.05);">
+          <img src="assets/lockup-badge.png" alt="CaissePro" style="width:90%; object-fit:contain;">
+        </div>
+        <div style="position:absolute; left:76.3%; top:84.2%; width:13.4%; height:8%; background:#0b0907; border-radius:7px; display:flex; align-items:center; justify-content:center;">
+          <img src="assets/lockup-badge.png" alt="CaissePro" style="width:90%; object-fit:contain;">
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= FEATURES BENTO ================= -->
+  <section id="fonctionnalites" data-screen-label="Fonctionnalités" data-reveal style="max-width:1240px; margin:0 auto; padding:clamp(56px,8vw,100px) clamp(18px,4vw,36px); animation:revealUp .9s cubic-bezier(.2,.7,.2,1) both; animation-timeline:view(); animation-range:entry 4% cover 34%;">
+    <div style="text-align:center; max-width:680px; margin:0 auto clamp(40px,5vw,60px);">
+      <p style="font-size:.8rem; letter-spacing:.16em; text-transform:uppercase; color:#22c55e; font-weight:800; margin:0 0 14px;">Tout-en-un</p>
+      <h2 style="font-family:'Sora'; font-weight:800; font-size:clamp(2.1rem,4vw,3.3rem); line-height:1.06; letter-spacing:-.02em; margin:0 0 16px;">Tout votre commerce, dans une seule app</h2>
+      <p style="color:#9fb0a8; font-size:1.1rem; line-height:1.6; margin:0;">De la vente au rapport, en passant par le stock et la boutique en ligne. Conçu pour les commerçants d'Afrique.</p>
+    </div>
+
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(min(100%,300px),1fr)); gap:18px;">
+      <!-- big POS card -->
+      <div style="grid-column:span 2; min-width:300px; border-radius:32px; padding:clamp(24px,3vw,36px); background:linear-gradient(165deg, rgba(22,163,74,.14), rgba(16,22,19,.7)); border:1px solid rgba(34,197,94,.22); position:relative; overflow:hidden; display:flex; flex-wrap:wrap; gap:clamp(20px,3vw,40px); align-items:center;">
+        <div style="position:relative; z-index:2; flex:1 1 280px; min-width:240px;">
+          <div style="width:48px;height:48px;border-radius:14px;background:rgba(34,197,94,.18);border:1px solid rgba(34,197,94,.3);display:grid;place-items:center;color:#22c55e;margin-bottom:18px;"><i data-lucide="shopping-cart" style="width:24px;height:24px;"></i></div>
+          <h3 style="font-family:'Sora'; font-weight:800; font-size:1.5rem; margin:0 0 10px;">Caisse & encaissement rapide</h3>
+          <p style="color:#9fb0a8; line-height:1.6; margin:0 0 8px; max-width:440px;">Recherchez vos produits, scannez les codes-barres et encaissez en quelques secondes. Alertes de stock en temps réel.</p>
+        </div>
+        <!-- real product grid in phone frame -->
+        <div style="position:relative; z-index:2; flex:0 0 auto; margin:0 auto;">
+          <div style="position:absolute; inset:-12% -16%; background:radial-gradient(closest-side, rgba(34,197,94,.3), transparent 72%); filter:blur(14px); pointer-events:none;"></div>
+          <div style="position:relative; width:clamp(200px,22vw,250px); border-radius:36px; padding:8px; background:linear-gradient(160deg,#191d1b,#0a0c0b); box-shadow:0 30px 60px rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,.05);">
+            <div style="border-radius:29px; overflow:hidden; aspect-ratio:986/1830; background:#0d1310;">
+              <img src="uploads/produit%20page.png" alt="CaissePro — point de vente, grille de produits" style="width:100%; height:100%; object-fit:cover; object-position:top;">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- mobile money -->
+      <div style="border-radius:32px; padding:clamp(22px,2.5vw,30px); background:rgba(16,22,19,.6); border:1px solid rgba(255,255,255,.08); display:flex; flex-direction:column;">
+        <div style="width:46px;height:46px;border-radius:14px;background:rgba(26,140,255,.16);border:1px solid rgba(26,140,255,.3);display:grid;place-items:center;color:#4ba6ff;margin-bottom:18px;"><i data-lucide="smartphone" style="width:23px;height:23px;"></i></div>
+        <h3 style="font-family:'Sora'; font-weight:800; font-size:1.25rem; margin:0 0 8px;">Mobile Money</h3>
+        <p style="color:#9fb0a8; line-height:1.55; margin:0 0 16px; font-size:.95rem;">Wave, Orange Money & PayDunya intégrés directement à la caisse.</p>
+        <div style="margin-top:auto; display:flex; align-items:baseline; gap:8px;">
+          <span style="font-family:'Sora'; font-weight:800; font-size:2.6rem; line-height:1; color:#22c55e;">0%</span>
+          <span style="color:#9fb0a8; font-weight:600; font-size:.9rem;">de commission</span>
+        </div>
+      </div>
+
+      <!-- whatsapp receipts -->
+      <div style="border-radius:32px; padding:clamp(22px,2.5vw,30px); background:rgba(16,22,19,.6); border:1px solid rgba(255,255,255,.08);">
+        <div style="width:46px;height:46px;border-radius:14px;background:rgba(37,211,102,.16);border:1px solid rgba(37,211,102,.3);display:grid;place-items:center;color:#25D366;margin-bottom:18px;"><i data-lucide="message-circle" style="width:23px;height:23px;"></i></div>
+        <h3 style="font-family:'Sora'; font-weight:800; font-size:1.25rem; margin:0 0 8px;">Reçus WhatsApp</h3>
+        <p style="color:#9fb0a8; line-height:1.55; margin:0; font-size:.95rem;">Envoyez automatiquement le reçu de chaque vente à vos clients sur WhatsApp.</p>
+        <div style="margin-top:18px; background:#0c100e; border:1px solid rgba(255,255,255,.07); border-radius:14px; padding:10px 12px; display:flex; align-items:center; gap:10px;">
+          <div style="width:30px;height:30px;border-radius:9px;background:#25D366;display:grid;place-items:center;color:#fff;"><i data-lucide="check" style="width:16px;height:16px;"></i></div>
+          <div><div style="font-size:.78rem; font-weight:700;">Reçu N°000123</div><div style="font-size:.68rem; color:#8a9a92;">Livré · 9 300 FCFA</div></div>
+        </div>
+      </div>
+
+      <!-- online store -->
+      <div style="grid-column:span 2; min-width:300px; border-radius:32px; padding:clamp(22px,2.5vw,32px); background:linear-gradient(165deg, rgba(249,115,22,.1), rgba(16,22,19,.7)); border:1px solid rgba(249,115,22,.2); display:flex; gap:24px; flex-wrap:wrap; align-items:center;">
+        <div style="flex:1 1 240px;">
+          <div style="width:46px;height:46px;border-radius:14px;background:rgba(249,115,22,.16);border:1px solid rgba(249,115,22,.32);display:grid;place-items:center;color:#fb923c;margin-bottom:18px;"><i data-lucide="globe" style="width:23px;height:23px;"></i></div>
+          <h3 style="font-family:'Sora'; font-weight:800; font-size:1.4rem; margin:0 0 8px;">Boutique en ligne gratuite</h3>
+          <p style="color:#9fb0a8; line-height:1.55; margin:0; font-size:.98rem;">Une vitrine en ligne façon Netflix pour vos produits — partagez le lien, vendez 24h/24.</p>
+        </div>
+        <div style="flex:1 1 240px; min-width:220px;">
+          <div style="background:#0c100e; border:1px solid rgba(255,255,255,.1); border-radius:16px; overflow:hidden; box-shadow:0 24px 50px rgba(0,0,0,.45);">
+            <div style="background:#141916; padding:10px 14px; display:flex; align-items:center; gap:8px; border-bottom:1px solid rgba(255,255,255,.06);">
+              <span style="width:10px;height:10px;border-radius:50%;background:#ff5f57;"></span>
+              <span style="width:10px;height:10px;border-radius:50%;background:#febc2e;"></span>
+              <span style="width:10px;height:10px;border-radius:50%;background:#28c840;"></span>
+              <div style="margin-left:8px; flex:1; display:flex; align-items:center; gap:6px; background:rgba(255,255,255,.06); border-radius:7px; padding:4px 10px; color:#8a9a92; font-size:.66rem; font-weight:600;">
+                <i data-lucide="lock" style="width:11px;height:11px;"></i> dakarvapes.caissepro.app
+              </div>
+            </div>
+            <div style="max-height:340px; overflow:hidden;">
+              <img src="uploads/online%20store.png" alt="Boutique en ligne DakarVapes propulsée par CaissePro" style="width:100%; display:block; object-fit:cover; object-position:top;">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- stock -->
+      <div style="border-radius:32px; padding:clamp(22px,2.5vw,30px); background:rgba(16,22,19,.6); border:1px solid rgba(255,255,255,.08);">
+        <div style="width:46px;height:46px;border-radius:14px;background:rgba(139,92,246,.16);border:1px solid rgba(139,92,246,.3);display:grid;place-items:center;color:#a78bfa;margin-bottom:18px;"><i data-lucide="boxes" style="width:23px;height:23px;"></i></div>
+        <h3 style="font-family:'Sora'; font-weight:800; font-size:1.25rem; margin:0 0 8px;">Stock & code-barres</h3>
+        <p style="color:#9fb0a8; line-height:1.55; margin:0; font-size:.95rem;">Suivez vos quantités en temps réel et soyez alerté avant la rupture.</p>
+      </div>
+
+      <!-- coach IA -->
+      <div style="grid-column:span 2; min-width:300px; border-radius:32px; padding:clamp(22px,2.5vw,32px); background:linear-gradient(150deg, rgba(22,163,74,.16), rgba(139,92,246,.12)); border:1px solid rgba(255,255,255,.1); display:flex; gap:20px; flex-wrap:wrap; align-items:center;">
+        <div style="width:54px;height:54px;border-radius:16px;background:rgba(34,197,94,.2);border:1px solid rgba(34,197,94,.35);display:grid;place-items:center;color:#22c55e;"><i data-lucide="sparkles" style="width:27px;height:27px;"></i></div>
+        <div style="flex:1 1 220px;">
+          <div style="display:inline-flex; align-items:center; gap:7px; padding:4px 11px; border-radius:999px; background:rgba(34,197,94,.18); border:1px solid rgba(34,197,94,.3); margin-bottom:12px;"><span style="font-size:.66rem; font-weight:800; letter-spacing:.06em; color:#7fe6a3;">PREMIUM</span></div>
+          <h3 style="font-family:'Sora'; font-weight:800; font-size:1.4rem; margin:0 0 8px;">Coach Entrepreneur IA</h3>
+          <p style="color:#b7c2bc; line-height:1.55; margin:0; font-size:.98rem;">Un conseiller commercial intelligent qui analyse vos ventes et vous dit quoi commander, quand et à quel prix.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- secondary feature chips -->
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(min(100%,220px),1fr)); gap:14px; margin-top:18px;">
+      <sc-for list="{{ extras }}" as="x" hint-placeholder-count="6">
+        <div style="display:flex; align-items:center; gap:13px; padding:18px 20px; border-radius:20px; background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.07);">
+          <div style="width:38px;height:38px;border-radius:11px;background:rgba(34,197,94,.12);display:grid;place-items:center;color:#22c55e;flex-shrink:0;"><i data-lucide="{{ x.icon }}" style="width:19px;height:19px;"></i></div>
+          <span style="font-weight:700; font-size:.96rem; color:#dde4e0;">{{ x.name }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <!-- ================= METIERS ================= -->
+  <section id="metiers" data-screen-label="Métiers" data-reveal style="max-width:1240px; margin:0 auto; padding:clamp(40px,6vw,80px) clamp(18px,4vw,36px); animation:revealUp .9s cubic-bezier(.2,.7,.2,1) both; animation-timeline:view(); animation-range:entry 4% cover 34%;">
+    <div style="text-align:center; max-width:640px; margin:0 auto clamp(36px,4vw,52px);">
+      <p style="font-size:.8rem; letter-spacing:.16em; text-transform:uppercase; color:#22c55e; font-weight:800; margin:0 0 14px;">Pour chaque métier</p>
+      <h2 style="font-family:'Sora'; font-weight:800; font-size:clamp(2rem,3.6vw,3rem); line-height:1.06; letter-spacing:-.02em; margin:0;">Conçu pour votre activité</h2>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(min(100%,160px),1fr)); gap:14px;">
+      <sc-for list="{{ metiers }}" as="m" hint-placeholder-count="10">
+        <div style="border-radius:22px; padding:22px 18px; background:rgba(16,22,19,.6); border:1px solid rgba(255,255,255,.07); text-align:center;">
+          <div style="width:48px;height:48px;border-radius:14px;margin:0 auto 14px;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.2);display:grid;place-items:center;color:#22c55e;"><i data-lucide="{{ m.icon }}" style="width:24px;height:24px;"></i></div>
+          <div style="font-weight:700; font-size:.98rem; color:#e2e8e4;">{{ m.name }}</div>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <!-- ================= PRICING ================= -->
+  <section id="tarifs" data-screen-label="Tarifs" data-reveal style="max-width:1240px; margin:0 auto; padding:clamp(48px,7vw,90px) clamp(18px,4vw,36px); animation:revealUp .9s cubic-bezier(.2,.7,.2,1) both; animation-timeline:view(); animation-range:entry 4% cover 34%;">
+    <div style="text-align:center; max-width:660px; margin:0 auto 26px;">
+      <p style="font-size:.8rem; letter-spacing:.16em; text-transform:uppercase; color:#22c55e; font-weight:800; margin:0 0 14px;">Tarifs</p>
+      <h2 style="font-family:'Sora'; font-weight:800; font-size:clamp(2rem,3.8vw,3.1rem); line-height:1.06; letter-spacing:-.02em; margin:0 0 14px;">Des prix simples, en FCFA</h2>
+      <p style="color:#9fb0a8; font-size:1.05rem; margin:0;">Commencez gratuitement. Évoluez quand vous grandissez. 0% de frais sur vos transactions, sur tous les plans.</p>
+    </div>
+
+    <!-- promo banner -->
+    <div style="max-width:560px; margin:0 auto 28px; display:flex; align-items:center; justify-content:center; gap:12px; padding:13px 20px; border-radius:18px; background:linear-gradient(120deg, rgba(22,163,74,.2), rgba(249,115,22,.14)); border:1px solid rgba(34,197,94,.3);">
+      <i data-lucide="gift" style="width:22px;height:22px;color:#22c55e;"></i>
+      <span style="font-weight:700; font-size:.98rem; color:#eaf1ed;">Offre de lancement : payez 1 mois, obtenez 2 mois</span>
+    </div>
+
+    <!-- billing toggle -->
+    <div style="display:flex; justify-content:center; margin-bottom:34px;">
+      <div style="display:inline-flex; padding:5px; border-radius:14px; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.09);">
+        <button onClick="{{ setMensuel }}" style="border:none; cursor:pointer; font-family:'Manrope'; font-weight:700; font-size:.9rem; padding:9px 20px; border-radius:10px; background:{{ mensuelBg }}; color:{{ mensuelColor }};">Mensuel</button>
+        <button onClick="{{ setAnnuel }}" style="border:none; cursor:pointer; font-family:'Manrope'; font-weight:700; font-size:.9rem; padding:9px 20px; border-radius:10px; background:{{ annuelBg }}; color:{{ annuelColor }};">Annuel <span style="color:#22c55e;">-2 mois</span></button>
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(min(100%,250px),1fr)); gap:18px; align-items:stretch;">
+      <sc-for list="{{ tiers }}" as="t" hint-placeholder-count="4">
+        <div style="position:relative; border-radius:30px; padding:30px 26px; background:{{ t.cardBg }}; border:1px solid {{ t.cardBorder }}; display:flex; flex-direction:column;">
+          <sc-if value="{{ t.popular }}" hint-placeholder-val="{{ true }}">
+            <div style="position:absolute; top:-12px; left:50%; transform:translateX(-50%); background:#16a34a; color:#fff; font-size:.72rem; font-weight:800; letter-spacing:.04em; padding:6px 16px; border-radius:999px; box-shadow:0 8px 20px rgba(22,163,74,.45);">LE PLUS POPULAIRE</div>
+          </sc-if>
+          <div style="font-family:'Sora'; font-weight:800; font-size:1.25rem; margin-bottom:4px;">{{ t.name }}</div>
+          <div style="color:#8a9a92; font-size:.88rem; font-weight:600; margin-bottom:20px;">{{ t.tagline }}</div>
+          <div style="display:flex; align-items:baseline; gap:6px; margin-bottom:4px;">
+            <span style="font-family:'Sora'; font-weight:800; font-size:2.6rem; line-height:1;">{{ t.display }}</span>
+            <span style="color:#9fb0a8; font-weight:700; font-size:.9rem;">FCFA</span>
+          </div>
+          <div style="color:#8a9a92; font-size:.82rem; font-weight:600; margin-bottom:22px; min-height:18px;">{{ t.period }}</div>
+          <div style="display:flex; flex-direction:column; gap:11px; margin-bottom:26px;">
+            <sc-for list="{{ t.features }}" as="f" hint-placeholder-count="5">
+              <div style="display:flex; align-items:flex-start; gap:9px;">
+                <i data-lucide="check" style="width:17px;height:17px;color:#22c55e;flex-shrink:0;margin-top:2px;"></i>
+                <span style="font-size:.9rem; color:#cdd6d1; line-height:1.4;">{{ f }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <a href="#" style="margin-top:auto; text-align:center; text-decoration:none; font-weight:700; font-size:.95rem; padding:13px; border-radius:14px; background:{{ t.btnBg }}; color:{{ t.btnColor }}; border:1px solid {{ t.btnBorder }};">{{ t.cta }}</a>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <!-- ================= AGENT PROGRAM ================= -->
+  <section id="agent" data-screen-label="Programme Agent" data-reveal style="max-width:1240px; margin:0 auto; padding:clamp(40px,6vw,80px) clamp(18px,4vw,36px); animation:revealUp .9s cubic-bezier(.2,.7,.2,1) both; animation-timeline:view(); animation-range:entry 4% cover 34%;">
+    <div style="border-radius:36px; padding:clamp(30px,5vw,56px); background:linear-gradient(150deg, rgba(139,92,246,.16), rgba(16,22,19,.75)); border:1px solid rgba(139,92,246,.25); display:flex; flex-wrap:wrap; gap:32px; align-items:center;">
+      <div style="flex:1 1 320px;">
+        <div style="display:inline-flex; align-items:center; gap:8px; padding:6px 14px; border-radius:999px; background:rgba(139,92,246,.18); border:1px solid rgba(139,92,246,.32); margin-bottom:20px;"><i data-lucide="handshake" style="width:16px;height:16px;color:#a78bfa;"></i><span style="font-size:.76rem; font-weight:800; letter-spacing:.04em; color:#c4b5fd;">PROGRAMME AGENT</span></div>
+        <h2 style="font-family:'Sora'; font-weight:800; font-size:clamp(1.9rem,3.4vw,2.7rem); line-height:1.08; letter-spacing:-.02em; margin:0 0 14px;">Gagnez en équipant les commerçants de votre quartier</h2>
+        <p style="color:#b0bcb6; font-size:1.05rem; line-height:1.6; margin:0 0 26px; max-width:480px;">Devenez agent revendeur CaissePro. Installez la caisse chez les commerçants autour de vous et touchez des revenus récurrents chaque mois.</p>
+        <a href="#" style="display:inline-flex; align-items:center; gap:10px; background:#8b5cf6; color:#fff; text-decoration:none; font-weight:700; font-size:1rem; padding:15px 26px; border-radius:16px; box-shadow:0 14px 34px rgba(139,92,246,.4);">Devenir agent <i data-lucide="arrow-right" style="width:18px;height:18px;"></i></a>
+      </div>
+      <div style="flex:1 1 240px; min-width:220px;">
+        <div style="border-radius:24px; padding:30px; background:rgba(12,16,14,.7); border:1px solid rgba(255,255,255,.1); text-align:center;">
+          <div style="color:#8a9a92; font-size:.85rem; font-weight:700; margin-bottom:8px;">Revenus potentiels</div>
+          <div style="display:flex; align-items:baseline; justify-content:center; gap:6px; margin-bottom:6px;"><span style="font-family:'Sora'; font-weight:800; font-size:clamp(2.4rem,5vw,3.4rem); line-height:1; color:#a78bfa;">50 000</span><span style="color:#9fb0a8; font-weight:700;">FCFA</span></div>
+          <div style="color:#8a9a92; font-size:.85rem; font-weight:600;">par mois et plus</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= TESTIMONIALS ================= -->
+  <section data-screen-label="Témoignages" data-reveal style="max-width:1240px; margin:0 auto; padding:clamp(40px,6vw,80px) clamp(18px,4vw,36px); animation:revealUp .9s cubic-bezier(.2,.7,.2,1) both; animation-timeline:view(); animation-range:entry 4% cover 34%;">
+    <div style="text-align:center; max-width:600px; margin:0 auto clamp(36px,4vw,50px);">
+      <p style="font-size:.8rem; letter-spacing:.16em; text-transform:uppercase; color:#22c55e; font-weight:800; margin:0 0 14px;">Ils nous font confiance</p>
+      <h2 style="font-family:'Sora'; font-weight:800; font-size:clamp(2rem,3.6vw,3rem); line-height:1.06; letter-spacing:-.02em; margin:0;">Les commerçants adoptent CaissePro</h2>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(min(100%,280px),1fr)); gap:18px;">
+      <sc-for list="{{ temoignages }}" as="t" hint-placeholder-count="3">
+        <div style="border-radius:26px; padding:28px; background:rgba(16,22,19,.6); border:1px solid rgba(255,255,255,.08);">
+          <div style="display:flex; gap:3px; margin-bottom:16px;">
+            <sc-for list="{{ t.stars }}" as="s" hint-placeholder-count="5">
+              <i data-lucide="star" style="width:16px;height:16px;color:#fbbf24;fill:#fbbf24;"></i>
+            </sc-for>
+          </div>
+          <p style="color:#dde4e0; font-size:1rem; line-height:1.6; margin:0 0 22px;">"{{ t.quote }}"</p>
+          <div style="display:flex; align-items:center; gap:12px;">
+            <div style="width:42px;height:42px;border-radius:12px;background:linear-gradient(145deg,#16a34a,#0f7a37);display:grid;place-items:center;color:#fff;font-weight:800;font-family:'Sora';">{{ t.initial }}</div>
+            <div><div style="font-weight:700; font-size:.95rem;">{{ t.name }}</div><div style="color:#8a9a92; font-size:.82rem; font-weight:600;">{{ t.role }}</div></div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <!-- ================= FINAL CTA ================= -->
+  <section data-screen-label="CTA final" data-reveal style="max-width:1100px; margin:0 auto; padding:clamp(40px,6vw,80px) clamp(18px,4vw,36px) clamp(60px,8vw,100px); animation:revealUp .9s cubic-bezier(.2,.7,.2,1) both; animation-timeline:view(); animation-range:entry 4% cover 34%;">
+    <div style="position:relative; border-radius:40px; padding:clamp(40px,6vw,72px); text-align:center; background:linear-gradient(160deg, rgba(22,163,74,.22), rgba(16,22,19,.85)); border:1px solid rgba(34,197,94,.28); overflow:hidden;">
+      <div style="position:absolute; inset:0; background:radial-gradient(600px 300px at 50% 0%, rgba(34,197,94,.25), transparent 70%); pointer-events:none;"></div>
+      <div style="position:relative;">
+        <h2 style="font-family:'Sora'; font-weight:800; font-size:clamp(2.1rem,4.4vw,3.5rem); line-height:1.05; letter-spacing:-.02em; margin:0 0 18px;">Prêt à moderniser votre commerce&nbsp;?</h2>
+        <p style="color:#b7c2bc; font-size:1.15rem; line-height:1.6; max-width:520px; margin:0 auto 32px;">Rejoignez les commerçants d'Afrique qui vendent plus, plus vite, avec CaissePro. Gratuit pour commencer.</p>
+        <a href="#" style="display:inline-flex; align-items:center; gap:11px; background:#16a34a; color:#fff; text-decoration:none; font-weight:700; font-size:1.08rem; padding:18px 34px; border-radius:18px; box-shadow:0 16px 40px rgba(22,163,74,.5);">Commencer gratuitement <i data-lucide="arrow-right" style="width:20px;height:20px;"></i></a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= FOOTER ================= -->
+  <footer style="border-top:1px solid rgba(255,255,255,.07); background:rgba(7,11,9,.6);">
+    <div style="max-width:1240px; margin:0 auto; padding:clamp(40px,5vw,64px) clamp(18px,4vw,36px) 30px; display:flex; flex-wrap:wrap; gap:36px; justify-content:space-between;">
+      <div style="flex:1 1 280px; max-width:340px;">
+        <div style="display:flex; align-items:center; gap:11px; margin-bottom:16px;">
+          <div style="width:38px; height:38px; border-radius:11px; background:#fff; display:grid; place-items:center; overflow:hidden; box-shadow:0 0 0 1px rgba(255,255,255,.1);"><img src="assets/logo-mark.png" alt="CaissePro" style="width:100%; height:100%; object-fit:cover;"></div>
+          <span style="font-family:'Sora'; font-weight:800; font-size:1.2rem;">Caisse<span style="color:#22c55e;">Pro</span></span>
+        </div>
+        <p style="color:#8a9a92; font-size:.92rem; line-height:1.6; margin:0;">La caisse enregistreuse intelligente de l'Afrique. Vendez, encaissez et grandissez.</p>
+      </div>
+      <div style="display:flex; flex-wrap:wrap; gap:48px;">
+        <div>
+          <div style="font-weight:800; font-size:.82rem; letter-spacing:.1em; text-transform:uppercase; color:#6f7e77; margin-bottom:14px;">Produit</div>
+          <div style="display:flex; flex-direction:column; gap:10px;">
+            <a href="#fonctionnalites" style="color:#b0bcb6; text-decoration:none; font-size:.92rem;">Fonctionnalités</a>
+            <a href="#tarifs" style="color:#b0bcb6; text-decoration:none; font-size:.92rem;">Tarifs</a>
+            <a href="#metiers" style="color:#b0bcb6; text-decoration:none; font-size:.92rem;">Métiers</a>
+          </div>
+        </div>
+        <div>
+          <div style="font-weight:800; font-size:.82rem; letter-spacing:.1em; text-transform:uppercase; color:#6f7e77; margin-bottom:14px;">Entreprise</div>
+          <div style="display:flex; flex-direction:column; gap:10px;">
+            <a href="#agent" style="color:#b0bcb6; text-decoration:none; font-size:.92rem;">Programme Agent</a>
+            <a href="#" style="color:#b0bcb6; text-decoration:none; font-size:.92rem;">Support</a>
+            <a href="#" style="color:#b0bcb6; text-decoration:none; font-size:.92rem;">Contact</a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="border-top:1px solid rgba(255,255,255,.06); padding:22px clamp(18px,4vw,36px); max-width:1240px; margin:0 auto; display:flex; flex-wrap:wrap; gap:14px; justify-content:space-between; align-items:center;">
+      <span style="color:#6f7e77; font-size:.85rem;">© 2026 CaissePro. Tous droits réservés.</span>
+      <span style="display:inline-flex; align-items:center; gap:8px; color:#8a9a92; font-size:.85rem; font-weight:700;">Propulsé par <span style="color:#22c55e; letter-spacing:.04em;">AMDY LABS</span></span>
+    </div>
+  </footer>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:900}}">
+class Component extends DCLogic {
+  state = { billing: 'mensuel' };
+
+  componentDidMount() { this.renderIcons(); }
+  componentDidUpdate() { this.renderIcons(); }
+
+  renderIcons() {
+    if (window.lucide && window.lucide.createIcons) {
+      try { window.lucide.createIcons(); } catch (e) {}
+    }
+  }
+
+  fmt(n) { return n.toLocaleString('fr-FR').replace(/\u202f/g, ' '); }
+
+  renderVals() {
+    const annuel = this.state.billing === 'annuel';
+
+    const baseTiers = [
+      { name: 'Gratuit', price: 0, tagline: 'Pour démarrer', popular: false, cta: 'Commencer gratuitement',
+        features: ['1 boutique', 'Ventes illimitées', 'Mobile Money 0% commission', 'Boutique en ligne', 'Reçus WhatsApp'] },
+      { name: 'Starter', price: 5000, tagline: 'Petits commerces', popular: false, cta: 'Choisir Starter',
+        features: ['Tout Gratuit, et plus', 'Gestion de stock avancée', 'Scanner code-barres', 'Rapports détaillés', '2 utilisateurs'] },
+      { name: 'Business', price: 15000, tagline: 'Le choix des pros', popular: true, cta: 'Choisir Business',
+        features: ['Tout Starter, et plus', 'Gestion d\u2019équipe (3 rôles)', 'Fournisseurs & réassort', 'Notifications push', '5 utilisateurs'] },
+      { name: 'Premium', price: 35000, tagline: 'Sans limites', popular: false, cta: 'Choisir Premium',
+        features: ['Tout Business, et plus', 'Coach Entrepreneur IA', 'Multi-boutique', 'Utilisateurs illimités', 'Support prioritaire'] },
+    ];
+
+    const tiers = baseTiers.map((t) => {
+      const amount = t.price === 0 ? 0 : (annuel ? t.price * 10 : t.price);
+      const pop = t.popular;
+      return {
+        ...t,
+        display: t.price === 0 ? '0' : this.fmt(amount),
+        period: t.price === 0 ? 'Pour toujours' : (annuel ? '/an · 2 mois offerts' : '/mois'),
+        cardBg: pop ? 'linear-gradient(165deg, rgba(22,163,74,.18), rgba(16,22,19,.85))' : 'rgba(16,22,19,.55)',
+        cardBorder: pop ? 'rgba(34,197,94,.45)' : 'rgba(255,255,255,.08)',
+        btnBg: pop ? '#16a34a' : 'rgba(255,255,255,.06)',
+        btnColor: pop ? '#ffffff' : '#eaf1ed',
+        btnBorder: pop ? '#16a34a' : 'rgba(255,255,255,.14)',
+      };
+    });
+
+    const on = this.state.billing;
+    const segActive = { bg: '#16a34a', color: '#ffffff' };
+    const segIdle = { bg: 'transparent', color: '#9fb0a8' };
+
+    return {
+      bars: [{ h: '40%' }, { h: '65%' }, { h: '50%' }, { h: '80%' }, { h: '60%' }, { h: '92%' }, { h: '74%' }],
+      paiements: [
+        { name: 'Wave', color: '#1a8cff' },
+        { name: 'Orange Money', color: '#ff7900' },
+        { name: 'PayDunya', color: '#22c55e' },
+        { name: 'Visa', color: '#1a1f71' },
+        { name: 'Mastercard', color: '#eb001b' },
+      ],
+      posItems: [
+        { name: 'Coca 33cl', price: '500' }, { name: 'Eau 1.5L', price: '400' }, { name: 'Riz 5kg', price: '4 500' },
+        { name: 'Huile 1L', price: '1 800' }, { name: 'Lait 400g', price: '2 500' }, { name: 'Savon', price: '700' },
+      ],
+      storefront: [
+        { price: '500' }, { price: '4 500' }, { price: '1 800' }, { price: '2 500' }, { price: '700' }, { price: '1 200' },
+      ],
+      extras: [
+        { icon: 'scan-barcode', name: 'Scanner code-barres' },
+        { icon: 'bell', name: 'Notifications push' },
+        { icon: 'wifi-off', name: 'Mode hors-ligne (PWA)' },
+        { icon: 'building-2', name: 'Multi-boutique' },
+        { icon: 'users', name: 'Gestion d\u2019équipe' },
+        { icon: 'life-buoy', name: 'Support 7j/7' },
+      ],
+      metiers: [
+        { icon: 'store', name: 'Boutique' },
+        { icon: 'utensils-crossed', name: 'Restaurant' },
+        { icon: 'scissors', name: 'Salon' },
+        { icon: 'pill', name: 'Pharmacie' },
+        { icon: 'wrench', name: 'Garage' },
+        { icon: 'hard-hat', name: 'BTP' },
+        { icon: 'hand-coins', name: 'Tontine' },
+        { icon: 'building-2', name: 'Immobilier' },
+        { icon: 'warehouse', name: 'Grossiste' },
+        { icon: 'shirt', name: 'Pressing' },
+      ],
+      tiers,
+      mensuelBg: on === 'mensuel' ? segActive.bg : segIdle.bg,
+      mensuelColor: on === 'mensuel' ? segActive.color : segIdle.color,
+      annuelBg: on === 'annuel' ? segActive.bg : segIdle.bg,
+      annuelColor: on === 'annuel' ? segActive.color : segIdle.color,
+      setMensuel: () => this.setState({ billing: 'mensuel' }),
+      setAnnuel: () => this.setState({ billing: 'annuel' }),
+      temoignages: [
+        { initial: 'F', name: 'Fatou Ndiaye', role: 'Boutique · Dakar', stars: [1,1,1,1,1],
+          quote: 'Avant je notais tout sur un cahier. Maintenant je vois mes ventes en direct et mes clients reçoivent leur reçu sur WhatsApp.' },
+        { initial: 'I', name: 'Ibrahima Sow', role: 'Restaurant · Thiès', stars: [1,1,1,1,1],
+          quote: 'Wave et Orange Money intégrés à la caisse, sans commission. Ça change tout pour mon chiffre d\u2019affaires.' },
+        { initial: 'A', name: 'Awa Diallo', role: 'Pharmacie · Saint-Louis', stars: [1,1,1,1,1],
+          quote: 'La gestion de stock m\u2019alerte avant la rupture. Je ne perds plus de ventes faute de produits.' },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

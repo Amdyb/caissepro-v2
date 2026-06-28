@@ -12,6 +12,7 @@
 
 /* Smooth dark mode transitions */
 html {
+  scroll-behavior: smooth;
   transition: background-color 0.35s ease, color 0.35s ease;
 }
 
@@ -86,6 +87,28 @@ aside, header, footer, nav, section,
   box-shadow: 0 0 80px rgba(16, 163, 74, 0.25), 0 0 160px rgba(16, 163, 74, 0.1);
 }
 
+/* ── Scroll-reveal (landing page) ── */
+@keyframes reveal-up {
+  from { opacity: 0; transform: translateY(26px); }
+  to   { opacity: 1; transform: none; }
+}
+.reveal { opacity: 0; will-change: opacity, transform; }
+.reveal.is-visible { animation: reveal-up 0.65s cubic-bezier(0.16, 1, 0.3, 1) both; }
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1 !important; }
+  .reveal.is-visible { animation: none !important; }
+}
+
+/* Soft float for hero device mockups */
+@keyframes soft-float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-10px); }
+}
+.animate-soft-float { animation: soft-float 6s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .animate-soft-float { animation: none; }
+}
+
 /* ── Hide scrollbar but keep horizontal touch-scroll (storefront category rows) ── */
 .scrollbar-hide {
   -ms-overflow-style: none; /* IE / old Edge */
@@ -93,4 +116,35 @@ aside, header, footer, nav, section,
 }
 .scrollbar-hide::-webkit-scrollbar {
   display: none; /* Chrome / Safari / WebKit */
+}
+
+/* ── Landing page (visual-first redesign) device + glow animations ── */
+@keyframes floaty {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-14px); }
+}
+@keyframes floaty2 {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(10px); }
+}
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.55; }
+  50%      { opacity: 0.9; }
+}
+@keyframes bar-rise {
+  from { transform: scaleY(0.2); }
+  to   { transform: scaleY(1); }
+}
+.animate-floaty       { animation: floaty 7s ease-in-out infinite; }
+.animate-floaty-slow  { animation: floaty 8s ease-in-out infinite; }
+.animate-floaty2      { animation: floaty2 6s ease-in-out infinite; }
+.animate-floaty2-slow { animation: floaty2 7.5s ease-in-out infinite; }
+.animate-pulse-glow   { animation: pulse-glow 5s ease-in-out infinite; }
+.animate-pulse-glow-slow { animation: pulse-glow 6s ease-in-out infinite; }
+.animate-bar-rise     { transform-origin: bottom; animation: bar-rise 0.6s ease both; }
+@media (prefers-reduced-motion: reduce) {
+  .animate-floaty, .animate-floaty-slow,
+  .animate-floaty2, .animate-floaty2-slow,
+  .animate-pulse-glow, .animate-pulse-glow-slow,
+  .animate-bar-rise { animation: none; }
 }
