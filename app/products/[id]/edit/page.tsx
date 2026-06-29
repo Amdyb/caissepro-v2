@@ -3,7 +3,7 @@
 import ProductImageUploader from '@/components/ProductImageUploader'
 import AppShell from '@/components/AppShell'
 import { supabase } from '@/lib/supabaseClient'
-import { PRODUCT_READ_ONLY_ROLES, READ_ONLY_MESSAGE } from '@/lib/permissions'
+import { isProductReadOnly, READ_ONLY_MESSAGE } from '@/lib/permissions'
 import { Save, Tags } from 'lucide-react'
 import { useParams, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
@@ -43,7 +43,7 @@ export default function EditProductPage() {
         .limit(1)
         .maybeSingle()
 
-      if (PRODUCT_READ_ONLY_ROLES.includes(membership?.role ?? '')) {
+      if (isProductReadOnly(membership?.role)) {
         try { sessionStorage.setItem('products_flash', READ_ONLY_MESSAGE) } catch {}
         router.replace('/products')
         return

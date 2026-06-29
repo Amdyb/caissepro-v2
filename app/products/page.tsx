@@ -9,7 +9,7 @@ import { Edit, Eye, FileSpreadsheet, PackagePlus, Plus, RefreshCw, ScanLine, Sea
 import { supabase } from '@/lib/supabaseClient'
 import { useBusinessData } from '@/lib/hooks/useBusinessData'
 import { useProducts } from '@/lib/hooks/useProducts'
-import { PRODUCT_READ_ONLY_ROLES } from '@/lib/permissions'
+import { isProductReadOnly } from '@/lib/permissions'
 
 const BarcodeScanner = dynamic(() => import('@/components/BarcodeScanner'), { ssr: false })
 // Lazy-loaded: pulls in the heavy xlsx parser only when the importer is opened.
@@ -189,7 +189,7 @@ export default function ProductsPage() {
     document.body.removeChild(link)
   }
 
-  const isReadOnly = PRODUCT_READ_ONLY_ROLES.includes(userRole)
+  const isReadOnly = isProductReadOnly(userRole, businessId)
 
   if (loading) return <main className="flex min-h-screen items-center justify-center bg-slate-50"><p className="font-bold text-slate-700">Chargement...</p></main>
 

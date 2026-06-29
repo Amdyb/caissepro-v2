@@ -373,8 +373,9 @@ export default function EmployeesPage() {
 
   const activeMembers = members.filter(m => m.is_active !== false)
   const inactiveMembers = members.filter(m => m.is_active === false)
-  // Only owners/admins manage the team. Managers & staff are view-only.
-  const canManage = canManageEmployees(currentRole)
+  // Owners/admins always manage the team. Managers manage it too, except on
+  // narrowed businesses (Dakar Vapes) where they are view-only. Staff view-only.
+  const canManage = canManageEmployees(currentRole, businessId)
 
   if (loading) {
     return (

@@ -10,6 +10,7 @@ import SoundManager from '@/components/SoundManager'
 import { supabase } from '@/lib/supabaseClient'
 import { useBusinessData } from '@/lib/hooks/useBusinessData'
 import { usePlatformSettings } from '@/lib/usePlatformSettings'
+import { DAKAR_VAPES_BUSINESS_ID } from '@/lib/permissions'
 import { mutate as globalMutate } from 'swr'
 import {
   AlertTriangle,
@@ -446,8 +447,9 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
         pathname === '/products' ||
         STAFF_ALLOWED_PATHS.some((p) => pathname === p || pathname.startsWith(p + '/'))
       if (!allowed) router.replace('/pos')
-    } else if (userRole === 'manager') {
-      // Products are view-only: block the create/edit routes with a read-only notice.
+    } else if (userRole === 'manager' && businessId === DAKAR_VAPES_BUSINESS_ID) {
+      // Dakar Vapes Manager: NARROWED. Products are view-only: block the
+      // create/edit routes with a read-only notice.
       const blockedProductRoute =
         pathname === '/products/new' ||
         pathname.startsWith('/products/new') ||
@@ -468,7 +470,7 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
       if (!allowed) router.replace('/dashboard')
     }
     // owner has unrestricted access
-  }, [loading, userRole, pathname, router])
+  }, [loading, userRole, businessId, pathname, router])
 
   // Restore the expanded/collapsed menu preference.
   useEffect(() => {
@@ -524,13 +526,15 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
   const isStaff = STAFF_ROLES.includes(userRole)
   const isManager = MANAGER_ROLES.includes(userRole)
   const isOwner = userRole === 'owner'
-  const isManagerOnly = userRole === 'manager'
+  // Dakar Vapes uses the NARROWED Manager sidebar; managers on every other
+  // business get the broad sidebar (full menu minus the Zone de Sécurité).
+  const isDakarVapesManager = userRole === 'manager' && businessId === DAKAR_VAPES_BUSINESS_ID
   const isEmployee = isStaff || isManager
   const baseSections = isStaff
     ? [STAFF_SECTION, STAFF_PROFILE_SECTION]
     : isOwner
     ? getNavSections(businessType)
-    : isManagerOnly
+    : isDakarVapesManager
     ? MANAGER_SECTIONS
     : isManager
     ? getNavSections(businessType).filter(s => s.key !== 'avances')
