@@ -10,9 +10,17 @@
 //   • Default (all businesses): broad Manager — full Produits, Catégories,
 //     Fournisseurs, Clients, Dépenses, Rapports, Boutique, Employés. Everything
 //     EXCEPT the Zone de Sécurité.
-//   • Dakar Vapes ONLY: narrowed Manager — Produits & Stock VIEW ONLY, Employés
-//     view only, no Catégories/Fournisseurs, no employee management. Keeps Vendre,
-//     Remboursements, Caisse, Clients, Dépenses, Rapports (view), Boutique (manage).
+//   • Dakar Vapes ONLY: tightly LOCKED Manager — exactly Vendre, Remboursements,
+//     Caisse du jour, Dépenses, Produits (view + stock only), Rapports (view),
+//     Commandes en ligne (full), Ma Boutique (view + share only), Profil, Aide.
+//     Nothing else: no Catégories/Fournisseurs/Clients/Employés/Historique/
+//     Finances/Client Doit/Coach/advanced settings.
+// Per-business Vendeur / Caissier role:
+//   • Default (all businesses): POS-focused staff — Vendre, Produits (view),
+//     Caisse du jour, Dépenses.
+//   • Dakar Vapes ONLY: locked Vendeur — exactly Vendre, Dépenses, Produits
+//     (view), Commandes en ligne (full), Ma Boutique (view + share), Profil,
+//     Aide. No Remboursement, no Caisse du jour, no Rapport.
 // The active business is the one selected in localStorage (multi-boutique).
 
 // 'proprietaire' is the French role stored for owners in business_members and is
@@ -80,6 +88,16 @@ export function canManageProducts(role?: string | null, businessId?: string | nu
 // True when the role can add/edit/deactivate employees. Owners always can; Managers
 // can on every business EXCEPT the narrowed ones (Dakar Vapes).
 export function canManageEmployees(role?: string | null, businessId?: string | null): boolean {
+  if (!role) return false
+  if (OWNER_ROLES.includes(role)) return true
+  if (role === 'manager') return !isManagerNarrowed(businessId)
+  return false
+}
+
+// True when the role may CUSTOMIZE the storefront (theme/logo/colors) and edit
+// payment settings — vs. just VIEW + SHARE it. Owners always can; broad Managers
+// can; Dakar Vapes Manager & Vendeur and all staff get view + share only.
+export function canCustomizeStorefront(role?: string | null, businessId?: string | null): boolean {
   if (!role) return false
   if (OWNER_ROLES.includes(role)) return true
   if (role === 'manager') return !isManagerNarrowed(businessId)

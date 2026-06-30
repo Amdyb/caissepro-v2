@@ -35,7 +35,6 @@ import {
   Receipt,
   ReceiptText,
   RotateCcw,
-  Settings,
   Share2,
   Sparkles,
   ShoppingBag,
@@ -81,9 +80,10 @@ const PLAN_LEVELS: Record<string, number> = { free: 0, starter: 1, business: 2, 
 // the role's actual items, so staff/managers only get the ones they can reach.
 const ESSENTIAL_HREFS = ['/pos', '/products', '/register-shifts', '/storefront']
 
-// Includes both the French ('caissier') and English ('cashier') cashier values
-// so the POS-focused staff nav + route guard apply regardless of which was stored.
-const STAFF_ROLES = ['sales', 'staff', 'employee', 'cashier', 'caissier']
+// Includes the French ('caissier'/'vendeur') and English ('cashier'/'sales')
+// staff values so the POS-focused nav + route guard apply regardless of which
+// was stored.
+const STAFF_ROLES = ['sales', 'staff', 'employee', 'cashier', 'caissier', 'vendeur']
 const MANAGER_ROLES = ['manager', 'admin', 'owner']
 
 const STAFF_ALLOWED_PATHS = [
@@ -105,18 +105,30 @@ const MANAGER_ALLOWED_PATHS = [
   '/upgrade', '/pricing',
 ]
 
-// Narrowed list for the pure "manager" role (admins keep MANAGER_ALLOWED_PATHS).
-// No /categories, /suppliers, /coach, /conseiller, /backup. Product create/edit
-// routes are blocked separately (view-only) even though /products is allowed.
-const MANAGER_ONLY_ALLOWED_PATHS = [
+// Dakar Vapes MANAGER — LOCKED to exactly: Vendre, Remboursements, Caisse du
+// jour, Dépenses, Produits (view), Rapports (view), Commandes en ligne (full),
+// Ma Boutique (view + share), Profil, Aide. Product create/edit and storefront
+// customize/payment routes are blocked separately even though /products and
+// /storefront are listed. No /sales (historique), /customers, /employees,
+// /finances, /categories, /suppliers, /settings, /payment-methods, /coach, etc.
+const DV_MANAGER_ALLOWED_PATHS = [
   '/dashboard', '/pos', '/checkout',
-  '/products', '/sales', '/refunds', '/register-shifts',
-  '/customers', '/debts', '/expenses',
-  '/reports', '/finances',
-  '/storefront', '/orders', '/payment-links',
-  '/employees',
-  '/profile', '/change-password', '/settings', '/payment-methods',
-  '/help', '/feedback', '/legal', '/language',
+  '/refunds', '/register-shifts', '/expenses',
+  '/products', '/reports', '/orders', '/storefront',
+  '/profile', '/change-password',
+  '/help', '/legal', '/language',
+  '/upgrade', '/pricing',
+]
+
+// Dakar Vapes VENDEUR / CAISSIER — LOCKED to exactly: Vendre, Dépenses, Produits
+// (view), Commandes en ligne (full), Ma Boutique (view + share), Profil, Aide.
+// No /refunds, no /register-shifts (caisse), no /reports — on top of everything
+// the manager is blocked from.
+const DV_VENDEUR_ALLOWED_PATHS = [
+  '/pos', '/checkout', '/expenses',
+  '/products', '/orders', '/storefront',
+  '/profile', '/change-password',
+  '/help', '/legal', '/language',
   '/upgrade', '/pricing',
 ]
 
@@ -163,40 +175,34 @@ const MANAGER_BOTTOM_NAV = [
   { label: 'Rapports', href: '/reports', icon: TrendingUp },
 ]
 
-const MANAGER_CAISSE_SECTION: SectionConfig = {
-  key: 'manager-caisse',
-  title: 'CAISSE',
-  borderColor: 'border-emerald-500',
-  bgColor: 'bg-emerald-50 dark:bg-emerald-900/30',
-  textColor: 'text-emerald-700 dark:text-emerald-400',
-  headerColor: 'text-emerald-600 dark:text-emerald-400',
-  defaultOpen: true,
-  items: [
-    { label: 'Vendre', href: '/pos', icon: ShoppingCart },
-    { label: 'Historique des ventes', href: '/sales', icon: ReceiptText },
-    { label: 'Remboursements', href: '/refunds', icon: RotateCcw },
-    { label: 'Caisse du jour', href: '/register-shifts', icon: Wallet },
-  ],
-}
+// Dakar Vapes vendeur/caissier mobile nav — no Caisse du jour (not allowed);
+// Commandes en ligne instead.
+const DV_VENDEUR_BOTTOM_NAV = [
+  { label: 'Vendre', href: '/pos', icon: ShoppingCart },
+  { label: 'Produits', href: '/products', icon: Package },
+  { label: 'Commandes', href: '/orders', icon: ShoppingBag },
+  { label: 'Profil', href: '/profile', icon: User },
+]
 
-const MANAGER_GESTION_SECTION: SectionConfig = {
-  key: 'manager-gestion',
-  title: 'GESTION',
+// ── Dakar Vapes locked sidebars ─────────────────────────────────────────────
+// Shared building blocks used by both the Dakar Vapes Manager and Vendeur.
+const DV_PRODUITS_SECTION: SectionConfig = {
+  key: 'dv-produits',
+  title: 'PRODUITS',
   borderColor: 'border-violet-500',
   bgColor: 'bg-violet-50 dark:bg-violet-900/30',
   textColor: 'text-violet-700 dark:text-violet-400',
   headerColor: 'text-violet-600 dark:text-violet-400',
   defaultOpen: false,
   items: [
+    // View products + stock only — add/edit/delete buttons hidden via readOnly.
     { label: 'Produits', href: '/products', icon: Package, readOnly: true },
-    { label: 'Clients', href: '/customers', icon: Users },
-    { label: 'Depenses', href: '/expenses', icon: Receipt },
-    { label: 'Employés', href: '/employees', icon: UserCog, readOnly: true },
   ],
 }
 
-const MANAGER_BOUTIQUE_SECTION: SectionConfig = {
-  key: 'manager-boutique',
+// Ma Boutique = VIEW + SHARE only. No Personnaliser, no Paramètres paiement.
+const DV_BOUTIQUE_SECTION: SectionConfig = {
+  key: 'dv-boutique',
   title: 'BOUTIQUE EN LIGNE',
   borderColor: 'border-orange-500',
   bgColor: 'bg-orange-50 dark:bg-orange-900/30',
@@ -204,28 +210,14 @@ const MANAGER_BOUTIQUE_SECTION: SectionConfig = {
   headerColor: 'text-orange-600 dark:text-orange-400',
   defaultOpen: false,
   items: [
-    { label: 'Ma boutique', href: '/storefront', icon: Globe },
     { label: 'Commandes en ligne', href: '/orders', icon: ShoppingBag },
-    { label: 'QR Code boutique', href: '/storefront/qr', icon: QrCode },
+    { label: 'Ma boutique', href: '/storefront', icon: Globe },
+    { label: 'Partager boutique', href: '/storefront/share', icon: Share2 },
   ],
 }
 
-const MANAGER_RAPPORTS_SECTION: SectionConfig = {
-  key: 'manager-rapports',
-  title: 'RAPPORTS',
-  borderColor: 'border-teal-500',
-  bgColor: 'bg-teal-50 dark:bg-teal-900/30',
-  textColor: 'text-teal-700 dark:text-teal-400',
-  headerColor: 'text-teal-600 dark:text-teal-400',
-  defaultOpen: false,
-  items: [
-    { label: 'Rapports', href: '/reports', icon: TrendingUp },
-    { label: 'Finances', href: '/finances', icon: DollarSign },
-  ],
-}
-
-const MANAGER_PROFILE_SECTION: SectionConfig = {
-  key: 'manager-profil',
+const DV_PROFILE_SECTION: SectionConfig = {
+  key: 'dv-profil',
   title: 'MON COMPTE',
   borderColor: 'border-slate-300',
   bgColor: 'bg-slate-100 dark:bg-slate-700',
@@ -234,27 +226,79 @@ const MANAGER_PROFILE_SECTION: SectionConfig = {
   defaultOpen: false,
   items: [
     { label: 'Mon profil', href: '/profile', icon: User },
-    { label: 'Parametres', href: '/settings', icon: Settings },
-    { label: 'Modes de paiement', href: '/payment-methods', icon: CreditCard },
     { label: 'Aide', href: '/help', icon: HelpCircle },
   ],
 }
 
-// The exact, narrowed Manager sidebar: Vendre, Historique, Remboursements,
-// Caisse du jour, Produits (view), Clients, Dépenses, Employés (view), Boutique
-// en ligne, Rapports — and the account section. No Catégories, Fournisseurs,
-// Conseiller, Coach, or Zone de Sécurité.
-const MANAGER_SECTIONS: SectionConfig[] = [
-  MANAGER_CAISSE_SECTION,
-  MANAGER_GESTION_SECTION,
-  MANAGER_BOUTIQUE_SECTION,
-  MANAGER_RAPPORTS_SECTION,
-  MANAGER_PROFILE_SECTION,
+// Dakar Vapes MANAGER — exactly: Vendre, Remboursements, Caisse du jour,
+// Dépenses, Produits (view), Commandes en ligne, Ma boutique (view+share),
+// Rapports (view), Profil, Aide. Nothing else.
+const DV_MANAGER_CAISSE_SECTION: SectionConfig = {
+  key: 'dv-manager-caisse',
+  title: 'CAISSE',
+  borderColor: 'border-emerald-500',
+  bgColor: 'bg-emerald-50 dark:bg-emerald-900/30',
+  textColor: 'text-emerald-700 dark:text-emerald-400',
+  headerColor: 'text-emerald-600 dark:text-emerald-400',
+  defaultOpen: true,
+  items: [
+    { label: 'Vendre', href: '/pos', icon: ShoppingCart },
+    { label: 'Remboursements', href: '/refunds', icon: RotateCcw },
+    { label: 'Caisse du jour', href: '/register-shifts', icon: Wallet },
+    { label: 'Dépenses', href: '/expenses', icon: Receipt },
+  ],
+}
+
+const DV_MANAGER_RAPPORTS_SECTION: SectionConfig = {
+  key: 'dv-manager-rapports',
+  title: 'RAPPORTS',
+  borderColor: 'border-teal-500',
+  bgColor: 'bg-teal-50 dark:bg-teal-900/30',
+  textColor: 'text-teal-700 dark:text-teal-400',
+  headerColor: 'text-teal-600 dark:text-teal-400',
+  defaultOpen: false,
+  items: [
+    { label: 'Rapports', href: '/reports', icon: TrendingUp },
+  ],
+}
+
+const DV_MANAGER_SECTIONS: SectionConfig[] = [
+  DV_MANAGER_CAISSE_SECTION,
+  DV_PRODUITS_SECTION,
+  DV_BOUTIQUE_SECTION,
+  DV_MANAGER_RAPPORTS_SECTION,
+  DV_PROFILE_SECTION,
+]
+
+// Dakar Vapes VENDEUR / CAISSIER — exactly: Vendre, Dépenses, Produits (view),
+// Commandes en ligne, Ma boutique (view+share), Profil, Aide. No Remboursement,
+// no Caisse du jour, no Rapport.
+const DV_VENDEUR_CAISSE_SECTION: SectionConfig = {
+  key: 'dv-vendeur-caisse',
+  title: 'CAISSE',
+  borderColor: 'border-emerald-500',
+  bgColor: 'bg-emerald-50 dark:bg-emerald-900/30',
+  textColor: 'text-emerald-700 dark:text-emerald-400',
+  headerColor: 'text-emerald-600 dark:text-emerald-400',
+  defaultOpen: true,
+  items: [
+    { label: 'Vendre', href: '/pos', icon: ShoppingCart },
+    { label: 'Dépenses', href: '/expenses', icon: Receipt },
+  ],
+}
+
+const DV_VENDEUR_SECTIONS: SectionConfig[] = [
+  DV_VENDEUR_CAISSE_SECTION,
+  DV_PRODUITS_SECTION,
+  DV_BOUTIQUE_SECTION,
+  DV_PROFILE_SECTION,
 ]
 
 const ROLE_LABELS: Record<string, string> = {
   sales: 'Vendeur',
+  vendeur: 'Vendeur',
   cashier: 'Caissier',
+  caissier: 'Caissier',
   staff: 'Employé',
   employee: 'Employé',
   manager: 'Manager',
@@ -439,30 +483,49 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
     return () => window.removeEventListener('business-type-changed', onBusinessTypeChanged)
   }, [])
 
-  // Block staff from restricted pages
+  // Block staff/managers from restricted pages
   useEffect(() => {
     if (loading) return
-    if (STAFF_ROLES.includes(userRole)) {
-      const allowed =
-        pathname === '/products' ||
-        STAFF_ALLOWED_PATHS.some((p) => pathname === p || pathname.startsWith(p + '/'))
-      if (!allowed) router.replace('/pos')
-    } else if (userRole === 'manager' && businessId === DAKAR_VAPES_BUSINESS_ID) {
-      // Dakar Vapes Manager: NARROWED. Products are view-only: block the
-      // create/edit routes with a read-only notice.
-      const blockedProductRoute =
-        pathname === '/products/new' ||
-        pathname.startsWith('/products/new') ||
-        /^\/products\/[^/]+\/edit/.test(pathname)
+
+    const isDakarVapes = businessId === DAKAR_VAPES_BUSINESS_ID
+
+    // Product create/edit/delete routes — view-only roles get bounced back to the
+    // catalogue with a read-only notice (Dakar Vapes manager + all DV staff).
+    const blockedProductRoute =
+      pathname === '/products/new' ||
+      pathname.startsWith('/products/new') ||
+      /^\/products\/[^/]+\/edit/.test(pathname)
+    // Storefront customize + payment settings — Ma Boutique is view + share only.
+    const blockedStorefrontRoute =
+      pathname.startsWith('/storefront/customize') ||
+      pathname.startsWith('/storefront/payments')
+
+    if (isDakarVapes && (STAFF_ROLES.includes(userRole) || userRole === 'manager')) {
+      // Dakar Vapes LOCKED roles: manager and vendeur/caissier.
+      const home = userRole === 'manager' ? '/dashboard' : '/pos'
       if (blockedProductRoute) {
         try { sessionStorage.setItem('products_flash', 'Accès en lecture seule') } catch {}
         router.replace('/products')
         return
       }
-      const allowed = MANAGER_ONLY_ALLOWED_PATHS.some(
-        (p) => pathname === p || pathname.startsWith(p + '/')
-      )
-      if (!allowed) router.replace('/dashboard')
+      if (blockedStorefrontRoute) {
+        // Bounce back to the storefront landing (view + share only). No flash —
+        // /storefront does not surface access_flash, avoiding a stale message.
+        router.replace('/storefront')
+        return
+      }
+      const allowedPaths =
+        userRole === 'manager' ? DV_MANAGER_ALLOWED_PATHS : DV_VENDEUR_ALLOWED_PATHS
+      const allowed = allowedPaths.some((p) => pathname === p || pathname.startsWith(p + '/'))
+      if (!allowed) {
+        try { sessionStorage.setItem('access_flash', 'Accès non autorisé') } catch {}
+        router.replace(home)
+      }
+    } else if (STAFF_ROLES.includes(userRole)) {
+      const allowed =
+        pathname === '/products' ||
+        STAFF_ALLOWED_PATHS.some((p) => pathname === p || pathname.startsWith(p + '/'))
+      if (!allowed) router.replace('/pos')
     } else if (MANAGER_ROLES.includes(userRole) && userRole !== 'owner') {
       const allowed = MANAGER_ALLOWED_PATHS.some(
         (p) => pathname === p || pathname.startsWith(p + '/')
@@ -526,16 +589,20 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
   const isStaff = STAFF_ROLES.includes(userRole)
   const isManager = MANAGER_ROLES.includes(userRole)
   const isOwner = userRole === 'owner'
-  // Dakar Vapes uses the NARROWED Manager sidebar; managers on every other
-  // business get the broad sidebar (full menu minus the Zone de Sécurité).
-  const isDakarVapesManager = userRole === 'manager' && businessId === DAKAR_VAPES_BUSINESS_ID
+  const isDakarVapes = businessId === DAKAR_VAPES_BUSINESS_ID
+  // Dakar Vapes uses tightly LOCKED sidebars for both manager and vendeur; every
+  // other business keeps the broad role-based sidebars.
+  const isDakarVapesManager = userRole === 'manager' && isDakarVapes
+  const isDakarVapesStaff = isStaff && isDakarVapes
   const isEmployee = isStaff || isManager
-  const baseSections = isStaff
+  const baseSections = isDakarVapesStaff
+    ? DV_VENDEUR_SECTIONS
+    : isStaff
     ? [STAFF_SECTION, STAFF_PROFILE_SECTION]
     : isOwner
     ? getNavSections(businessType)
     : isDakarVapesManager
-    ? MANAGER_SECTIONS
+    ? DV_MANAGER_SECTIONS
     : isManager
     ? getNavSections(businessType).filter(s => s.key !== 'avances')
     : getNavSections(businessType)
@@ -863,7 +930,7 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
       {/* Fixed bottom nav (mobile only) */}
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800 lg:hidden">
         <div className="grid grid-cols-5">
-          {(isStaff ? STAFF_BOTTOM_NAV : (isManager && !isOwner) ? MANAGER_BOTTOM_NAV : BOTTOM_NAV).map((item) => {
+          {(isDakarVapesStaff ? DV_VENDEUR_BOTTOM_NAV : isStaff ? STAFF_BOTTOM_NAV : (isManager && !isOwner) ? MANAGER_BOTTOM_NAV : BOTTOM_NAV).map((item) => {
             const Icon = item.icon
             const active = pathname === item.href
             return (

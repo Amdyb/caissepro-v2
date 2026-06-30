@@ -166,6 +166,14 @@ export default function DashboardPage() {
     return () => { active = false }
   }, [])
 
+  // Show "Accès non autorisé" after a role-blocked route guard redirects here.
+  useEffect(() => {
+    try {
+      const flash = sessionStorage.getItem('access_flash')
+      if (flash) { setMessage(flash); sessionStorage.removeItem('access_flash') }
+    } catch {}
+  }, [])
+
   useEffect(() => {
     // Prefetch frequently-visited pages
     const prefetchLinks = ['/pos', '/products', '/sales']

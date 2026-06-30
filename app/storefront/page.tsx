@@ -3,6 +3,8 @@
 import AppShell from '@/components/AppShell'
 import ShopSwitcher from '@/components/ShopSwitcher'
 import { supabase } from '@/lib/supabaseClient'
+import { useBusinessData } from '@/lib/hooks/useBusinessData'
+import { canCustomizeStorefront } from '@/lib/permissions'
 import { resolveSelectedBusiness, setSelectedBusinessId, slugify, ShopOption } from '@/lib/storefront'
 import {
   ChevronRight,
@@ -23,6 +25,10 @@ export default function StorefrontPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [biz, setBiz] = useState<SelectedBiz | null>(null)
   const [loading, setLoading] = useState(true)
+  const { role, businessId } = useBusinessData()
+  // View + share only roles (Dakar Vapes manager/vendeur, staff) can't edit.
+  // Pair role with its own business id so the lock matches the active membership.
+  const canCustomize = canCustomizeStorefront(role, businessId)
 
   // Loads the selected shop's slug, generating one if it is still missing.
   async function loadBusiness(id: string) {
@@ -79,14 +85,17 @@ export default function StorefrontPage() {
       external: true,
       accent: 'text-emerald-600 bg-emerald-50',
     },
-    {
-      title: 'Personnaliser',
-      desc: 'Logo, bannière, couleurs et thème de cette boutique.',
-      icon: Palette,
-      href: '/storefront/customize',
-      external: false,
-      accent: 'text-violet-600 bg-violet-50',
-    },
+    // Personnaliser — edit-only, hidden for view + share roles.
+    ...(canCustomize
+      ? [{
+          title: 'Personnaliser',
+          desc: 'Logo, bannière, couleurs et thème de cette boutique.',
+          icon: Palette,
+          href: '/storefront/customize',
+          external: false,
+          accent: 'text-violet-600 bg-violet-50',
+        }]
+      : []),
     {
       title: 'Partager',
       desc: 'QR code, partage WhatsApp et lien à copier.',
@@ -103,14 +112,17 @@ export default function StorefrontPage() {
       external: false,
       accent: 'text-orange-600 bg-orange-50',
     },
-    {
-      title: 'Paramètres paiement',
-      desc: 'Numéros Wave et Orange Money de cette boutique.',
-      icon: CreditCard,
-      href: '/storefront/payments',
-      external: false,
-      accent: 'text-rose-600 bg-rose-50',
-    },
+    // Paramètres paiement — edit-only, hidden for view + share roles.
+    ...(canCustomize
+      ? [{
+          title: 'Paramètres paiement',
+          desc: 'Numéros Wave et Orange Money de cette boutique.',
+          icon: CreditCard,
+          href: '/storefront/payments',
+          external: false,
+          accent: 'text-rose-600 bg-rose-50',
+        }]
+      : []),
   ]
 
   return (
