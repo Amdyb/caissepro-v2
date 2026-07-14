@@ -1,6 +1,7 @@
 'use client'
 
 import AppShell from '@/components/AppShell'
+import CategoryPicker from '@/components/CategoryPicker'
 import { PlanName, getNumericLimit } from '@/lib/plans'
 import { supabase } from '@/lib/supabaseClient'
 import { uploadImage, validateImageFile, getSelectedBusinessId } from '@/lib/uploadImage'
@@ -173,7 +174,7 @@ export default function NewProductPage() {
             <input required placeholder="Nom produit" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full rounded-2xl border border-slate-300 px-5 py-4 font-bold outline-none" />
 
             <div className="grid gap-5 md:grid-cols-2">
-              <input placeholder="Catégorie" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="rounded-2xl border border-slate-300 px-5 py-4 font-bold outline-none" />
+              <CategoryPicker businessId={businessId} value={form.category} onChange={(name) => setForm({ ...form, category: name })} />
               <div className="flex gap-2">
                 <input placeholder="Code-barres" value={form.barcode} onChange={(e) => setForm({ ...form, barcode: e.target.value })} className="flex-1 rounded-2xl border border-slate-300 px-5 py-4 font-bold outline-none" />
                 <button type="button" onClick={() => setShowScanner(true)} className="flex items-center gap-1 rounded-2xl border border-slate-200 bg-slate-50 px-4 font-black text-slate-600 hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-700" title="Scanner un code-barres">

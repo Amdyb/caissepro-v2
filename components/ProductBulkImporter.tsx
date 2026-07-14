@@ -25,17 +25,52 @@ export default function ProductBulkImporter({ businessId, onImported }: { busine
     setLoading(true)
     setMessage('')
 
-    const payload = rows.map((row) => ({
-      business_id: businessId,
-      name: row.name || row.nom || row.produit || 'Produit',
-      category: row.category || row.categorie || null,
-      barcode: row.barcode || row.codebarre || row.code_barre || null,
-      cost_price: Number(row.cost_price || row.cout || row.prix_achat || 0),
-      sell_price: Number(row.sell_price || row.price || row.prix || row.prix_vente || 0),
-      minimum_price: Number(row.minimum_price || row.prix_minimum || row.minimum || 0),
-      stock: Number(row.stock || row.quantite || row.quantity || 0),
-      image: row.image || row.image_url || null
-    }))
+    // Load existing categories and build a canonical name lookup
+    // (trimmed, lowercased key → canonical name stored in product_categories).
+    const { data: existingCats } = await supabase
+      .from('product_categories')
+      .select('name')
+      .eq('business_id', businessId)
+    const canonicalMap = new Map<string, string>()
+    for (const c of existingCats || []) {
+      canonicalMap.set(c.name.trim().toLowerCase(), c.name)
+    }
+
+    // Collect unique raw category names from the import that have no match.
+    const rawCategoryNames = Array.from(
+      new Set(
+        rows
+          .map((row) => (row.category || row.categorie || '').toString().trim())
+          .filter(Boolean)
+          .filter((name) => !canonicalMap.has(name.toLowerCase()))
+      )
+    )
+
+    // Create missing categories one by one (small sets in practice).
+    for (const name of rawCategoryNames) {
+      const { data } = await supabase
+        .from('product_categories')
+        .insert({ business_id: businessId, name })
+        .select('name')
+        .single()
+      if (data) canonicalMap.set(name.toLowerCase(), data.name)
+    }
+
+    const payload = rows.map((row) => {
+      const rawCat = (row.category || row.categorie || '').toString().trim()
+      const category = rawCat ? (canonicalMap.get(rawCat.toLowerCase()) ?? rawCat) : null
+      return {
+        business_id: businessId,
+        name: row.name || row.nom || row.produit || 'Produit',
+        category,
+        barcode: row.barcode || row.codebarre || row.code_barre || null,
+        cost_price: Number(row.cost_price || row.cout || row.prix_achat || 0),
+        sell_price: Number(row.sell_price || row.price || row.prix || row.prix_vente || 0),
+        minimum_price: Number(row.minimum_price || row.prix_minimum || row.minimum || 0),
+        stock: Number(row.stock || row.quantite || row.quantity || 0),
+        image: row.image || row.image_url || null,
+      }
+    })
 
     const { error } = await supabase.from('products').insert(payload)
 

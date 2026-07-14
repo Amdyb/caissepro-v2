@@ -28,7 +28,10 @@ export default function CategoriesPage() {
   }, [categories, search])
 
   function productCount(categoryName: string) {
-    return products.filter((product) => product.category === categoryName).length
+    const norm = categoryName.trim().toLowerCase()
+    return products.filter(
+      (product) => (product.category || '').trim().toLowerCase() === norm
+    ).length
   }
 
   useEffect(() => {
@@ -112,11 +115,24 @@ export default function CategoriesPage() {
       return setMessage(categoryError.message)
     }
 
-    const { error: productsError } = await supabase
-      .from('products')
-      .update({ category: newName })
-      .eq('business_id', businessId)
-      .eq('category', oldName)
+    // Collect all drift variants of oldName (case/space differences) that exist
+    // on products, then rename them all in one pass so no products are orphaned.
+    const variantNames = products
+      .filter((p) => (p.category || '').trim().toLowerCase() === oldName.trim().toLowerCase())
+      .map((p) => p.category as string)
+      .filter(Boolean)
+    const uniqueVariants = Array.from(new Set(variantNames))
+
+    const cascadeErrors: string[] = []
+    for (const variant of uniqueVariants) {
+      const { error } = await supabase
+        .from('products')
+        .update({ category: newName })
+        .eq('business_id', businessId)
+        .eq('category', variant)
+      if (error) cascadeErrors.push(error.message)
+    }
+    const productsError = cascadeErrors.length ? { message: cascadeErrors.join('; ') } : null
 
     setSaving(false)
 

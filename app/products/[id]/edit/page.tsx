@@ -1,10 +1,11 @@
 'use client'
 
 import ProductImageUploader from '@/components/ProductImageUploader'
+import CategoryPicker from '@/components/CategoryPicker'
 import AppShell from '@/components/AppShell'
 import { supabase } from '@/lib/supabaseClient'
 import { isProductReadOnly, READ_ONLY_MESSAGE } from '@/lib/permissions'
-import { Save, Tags } from 'lucide-react'
+import { Save } from 'lucide-react'
 import { useParams, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 
@@ -16,7 +17,6 @@ export default function EditProductPage() {
   const productId = String(params.id)
 
   const [businessId, setBusinessId] = useState('')
-  const [categories, setCategories] = useState<string[]>([])
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
   const [success, setSuccess] = useState('')
@@ -79,16 +79,6 @@ export default function EditProductPage() {
         image: product.image || ''
       })
 
-      if (product.business_id) {
-        const { data: categoryData } = await supabase
-          .from('products')
-          .select('category')
-          .eq('business_id', product.business_id)
-          .not('category', 'is', null)
-
-        const unique = Array.from(new Set((categoryData || []).map((item: any) => String(item.category || '').trim()).filter(Boolean))) as string[]
-        setCategories(unique.sort())
-      }
     }
 
     load()
@@ -149,14 +139,12 @@ export default function EditProductPage() {
 
           <ProductImageUploader value={form.image} businessId={businessId} onChange={(url) => setForm({ ...form, image: url })} />
 
-          <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
-            <label className="mb-2 flex items-center gap-2 text-sm font-black text-slate-700"><Tags size={16} /> Catégorie</label>
-            <input list="product-categories" className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 font-semibold outline-none focus:border-emerald-500" placeholder="Ex: Boissons, Vapes, Accessoires..." value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} />
-            <datalist id="product-categories">
-              {categories.map((category) => <option key={category} value={category} />)}
-            </datalist>
-            <p className="mt-2 text-xs font-bold text-slate-500">Tapez une nouvelle catégorie ou choisissez une catégorie existante.</p>
-          </div>
+          <CategoryPicker
+            businessId={businessId || null}
+            value={form.category}
+            onChange={(name) => setForm({ ...form, category: name })}
+            selectClassName="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 font-semibold outline-none focus:border-emerald-500"
+          />
 
           <input className="w-full rounded-2xl border border-slate-300 px-4 py-3 font-semibold outline-none focus:border-emerald-500" placeholder="Code-barres" value={form.barcode} onChange={(e) => setForm({ ...form, barcode: e.target.value })} />
 
