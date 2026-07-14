@@ -258,7 +258,16 @@ export default function CheckoutPage() {
       unit_price: item.price
     }))
 
-    await supabase.from('sale_items').insert(saleItems)
+    const { error: itemError } = await supabase.from('sale_items').insert(saleItems)
+    if (itemError) {
+      console.error('[Checkout] sale_items insert error:', itemError)
+      // Roll back the orphaned sale row so the DB stays consistent.
+      await supabase.from('sales').delete().eq('id', saleData.id)
+      setMessage(`Erreur enregistrement produits: ${itemError.message}`)
+      window.dispatchEvent(new Event('play-error'))
+      setCheckoutLoading(false)
+      return
+    }
 
     for (const item of cart) {
       if (!item.product?.id) continue

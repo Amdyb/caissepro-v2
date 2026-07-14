@@ -289,8 +289,9 @@ export default function POSPage() {
         product_name: item.product.name,
         product_image: item.product.image || null,
         unit_price: item.price,
+        price: item.price,
         quantity: item.quantity,
-        subtotal: item.quantity * item.price,
+        total: item.quantity * item.price,
       }))
 
       const { error: itemError } = await supabase
@@ -299,7 +300,9 @@ export default function POSPage() {
 
       if (itemError) {
         console.error('[POS] sale_items insert error:', itemError)
-        flash(`Erreur lignes vente: ${itemError.message}`)
+        // Roll back the orphaned sale row so the DB stays consistent.
+        await supabase.from('sales').delete().eq('id', saleData.id)
+        throw new Error(`Erreur enregistrement produits: ${itemError.message}`)
       }
 
       const lowStockProducts: string[] = []
@@ -365,7 +368,7 @@ export default function POSPage() {
               product_name: item.product_name || '',
               quantity: item.quantity,
               price: item.unit_price,
-              total: item.subtotal,
+              total: item.total,
             })),
             created_at: new Date().toISOString(),
           },
