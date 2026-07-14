@@ -1,29 +1,5 @@
-import {
-  Building2,
-  HandCoins,
-  HardHat,
-  Pill,
-  Scissors,
-  Shirt,
-  Store,
-  UtensilsCrossed,
-  Warehouse,
-  Wrench,
-} from 'lucide-react'
+import { BUSINESS_TYPE_CONFIGS } from '@/lib/businessTypes'
 import Reveal from '@/components/Reveal'
-
-const METIERS = [
-  { icon: Store, name: 'Boutique' },
-  { icon: UtensilsCrossed, name: 'Restaurant' },
-  { icon: Scissors, name: 'Salon' },
-  { icon: Pill, name: 'Pharmacie' },
-  { icon: Wrench, name: 'Garage' },
-  { icon: HardHat, name: 'BTP' },
-  { icon: HandCoins, name: 'Tontine' },
-  { icon: Building2, name: 'Immobilier' },
-  { icon: Warehouse, name: 'Grossiste' },
-  { icon: Shirt, name: 'Pressing' },
-]
 
 export default function Metiers() {
   return (
@@ -40,16 +16,16 @@ export default function Metiers() {
       </Reveal>
 
       <Reveal>
-        <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-3 md:grid-cols-5">
-          {METIERS.map(({ icon: Icon, name }) => (
+        <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7">
+          {BUSINESS_TYPE_CONFIGS.map(({ key, icon: Icon, label }) => (
             <div
-              key={name}
+              key={key}
               className="rounded-[22px] border border-white/[0.07] bg-[#101613]/60 px-[18px] py-[22px] text-center"
             >
               <div className="mx-auto mb-3.5 grid h-12 w-12 place-items-center rounded-[14px] border border-[#22c55e]/20 bg-[#22c55e]/[0.1] text-[#22c55e]">
                 <Icon size={24} />
               </div>
-              <div className="text-[0.98rem] font-bold text-[#e2e8e4]">{name}</div>
+              <div className="text-[0.98rem] font-bold text-[#e2e8e4]">{label}</div>
             </div>
           ))}
         </div>
