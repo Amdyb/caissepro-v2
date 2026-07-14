@@ -10,7 +10,7 @@ import SoundManager from '@/components/SoundManager'
 import { supabase } from '@/lib/supabaseClient'
 import { useBusinessData } from '@/lib/hooks/useBusinessData'
 import { usePlatformSettings } from '@/lib/usePlatformSettings'
-import { DAKAR_VAPES_BUSINESS_ID } from '@/lib/permissions'
+import { DAKAR_VAPES_BUSINESS_ID, STAFF_ROLES, MANAGER_ROLES } from '@/lib/permissions'
 import { mutate as globalMutate } from 'swr'
 import {
   AlertTriangle,
@@ -80,11 +80,6 @@ const PLAN_LEVELS: Record<string, number> = { free: 0, starter: 1, business: 2, 
 // the role's actual items, so staff/managers only get the ones they can reach.
 const ESSENTIAL_HREFS = ['/pos', '/products', '/register-shifts', '/storefront']
 
-// Includes the French ('caissier'/'vendeur') and English ('cashier'/'sales')
-// staff values so the POS-focused nav + route guard apply regardless of which
-// was stored.
-const STAFF_ROLES = ['sales', 'staff', 'employee', 'cashier', 'caissier', 'vendeur']
-const MANAGER_ROLES = ['manager', 'admin', 'owner']
 
 const STAFF_ALLOWED_PATHS = [
   '/pos', '/checkout',

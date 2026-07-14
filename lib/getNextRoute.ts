@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabaseClient'
+import { OWNER_ROLES } from '@/lib/permissions'
 
 const FOUNDER_EMAILS = ['infos@dakarvapes.com', 'azzideejay@gmail.com']
 
@@ -59,7 +60,6 @@ export async function getNextRoute(userId: string, userEmail: string): Promise<s
   if (member.must_change_password) return '/change-password'
 
   // Employees (any non-owner role) always go to dashboard — never through onboarding
-  const OWNER_ROLES = ['owner', 'admin']
   if (!OWNER_ROLES.includes(member.role)) return '/dashboard'
 
   if (business.onboarding_completed) return '/dashboard'

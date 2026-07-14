@@ -8,6 +8,7 @@ import { SkeletonDashboard } from '@/components/Skeleton'
 import { supabase } from '@/lib/supabaseClient'
 import { getAdminContext } from '@/lib/superAdmin'
 import { useBusinessData } from '@/lib/hooks/useBusinessData'
+import { STAFF_ROLES } from '@/lib/permissions'
 import {
   ArrowRight,
   Bell,
@@ -193,8 +194,7 @@ export default function DashboardPage() {
       supabase.auth.signOut().then(() => router.push('/login?error=deactivated'))
       return
     }
-    const STAFF_ROLES_CHECK = ['sales', 'staff', 'cashier', 'employee']
-    if (!onboardingCompleted && !STAFF_ROLES_CHECK.includes(role)) {
+    if (!onboardingCompleted && !STAFF_ROLES.includes(role)) {
       router.push('/onboarding')
     }
   }, [bdLoading, businessId, isActive, onboardingCompleted, role, router])

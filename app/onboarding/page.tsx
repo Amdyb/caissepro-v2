@@ -1,6 +1,7 @@
 'use client'
 
 import { generateUniqueSlug } from '@/lib/generateUniqueSlug'
+import { STAFF_ROLES } from '@/lib/permissions'
 import { supabase } from '@/lib/supabaseClient'
 import { ArrowLeft, ArrowRight, Briefcase, Check, Palette, PiggyBank, Scissors, Shirt, ShoppingBasket, Store, Tv, Utensils } from 'lucide-react'
 import { useRouter } from 'next/navigation'
@@ -60,8 +61,7 @@ export default function OnboardingPage() {
 
       if (member?.business_id) {
         const role: string = member.role || ''
-        const STAFF_ROLES_CHECK = ['sales', 'staff', 'cashier', 'employee']
-        if (STAFF_ROLES_CHECK.includes(role)) { router.push('/dashboard'); return }
+        if (STAFF_ROLES.includes(role)) { router.push('/dashboard'); return }
 
         const { data: biz } = await supabase
           .from('businesses')

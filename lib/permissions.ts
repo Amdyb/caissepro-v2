@@ -1,8 +1,8 @@
 // Centralized role permission helpers.
 //
 // Roles in business_members.role:
-//   owner / admin   → Propriétaire — full access
-//   manager         → Manager — see notes below; the exact scope is now
+//   proprietaire / owner → Propriétaire — full access (evaluated first)
+//   manager / admin      → Manager — see notes below; the exact scope is now
 //                     per-business (broad by default, narrowed for Dakar Vapes)
 //   sales/cashier/staff/employee/vendeur → Caissier — POS-focused, view-only catalog
 //
@@ -25,10 +25,13 @@
 
 // 'proprietaire' is the French role stored for owners in business_members and is
 // the value used by the vast majority of accounts — it MUST grant full access.
-export const OWNER_ROLES = ['owner', 'admin', 'proprietaire']
+// Evaluated FIRST in every permission check — never falls into manager/staff paths.
+export const OWNER_ROLES   = ['proprietaire', 'owner']
+// 'admin' is manager-tier, not owner. Do not add 'owner' here.
+export const MANAGER_ROLES = ['manager', 'admin']
 // Includes both the French ('caissier') and English ('cashier') cashier values
 // so view-only gating applies consistently regardless of which was stored.
-export const STAFF_ROLES = ['sales', 'staff', 'employee', 'cashier', 'caissier', 'vendeur']
+export const STAFF_ROLES   = ['sales', 'staff', 'employee', 'cashier', 'caissier', 'vendeur']
 
 // Read-only message shown when a view-only role hits a write action/route.
 export const READ_ONLY_MESSAGE = 'Accès en lecture seule'
@@ -58,48 +61,40 @@ export function isManagerNarrowed(businessId?: string | null): boolean {
   return id === DAKAR_VAPES_BUSINESS_ID
 }
 
-// True when the role may only CONSULT the catalog (no add/edit/delete of products).
-// Staff are always view-only; Managers are view-only ONLY on narrowed businesses.
+// Staff or narrowed-business manager → read-only on catalog/team resources.
+function isNarrowedAccess(role?: string | null, businessId?: string | null): boolean {
+  if (!role) return false
+  if (STAFF_ROLES.includes(role)) return true
+  if (MANAGER_ROLES.includes(role)) return isManagerNarrowed(businessId)
+  return false
+}
+
+// Owner or broad-business manager → write access on catalog/team/storefront resources.
+function hasBroadAccess(role?: string | null, businessId?: string | null): boolean {
+  if (!role) return false
+  if (OWNER_ROLES.includes(role)) return true
+  if (MANAGER_ROLES.includes(role)) return !isManagerNarrowed(businessId)
+  return false
+}
+
 export function isProductReadOnly(role?: string | null, businessId?: string | null): boolean {
-  if (!role) return false
-  if (STAFF_ROLES.includes(role)) return true
-  if (role === 'manager') return isManagerNarrowed(businessId)
-  return false
+  return isNarrowedAccess(role, businessId)
 }
 
-// True when the role may only CONSULT the team (no add/edit/deactivate of employees).
-// Staff are always view-only; Managers are view-only ONLY on narrowed businesses.
 export function isEmployeeReadOnly(role?: string | null, businessId?: string | null): boolean {
-  if (!role) return false
-  if (STAFF_ROLES.includes(role)) return true
-  if (role === 'manager') return isManagerNarrowed(businessId)
-  return false
+  return isNarrowedAccess(role, businessId)
 }
 
-// True when the role can create/edit/delete products. Owners always can; Managers
-// can on every business EXCEPT the narrowed ones (Dakar Vapes).
 export function canManageProducts(role?: string | null, businessId?: string | null): boolean {
-  if (!role) return false
-  if (OWNER_ROLES.includes(role)) return true
-  if (role === 'manager') return !isManagerNarrowed(businessId)
-  return false
+  return hasBroadAccess(role, businessId)
 }
 
-// True when the role can add/edit/deactivate employees. Owners always can; Managers
-// can on every business EXCEPT the narrowed ones (Dakar Vapes).
 export function canManageEmployees(role?: string | null, businessId?: string | null): boolean {
-  if (!role) return false
-  if (OWNER_ROLES.includes(role)) return true
-  if (role === 'manager') return !isManagerNarrowed(businessId)
-  return false
+  return hasBroadAccess(role, businessId)
 }
 
-// True when the role may CUSTOMIZE the storefront (theme/logo/colors) and edit
-// payment settings — vs. just VIEW + SHARE it. Owners always can; broad Managers
-// can; Dakar Vapes Manager & Vendeur and all staff get view + share only.
+// Owners and broad Managers can customize storefront; Dakar Vapes Manager/Vendeur
+// and all staff get view + share only.
 export function canCustomizeStorefront(role?: string | null, businessId?: string | null): boolean {
-  if (!role) return false
-  if (OWNER_ROLES.includes(role)) return true
-  if (role === 'manager') return !isManagerNarrowed(businessId)
-  return false
+  return hasBroadAccess(role, businessId)
 }
