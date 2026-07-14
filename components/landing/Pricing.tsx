@@ -69,7 +69,7 @@ export default function Pricing() {
         <div className="mx-auto mb-7 flex max-w-[560px] items-center justify-center gap-3 rounded-[18px] border border-[#22c55e]/30 bg-gradient-to-r from-[#16a34a]/20 to-[#f97316]/[0.14] px-5 py-3.5">
           <Gift size={22} className="text-[#22c55e]" />
           <span className="text-[0.98rem] font-bold text-[#eaf1ed]">
-            Offre de lancement : payez 1 mois, obtenez 2 mois
+            1 mois offert pour les nouveaux inscrits
           </span>
         </div>
 
@@ -92,7 +92,7 @@ export default function Pricing() {
                 annuel ? 'bg-[#16a34a] text-white' : 'text-[#9fb0a8]'
               }`}
             >
-              Annuel <span className="text-[#22c55e]">-2 mois</span>
+              Annuel <span className="text-[#22c55e]">-1 mois</span>
             </button>
           </div>
         </div>
@@ -102,7 +102,7 @@ export default function Pricing() {
         {TIERS.map((t, i) => {
           const amount = t.price === 0 ? 0 : annuel ? t.price * 10 : t.price
           const display = t.price === 0 ? '0' : fmt(amount)
-          const period = t.price === 0 ? 'Pour toujours' : annuel ? '/an · 2 mois offerts' : '/mois'
+          const period = t.price === 0 ? 'Pour toujours' : annuel ? '/an · 1 mois offert' : '/mois'
 
           return (
             <Reveal key={t.name} delay={i * 70} className="h-full">

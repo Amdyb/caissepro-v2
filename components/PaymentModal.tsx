@@ -160,7 +160,7 @@ function PaymentModal({ plan, businessId, businessName, userEmail, onClose }: Pr
               <p className="text-sm font-black uppercase tracking-wide text-emerald-700">Plan {plan.name}</p>
               <p className="mt-1 text-4xl font-black text-slate-950">{plan.price} XOF<span className="text-base font-black text-slate-400">/mois</span></p>
               <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-sm font-black text-white">
-                Payez 1 mois, obtenez 2 mois !
+                1 mois offert pour les nouveaux inscrits
               </div>
             </div>
 

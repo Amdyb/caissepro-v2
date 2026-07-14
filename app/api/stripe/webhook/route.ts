@@ -66,7 +66,9 @@ export async function POST(req: NextRequest) {
 
   const supabase = adminClient()
 
-  // Activate subscription for 2 months (promo: 1 month paid = 2 months).
+  // Promo nouveaux inscrits : 1 mois payé + 1 mois offert = 2 mois total.
+  // Starts at activation (payment confirmed), not at signup.
+  // Agent referrals do NOT stack — referred merchants still get 1 month max bonus.
   const now = new Date()
   const expiresAt = new Date(now)
   expiresAt.setMonth(expiresAt.getMonth() + 2)

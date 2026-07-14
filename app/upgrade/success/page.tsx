@@ -52,7 +52,7 @@ function SuccessContent() {
         <p className="mt-4 text-base font-semibold text-slate-500">
           Félicitations ! Votre plan{' '}
           <span className="font-black text-emerald-600">{plan}</span>{' '}
-          est maintenant actif pour 2 mois.
+          est maintenant actif — 1 mois payé + 1 mois offert.
         </p>
 
         <div className="mt-8 rounded-3xl border border-emerald-200 bg-white p-6 shadow-sm text-left space-y-3">
@@ -62,7 +62,7 @@ function SuccessContent() {
           </div>
           <div className="flex items-center justify-between text-sm">
             <span className="font-bold text-slate-500">Durée</span>
-            <span className="font-black text-slate-900">2 mois</span>
+            <span className="font-black text-slate-900">2 mois (1 offert)</span>
           </div>
           <div className="flex items-center justify-between text-sm">
             <span className="font-bold text-slate-500">Expire le</span>

@@ -13,12 +13,14 @@ import { useRouter } from 'next/navigation'
 
 const ADMIN_EMAILS = ['infos@dakarvapes.com', 'azzideejay@gmail.com']
 
+// Default 2 = 1 mois payé + 1 mois offert (promo nouveaux inscrits).
+// Starts at activation date, not at signup.
 const DURATION_OPTIONS = [
-  { label: '1 mois',  months: 1 },
-  { label: '2 mois',  months: 2 },
-  { label: '3 mois',  months: 3 },
-  { label: '6 mois',  months: 6 },
-  { label: '12 mois', months: 12 },
+  { label: '1 mois',                    months: 1 },
+  { label: '2 mois (1 offert — promo)', months: 2 },
+  { label: '3 mois',                    months: 3 },
+  { label: '6 mois',                    months: 6 },
+  { label: '12 mois',                   months: 12 },
 ]
 
 type UpgradeRequest = {

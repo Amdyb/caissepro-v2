@@ -290,7 +290,7 @@ export default function SubscriptionPage() {
             <div>
               <p className="font-black text-emerald-800 dark:text-emerald-300">Renouveler votre abonnement</p>
               <p className="mt-0.5 text-sm font-semibold text-emerald-600">
-                {renewPlan.price} XOF/mois — Offre : payez 1 mois, obtenez 2 mois
+                {renewPlan.price} XOF/mois — 1 mois offert pour les nouveaux inscrits
               </p>
             </div>
             <button
@@ -307,7 +307,7 @@ export default function SubscriptionPage() {
           <div>
             <div className="mb-5 flex items-center gap-3 rounded-2xl bg-emerald-600 px-5 py-3.5 text-white shadow-lg shadow-emerald-600/20">
               <Sparkles size={16} className="shrink-0" />
-              <p className="font-black">Offre de lancement : Payez 1 mois, obtenez 2 mois d'utilisation !</p>
+              <p className="font-black">1 mois offert pour les nouveaux inscrits</p>
             </div>
 
             <div className={`grid gap-6 ${plansToShow.length === 1 ? 'md:grid-cols-1 max-w-sm' : plansToShow.length === 2 ? 'md:grid-cols-2' : 'md:grid-cols-3'}`}>

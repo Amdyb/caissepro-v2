@@ -52,12 +52,12 @@ export async function POST(req: NextRequest) {
     price:           `${amount} XOF`,
     status:          'pending_payment',
     whatsapp_sent:   false,
-    duration_months: 2,
+    duration_months: 2, // 1 mois payé + 1 mois offert (promo nouveaux inscrits)
   })
 
   try {
     const invoice = new paydunya.CheckoutInvoice(setup, store)
-    invoice.addItem(plan, 1, amount, amount, `Abonnement CaissePro ${plan} — 2 mois offerts`)
+    invoice.addItem(plan, 1, amount, amount, `Abonnement CaissePro ${plan} — 1 mois offert`)
     invoice.totalAmount = amount
     invoice.description = `Abonnement CaissePro ${plan}`
     invoice.addCustomData('plan', plan)

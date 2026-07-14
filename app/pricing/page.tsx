@@ -157,7 +157,7 @@ export default function PricingPage() {
         {/* Promo banner */}
         <div className="mt-8 flex items-center justify-center gap-3 rounded-2xl bg-emerald-600 px-6 py-4 text-white shadow-xl shadow-emerald-600/20">
           <Sparkles size={18} className="shrink-0" />
-          <p className="font-black">Offre de lancement : Payez 1 mois, obtenez 2 mois d'utilisation !</p>
+          <p className="font-black">1 mois offert pour les nouveaux inscrits</p>
           <Sparkles size={18} className="shrink-0" />
         </div>
 

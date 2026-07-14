@@ -165,7 +165,7 @@ const FAQ_SECTIONS: Section[] = [
       },
       {
         question: 'Quels sont les plans disponibles ?',
-        answer: 'Gratuit (0 XOF), Starter (5 000 XOF/mois), Business (15 000 XOF/mois) et Premium (35 000 XOF/mois). Offre promo en cours : payez 1 mois et obtenez 2 mois d\'utilisation.'
+        answer: 'Gratuit (0 XOF), Starter (5 000 XOF/mois), Business (15 000 XOF/mois) et Premium (35 000 XOF/mois). Offre de lancement : 1 mois offert pour les nouveaux inscrits à l\'activation de leur abonnement.'
       },
     ]
   },

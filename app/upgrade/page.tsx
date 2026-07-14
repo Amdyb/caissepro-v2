@@ -167,7 +167,7 @@ export default function UpgradePage() {
         {/* Promo banner */}
         <div className="mb-8 flex items-center justify-center gap-3 rounded-2xl bg-emerald-600 px-6 py-4 text-white shadow-xl shadow-emerald-600/20">
           <Sparkles size={18} className="shrink-0" />
-          <p className="font-black">Offre de lancement : Payez 1 mois, obtenez 2 mois d'utilisation !</p>
+          <p className="font-black">1 mois offert pour les nouveaux inscrits</p>
           <Sparkles size={18} className="shrink-0" />
         </div>
 
@@ -224,7 +224,7 @@ export default function UpgradePage() {
               >
                 {!isCurrent && (
                   <div className="absolute right-4 top-4 rounded-full bg-emerald-600 px-2.5 py-1 text-[10px] font-black text-white">
-                    2 MOIS OFFERTS
+                    1 MOIS OFFERT
                   </div>
                 )}
                 {isCurrent && (
