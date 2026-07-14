@@ -102,6 +102,12 @@ export function normalizeBusinessType(type?: string | null) {
   if (!type) return 'retail'
   const clean = type.trim().toLowerCase()
   if (BUSINESS_TEMPLATES[clean]) return clean
+  // New canonical keys → template equivalents
+  if (clean === 'salon') return 'beauty'
+  if (clean === 'pharmacie') return 'pharmacy'
+  if (clean === 'grossiste') return 'wholesale'
+  if (clean === 'bijouterie') return 'retail'
+  // Legacy aliases
   if (clean === 'blanchisserie' || clean === 'pressing' || clean === 'dry_cleaning') return 'laundry'
   if (clean === 'service') return 'services'
   return 'retail'

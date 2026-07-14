@@ -1,22 +1,12 @@
 'use client'
 
+import { BUSINESS_TYPE_CONFIGS } from '@/lib/businessTypes'
 import { generateUniqueSlug } from '@/lib/generateUniqueSlug'
 import { STAFF_ROLES } from '@/lib/permissions'
 import { supabase } from '@/lib/supabaseClient'
-import { ArrowLeft, ArrowRight, Briefcase, Check, Palette, PiggyBank, Scissors, Shirt, ShoppingBasket, Store, Tv, Utensils } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Check, Palette, Store } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
-
-const BUSINESS_TYPES = [
-  { value: 'retail',       label: 'Commerce & Boutique',      icon: Store,         color: '#16a34a' },
-  { value: 'restaurant',   label: 'Restaurant & Fast Food',   icon: Utensils,      color: '#ea580c' },
-  { value: 'beauty',       label: 'Salon & Beauté',           icon: Scissors,      color: '#db2777' },
-  { value: 'tontine',      label: 'Tontine & Épargne',        icon: PiggyBank,     color: '#7c3aed' },
-  { value: 'services',     label: 'Services',                 icon: Briefcase,     color: '#0891b2' },
-  { value: 'grocery',      label: 'Épicerie & Alimentation',  icon: ShoppingBasket,color: '#65a30d' },
-  { value: 'electronics',  label: 'Électronique',             icon: Tv,            color: '#1d4ed8' },
-  { value: 'fashion',      label: 'Mode & Accessoires',       icon: Shirt,         color: '#9333ea' },
-]
 
 const PRESET_COLORS = [
   '#16a34a', '#0891b2', '#7c3aed', '#db2777',
@@ -150,6 +140,15 @@ export default function OnboardingPage() {
         })
         if (memberError) throw memberError
 
+        // Seed starter categories for the selected business type.
+        const { getBusinessTypeConfig } = await import('@/lib/businessTypes')
+        const seedCats = getBusinessTypeConfig(businessType).seedCategories
+        if (seedCats.length > 0) {
+          await supabase.from('product_categories').insert(
+            seedCats.map((name) => ({ business_id: biz.id, name }))
+          )
+        }
+
         if (product.name) {
           await supabase.from('products').insert({
             business_id: biz.id,
@@ -263,14 +262,14 @@ export default function OnboardingPage() {
               </div>
 
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                {BUSINESS_TYPES.map((type) => {
+                {BUSINESS_TYPE_CONFIGS.map((type) => {
                   const Icon = type.icon
-                  const selected = businessType === type.value
+                  const selected = businessType === type.key
                   return (
                     <button
-                      key={type.value}
+                      key={type.key}
                       onClick={() => {
-                        setBusinessType(type.value)
+                        setBusinessType(type.key)
                         if (primaryColor === '#16a34a') setPrimaryColor(type.color)
                       }}
                       className="flex flex-col items-center gap-3 rounded-2xl p-4 text-center transition-all duration-200 hover:scale-105"

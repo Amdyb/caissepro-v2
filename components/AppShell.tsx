@@ -11,6 +11,7 @@ import { supabase } from '@/lib/supabaseClient'
 import { useBusinessData } from '@/lib/hooks/useBusinessData'
 import { usePlatformSettings } from '@/lib/usePlatformSettings'
 import { DAKAR_VAPES_BUSINESS_ID, STAFF_ROLES, MANAGER_ROLES } from '@/lib/permissions'
+import { getBusinessTypeConfig } from '@/lib/businessTypes'
 import { mutate as globalMutate } from 'swr'
 import {
   AlertTriangle,
@@ -156,19 +157,6 @@ const STAFF_PROFILE_SECTION: SectionConfig = {
   ],
 }
 
-const STAFF_BOTTOM_NAV = [
-  { label: 'Vendre', href: '/pos', icon: ShoppingCart },
-  { label: 'Produits', href: '/products', icon: Package },
-  { label: 'Caisse', href: '/register-shifts', icon: Wallet },
-  { label: 'Profil', href: '/profile', icon: User },
-]
-
-const MANAGER_BOTTOM_NAV = [
-  { label: 'Accueil', href: '/dashboard', icon: LayoutDashboard },
-  { label: 'Vendre', href: '/pos', icon: ShoppingCart },
-  { label: 'Produits', href: '/products', icon: Package },
-  { label: 'Rapports', href: '/reports', icon: TrendingUp },
-]
 
 // Dakar Vapes vendeur/caissier mobile nav — no Caisse du jour (not allowed);
 // Commandes en ligne instead.
@@ -315,26 +303,15 @@ const SUPER_ADMIN_SECTION: SectionConfig = {
 }
 
 function productsLabel(businessType: string): string {
-  switch (businessType) {
-    case 'restaurant': return 'Menu & Produits'
-    case 'beauty': return 'Services'
-    case 'pharmacy': return 'Médicaments'
-    case 'garage': return 'Pièces détachées'
-    case 'btp': return 'Matériaux'
-    case 'laundry': return 'Tarifs'
-    default: return 'Produits'
-  }
+  return getBusinessTypeConfig(businessType).productsTabLabel
 }
 
-// Operational items unique to a business type, folded into VENTES so each shop
-// keeps its workflow (most route to "Coming Soon" placeholders for now).
+// Operational items unique to a business type, folded into VENTES.
+// Routes point to "Coming Soon" placeholders until the modules are built.
 function operationalItems(businessType: string): SectionConfig['items'] {
   switch (businessType) {
-    case 'beauty': return [{ label: 'Rendez-vous', href: '/appointments', icon: Calendar }]
-    case 'pharmacy': return [{ label: 'Ordonnances', href: '/prescriptions', icon: FileText }]
-    case 'garage': return [{ label: 'Interventions', href: '/services', icon: Wrench }]
-    case 'btp': return [{ label: 'Chantiers', href: '/projects', icon: HardHat }]
-    case 'laundry': return [{ label: 'En cours', href: '/active-orders', icon: Droplets }]
+    case 'salon': return [{ label: 'Rendez-vous', href: '/appointments', icon: Calendar }]
+    case 'pharmacie': return [{ label: 'Ordonnances', href: '/prescriptions', icon: FileText }]
     default: return []
   }
 }
@@ -343,6 +320,7 @@ function operationalItems(businessType: string): SectionConfig['items'] {
 // type-specific operational items + product label injected. Progressive
 // disclosure (essentials vs full) is handled at render time.
 function getNavSections(businessType: string): SectionConfig[] {
+  const typeConfig = getBusinessTypeConfig(businessType)
   return [
     {
       key: 'ventes', title: 'VENTES',
@@ -363,8 +341,8 @@ function getNavSections(businessType: string): SectionConfig[] {
       textColor: 'text-violet-700 dark:text-violet-400', headerColor: 'text-violet-600 dark:text-violet-400',
       defaultOpen: false,
       items: [
-        { label: productsLabel(businessType), href: '/products', icon: Package, tourId: 'tour-nav-products' },
-        { label: 'Ajouter produit', href: '/products/new', icon: Plus },
+        { label: typeConfig.productsTabLabel, href: '/products', icon: Package, tourId: 'tour-nav-products' },
+        { label: typeConfig.addButtonLabel, href: '/products/new', icon: Plus },
         { label: 'Catégories', href: '/categories', icon: Tag },
         { label: 'Fournisseurs', href: '/suppliers', icon: Truck, lockedPlan: 'business' },
         { label: 'Réassort', href: '/reassort', icon: PackagePlus, lockedPlan: 'business' },
@@ -433,12 +411,23 @@ function getNavSections(businessType: string): SectionConfig[] {
 }
 
 
-const BOTTOM_NAV = [
-  { label: 'Accueil', href: '/dashboard', icon: LayoutDashboard },
-  { label: 'Vendre', href: '/pos', icon: ShoppingCart },
-  { label: 'Produits', href: '/products', icon: Package },
-  { label: 'Rapports', href: '/reports', icon: TrendingUp },
-]
+function makeBottomNav(productsTabLabel: string) {
+  return [
+    { label: 'Accueil',   href: '/dashboard',        icon: LayoutDashboard },
+    { label: 'Vendre',    href: '/pos',               icon: ShoppingCart },
+    { label: productsTabLabel, href: '/products',     icon: Package },
+    { label: 'Rapports',  href: '/reports',           icon: TrendingUp },
+  ]
+}
+
+function makeStaffBottomNav(productsTabLabel: string) {
+  return [
+    { label: 'Vendre',    href: '/pos',               icon: ShoppingCart },
+    { label: productsTabLabel, href: '/products',     icon: Package },
+    { label: 'Caisse',    href: '/register-shifts',   icon: Wallet },
+    { label: 'Profil',    href: '/profile',            icon: User },
+  ]
+}
 
 const AppShell = memo(function AppShell({ children, title, subtitle, action }: AppShellProps) {
   const pathname = usePathname()
@@ -585,6 +574,10 @@ const AppShell = memo(function AppShell({ children, title, subtitle, action }: A
   const isManager = MANAGER_ROLES.includes(userRole)
   const isOwner = userRole === 'owner'
   const isDakarVapes = businessId === DAKAR_VAPES_BUSINESS_ID
+  const productsTabLabel = getBusinessTypeConfig(businessType).productsTabLabel
+  const BOTTOM_NAV = makeBottomNav(productsTabLabel)
+  const STAFF_BOTTOM_NAV = makeStaffBottomNav(productsTabLabel)
+  const MANAGER_BOTTOM_NAV = makeBottomNav(productsTabLabel)
   // Dakar Vapes uses tightly LOCKED sidebars for both manager and vendeur; every
   // other business keeps the broad role-based sidebars.
   const isDakarVapesManager = userRole === 'manager' && isDakarVapes

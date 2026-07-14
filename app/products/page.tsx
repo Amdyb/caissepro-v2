@@ -10,6 +10,7 @@ import { supabase } from '@/lib/supabaseClient'
 import { useBusinessData } from '@/lib/hooks/useBusinessData'
 import { useProducts } from '@/lib/hooks/useProducts'
 import { isProductReadOnly } from '@/lib/permissions'
+import { getBusinessTypeConfig } from '@/lib/businessTypes'
 
 const BarcodeScanner = dynamic(() => import('@/components/BarcodeScanner'), { ssr: false })
 // Lazy-loaded: pulls in the heavy xlsx parser only when the importer is opened.
@@ -95,8 +96,9 @@ const ProductGridCard = memo(function ProductGridCard({
 })
 
 export default function ProductsPage() {
-  const { businessId, role: userRole } = useBusinessData()
+  const { businessId, role: userRole, businessType } = useBusinessData()
   const { products, loading, mutate } = useProducts(businessId)
+  const typeConfig = getBusinessTypeConfig(businessType)
 
   const [search, setSearch] = useState('')
   const [showImporter, setShowImporter] = useState(false)
@@ -194,7 +196,7 @@ export default function ProductsPage() {
   if (loading) return <main className="flex min-h-screen items-center justify-center bg-slate-50"><p className="font-bold text-slate-700">Chargement...</p></main>
 
   return (
-    <AppShell title="Produits" subtitle="Inventaire, prix, stock et catalogue produit.">
+    <AppShell title={typeConfig.productsTabLabel} subtitle="Inventaire, prix, stock et catalogue produit.">
       {restockProduct && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm">
           <div className="relative w-full max-w-sm rounded-[2rem] bg-white p-8 shadow-2xl dark:bg-slate-800">
@@ -272,7 +274,7 @@ export default function ProductsPage() {
               className="mb-5 flex items-center justify-center gap-2 rounded-[1.6rem] bg-emerald-600 px-6 py-4 text-base font-black text-white shadow-xl shadow-emerald-600/20"
             >
               <Plus size={20} />
-              Ajouter un produit
+              {typeConfig.addButtonLabel}
             </Link>
           </>
         )}

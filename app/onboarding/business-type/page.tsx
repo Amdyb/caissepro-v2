@@ -1,26 +1,10 @@
 'use client'
 
+import { BUSINESS_TYPE_CONFIGS } from '@/lib/businessTypes'
 import { supabase } from '@/lib/supabaseClient'
-import { ArrowRight, Building2, ShoppingBag, Store } from 'lucide-react'
+import { ArrowRight, Store } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-
-const businessTypes = [
-  {
-    id: 'retail',
-    title: 'Commerce & Boutique',
-    description: 'Produits, stock, caisse, clients, paiements et boutique en ligne.',
-    icon: ShoppingBag,
-    examples: 'Mode, électronique, beauté, supérette, épicerie, pharmacie...'
-  },
-  {
-    id: 'other',
-    title: 'Autre',
-    description: 'Tout autre type d\'activité commerciale ou de service.',
-    icon: Building2,
-    examples: 'Services, artisanat, prestation, agence, réparation...'
-  }
-]
 
 export default function BusinessTypeOnboardingPage() {
   const router = useRouter()
@@ -54,7 +38,8 @@ export default function BusinessTypeOnboardingPage() {
       if (member?.business_id) {
         setBusinessId(member.business_id)
         const btype = member.businesses?.business_type || 'retail'
-        setSelected(['retail', 'other'].includes(btype) ? btype : 'retail')
+        const validKeys = BUSINESS_TYPE_CONFIGS.map((c) => c.key)
+        setSelected(validKeys.includes(btype) ? btype : 'retail')
       }
 
       setLoading(false)
@@ -101,21 +86,19 @@ export default function BusinessTypeOnboardingPage() {
         {message && <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-bold text-red-700">{message}</div>}
 
         <div className="grid gap-5 md:grid-cols-2">
-          {businessTypes.map((type) => {
+          {BUSINESS_TYPE_CONFIGS.map((type) => {
             const Icon = type.icon
-            const active = selected === type.id
+            const active = selected === type.key
             return (
               <button
-                key={type.id}
-                onClick={() => setSelected(type.id)}
+                key={type.key}
+                onClick={() => setSelected(type.key)}
                 className={`rounded-[2rem] border p-6 text-left shadow-sm transition hover:-translate-y-1 hover:shadow-xl ${active ? 'border-emerald-400 bg-emerald-50 ring-4 ring-emerald-100' : 'border-slate-200 bg-white'}`}
               >
                 <div className={`mb-5 inline-flex rounded-2xl p-4 ${active ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-700'}`}>
                   <Icon size={30} />
                 </div>
-                <h2 className="text-2xl font-black">{type.title}</h2>
-                <p className="mt-3 text-sm font-semibold leading-6 text-slate-600">{type.description}</p>
-                <p className="mt-5 rounded-2xl bg-white/70 p-3 text-xs font-black text-slate-500">{type.examples}</p>
+                <h2 className="text-2xl font-black">{type.label}</h2>
               </button>
             )
           })}

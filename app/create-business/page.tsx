@@ -9,16 +9,13 @@ import { useState } from 'react'
 import { Store, Lock, Sparkles, ArrowRight } from 'lucide-react'
 
 const BUSINESS_TYPES: { value: string; label: string }[] = [
-  { value: 'retail', label: 'Commerce & Boutique' },
-  { value: 'restaurant', label: 'Restaurant' },
-  { value: 'beauty', label: 'Salon & Beauté' },
-  { value: 'pharmacy', label: 'Pharmacie' },
-  { value: 'garage', label: 'Garage & Auto' },
-  { value: 'btp', label: 'BTP & Services' },
-  { value: 'tontine', label: 'Tontine' },
-  { value: 'rental', label: 'Location & Immobilier' },
-  { value: 'wholesale', label: 'Grossiste' },
-  { value: 'laundry', label: 'Laverie & Pressing' },
+  { value: 'retail',      label: 'Commerce & Boutique' },
+  { value: 'restaurant',  label: 'Restaurant & Fast-Food' },
+  { value: 'salon',       label: 'Salon & Beauté' },
+  { value: 'pharmacie',   label: 'Pharmacie' },
+  { value: 'bijouterie',  label: 'Bijouterie' },
+  { value: 'grossiste',   label: 'Grossiste' },
+  { value: 'tontine',     label: 'Tontine' },
 ]
 
 const SELECTED_BIZ_KEY = 'caissepro_selected_business_id'

@@ -9,15 +9,13 @@ import { supabase } from '@/lib/supabaseClient'
 import { Loader2, Users } from 'lucide-react'
 
 const BUSINESS_TYPES = [
-  { value: 'retail', label: 'Commerce & Boutique' },
-  { value: 'grocery', label: 'Épicerie & Alimentation' },
-  { value: 'restaurant', label: 'Restaurant & Fast Food' },
-  { value: 'beauty', label: 'Salon & Beauté' },
-  { value: 'fashion', label: 'Mode & Accessoires' },
-  { value: 'electronics', label: 'Électronique' },
-  { value: 'services', label: 'Services' },
-  { value: 'laundry', label: 'Blanchisserie & Pressing' },
-  { value: 'tontine', label: 'Tontine & Épargne' },
+  { value: 'retail',      label: 'Commerce & Boutique' },
+  { value: 'restaurant',  label: 'Restaurant & Fast-Food' },
+  { value: 'salon',       label: 'Salon & Beauté' },
+  { value: 'pharmacie',   label: 'Pharmacie' },
+  { value: 'bijouterie',  label: 'Bijouterie' },
+  { value: 'grossiste',   label: 'Grossiste' },
+  { value: 'tontine',     label: 'Tontine' },
 ]
 
 function RegisterForm() {
