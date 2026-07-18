@@ -11,16 +11,18 @@
 //     Fournisseurs, Clients, Dépenses, Rapports, Boutique, Employés. Everything
 //     EXCEPT the Zone de Sécurité.
 //   • Dakar Vapes ONLY: tightly LOCKED Manager — exactly Vendre, Remboursements,
-//     Caisse du jour, Dépenses, Produits (view + stock only), Rapports (view),
-//     Commandes en ligne (full), Ma Boutique (view + share only), Profil, Aide.
-//     Nothing else: no Catégories/Fournisseurs/Clients/Employés/Historique/
-//     Finances/Client Doit/Coach/advanced settings.
+//     Caisse du jour, Dépenses, Produits (view + stock only), Historique des
+//     ventes (view-only), Rapports (view), Commandes en ligne (full), Ma
+//     Boutique (view + share only), Profil, Aide. Nothing else: no
+//     Catégories/Fournisseurs/Clients/Employés/Finances/Client Doit/Coach/
+//     advanced settings.
 // Per-business Vendeur / Caissier role:
 //   • Default (all businesses): POS-focused staff — Vendre, Produits (view),
 //     Caisse du jour, Dépenses.
-//   • Dakar Vapes ONLY: locked Vendeur — exactly Vendre, Dépenses, Produits
-//     (view), Commandes en ligne (full), Ma Boutique (view + share), Profil,
-//     Aide. No Remboursement, no Caisse du jour, no Rapport.
+//   • Dakar Vapes ONLY: locked Vendeur — exactly Vendre, Historique des ventes
+//     (view-only), Dépenses, Produits (view), Commandes en ligne (full), Ma
+//     Boutique (view + share), Profil, Aide. No Remboursement, no Caisse du
+//     jour, no Rapport.
 // The active business is the one selected in localStorage (multi-boutique).
 
 // 'proprietaire' is the French role stored for owners in business_members and is

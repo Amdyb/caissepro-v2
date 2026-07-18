@@ -102,27 +102,28 @@ const MANAGER_ALLOWED_PATHS = [
 ]
 
 // Dakar Vapes MANAGER — LOCKED to exactly: Vendre, Remboursements, Caisse du
-// jour, Dépenses, Produits (view), Rapports (view), Commandes en ligne (full),
-// Ma Boutique (view + share), Profil, Aide. Product create/edit and storefront
-// customize/payment routes are blocked separately even though /products and
-// /storefront are listed. No /sales (historique), /customers, /employees,
-// /finances, /categories, /suppliers, /settings, /payment-methods, /coach, etc.
+// jour, Dépenses, Produits (view), Rapports (view), Historique des ventes
+// (view-only), Commandes en ligne (full), Ma Boutique (view + share), Profil,
+// Aide. Product create/edit and storefront customize/payment routes are blocked
+// separately even though /products and /storefront are listed. No /customers,
+// /employees, /finances, /categories, /suppliers, /settings, /payment-methods,
+// /coach, etc.
 const DV_MANAGER_ALLOWED_PATHS = [
   '/dashboard', '/pos', '/checkout',
   '/refunds', '/register-shifts', '/expenses',
-  '/products', '/reports', '/orders', '/storefront',
+  '/products', '/sales', '/reports', '/orders', '/storefront',
   '/profile', '/change-password',
   '/help', '/legal', '/language',
   '/upgrade', '/pricing',
 ]
 
 // Dakar Vapes VENDEUR / CAISSIER — LOCKED to exactly: Vendre, Dépenses, Produits
-// (view), Commandes en ligne (full), Ma Boutique (view + share), Profil, Aide.
-// No /refunds, no /register-shifts (caisse), no /reports — on top of everything
-// the manager is blocked from.
+// (view), Historique des ventes (view-only), Commandes en ligne (full), Ma
+// Boutique (view + share), Profil, Aide. No /refunds, no /register-shifts
+// (caisse), no /reports — on top of everything the manager is blocked from.
 const DV_VENDEUR_ALLOWED_PATHS = [
   '/pos', '/checkout', '/expenses',
-  '/products', '/orders', '/storefront',
+  '/products', '/sales', '/orders', '/storefront',
   '/profile', '/change-password',
   '/help', '/legal', '/language',
   '/upgrade', '/pricing',
@@ -213,9 +214,9 @@ const DV_PROFILE_SECTION: SectionConfig = {
   ],
 }
 
-// Dakar Vapes MANAGER — exactly: Vendre, Remboursements, Caisse du jour,
-// Dépenses, Produits (view), Commandes en ligne, Ma boutique (view+share),
-// Rapports (view), Profil, Aide. Nothing else.
+// Dakar Vapes MANAGER — exactly: Vendre, Historique des ventes (view-only),
+// Remboursements, Caisse du jour, Dépenses, Produits (view), Commandes en
+// ligne, Ma boutique (view+share), Rapports (view), Profil, Aide. Nothing else.
 const DV_MANAGER_CAISSE_SECTION: SectionConfig = {
   key: 'dv-manager-caisse',
   title: 'CAISSE',
@@ -226,6 +227,7 @@ const DV_MANAGER_CAISSE_SECTION: SectionConfig = {
   defaultOpen: true,
   items: [
     { label: 'Vendre', href: '/pos', icon: ShoppingCart },
+    { label: 'Historique des ventes', href: '/sales', icon: ReceiptText },
     { label: 'Remboursements', href: '/refunds', icon: RotateCcw },
     { label: 'Caisse du jour', href: '/register-shifts', icon: Wallet },
     { label: 'Dépenses', href: '/expenses', icon: Receipt },
@@ -253,9 +255,9 @@ const DV_MANAGER_SECTIONS: SectionConfig[] = [
   DV_PROFILE_SECTION,
 ]
 
-// Dakar Vapes VENDEUR / CAISSIER — exactly: Vendre, Dépenses, Produits (view),
-// Commandes en ligne, Ma boutique (view+share), Profil, Aide. No Remboursement,
-// no Caisse du jour, no Rapport.
+// Dakar Vapes VENDEUR / CAISSIER — exactly: Vendre, Historique des ventes
+// (view-only), Dépenses, Produits (view), Commandes en ligne, Ma boutique
+// (view+share), Profil, Aide. No Remboursement, no Caisse du jour, no Rapport.
 const DV_VENDEUR_CAISSE_SECTION: SectionConfig = {
   key: 'dv-vendeur-caisse',
   title: 'CAISSE',
@@ -266,6 +268,7 @@ const DV_VENDEUR_CAISSE_SECTION: SectionConfig = {
   defaultOpen: true,
   items: [
     { label: 'Vendre', href: '/pos', icon: ShoppingCart },
+    { label: 'Historique des ventes', href: '/sales', icon: ReceiptText },
     { label: 'Dépenses', href: '/expenses', icon: Receipt },
   ],
 }
