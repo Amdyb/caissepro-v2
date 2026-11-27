@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import Image from 'next/image'
 import { memo, useCallback, useEffect, useMemo, useState } from 'react'
-import { Edit, Eye, FileSpreadsheet, PackagePlus, Plus, RefreshCw, ScanLine, Search, ShoppingBag, Trash2, Upload, X } from 'lucide-react'
+import { Edit, Eye, FileSpreadsheet, PackagePlus, Plus, RefreshCw, ScanLine, Search, Share2, ShoppingBag, Trash2, Upload, X } from 'lucide-react'
 import { supabase } from '@/lib/supabaseClient'
 import { useBusinessData } from '@/lib/hooks/useBusinessData'
 import { useProducts } from '@/lib/hooks/useProducts'
@@ -15,11 +15,14 @@ import { getBusinessTypeConfig } from '@/lib/businessTypes'
 const BarcodeScanner = dynamic(() => import('@/components/BarcodeScanner'), { ssr: false })
 // Lazy-loaded: pulls in the heavy xlsx parser only when the importer is opened.
 const ProductBulkImporter = dynamic(() => import('@/components/ProductBulkImporter'), { ssr: false })
+// Lazy-loaded: html-to-image is only needed when a merchant shares a product.
+const ProductShareCard = dynamic(() => import('@/components/ProductShareCard'), { ssr: false })
 
 type Product = {
   id: string
   business_id: string
   name: string
+  short_description: string | null
   barcode: string | null
   category: string | null
   cost_price: number | null
@@ -46,11 +49,13 @@ const ProductGridCard = memo(function ProductGridCard({
   isReadOnly,
   onRestock,
   onDelete,
+  onShare,
 }: {
   product: Product
   isReadOnly: boolean
   onRestock: (p: Product) => void
   onDelete: (id: string) => void
+  onShare: (p: Product) => void
 }) {
   const status = stockStatus(Number(product.stock || 0))
 
@@ -91,12 +96,19 @@ const ProductGridCard = memo(function ProductGridCard({
       <h3 className="text-base font-black text-slate-900 dark:text-white">{product.name}</h3>
       <p className="mt-2 text-xl font-black text-emerald-600">{Number(product.sell_price || 0).toLocaleString('fr-FR')} CFA</p>
       <p className="mt-1 text-sm font-bold text-slate-500 dark:text-slate-400">Stock: {product.stock || 0}</p>
+
+      <button
+        onClick={() => onShare(product)}
+        className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 py-2.5 text-sm font-black text-slate-700 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200"
+      >
+        <Share2 size={15} /> Partager
+      </button>
     </div>
   )
 })
 
 export default function ProductsPage() {
-  const { businessId, role: userRole, businessType } = useBusinessData()
+  const { businessId, role: userRole, businessType, businessName, business } = useBusinessData()
   const { products, loading, mutate } = useProducts(businessId)
   const typeConfig = getBusinessTypeConfig(businessType)
 
@@ -107,6 +119,26 @@ export default function ProductsPage() {
   const [restockSaving, setRestockSaving] = useState(false)
   const [showScanner, setShowScanner] = useState(false)
   const [flash, setFlash] = useState('')
+  const [shareProduct, setShareProduct] = useState<Product | null>(null)
+  // Storefront display settings the shared card needs (not in useBusinessData).
+  const [shopMeta, setShopMeta] = useState<{ hide_prices: boolean; primary_color: string }>({ hide_prices: false, primary_color: '#16a34a' })
+
+  useEffect(() => {
+    if (!businessId) return
+    let cancelled = false
+    supabase
+      .from('businesses')
+      .select('hide_prices, primary_color')
+      .eq('id', businessId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (cancelled || !data) return
+        setShopMeta({ hide_prices: !!data.hide_prices, primary_color: data.primary_color || '#16a34a' })
+      })
+    return () => { cancelled = true }
+  }, [businessId])
+
+  const openShare = useCallback((product: Product) => setShareProduct(product), [])
 
   // Show the "read-only" notice after a blocked add/edit redirect lands here.
   useEffect(() => {
@@ -323,11 +355,23 @@ export default function ProductsPage() {
                 isReadOnly={isReadOnly}
                 onRestock={openRestock}
                 onDelete={deleteProduct}
+                onShare={openShare}
               />
             ))}
           </div>
         )}
       </div>
+
+      {shareProduct && (
+        <ProductShareCard
+          product={shareProduct}
+          shopName={businessName}
+          shopSlug={business?.slug || ''}
+          hidePrices={shopMeta.hide_prices}
+          primaryColor={shopMeta.primary_color}
+          onClose={() => setShareProduct(null)}
+        />
+      )}
     </AppShell>
   )
 }
