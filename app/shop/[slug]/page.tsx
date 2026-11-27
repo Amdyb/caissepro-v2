@@ -31,7 +31,12 @@ import {
   X,
 } from 'lucide-react'
 import { useParams } from 'next/navigation'
+import dynamic from 'next/dynamic'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+
+// Lazy-loaded: keeps the heavy html-to-image library out of the storefront's
+// initial bundle (matters on 2G/3G); only pulled in when a share is triggered.
+const ProductShareCard = dynamic(() => import('@/components/ProductShareCard'), { ssr: false })
 
 // Dedicated no-auth client — never inherits session from the app's auth client
 const supabase = createClient(
@@ -269,6 +274,7 @@ export default function PublicShopPage() {
 
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [detailQty, setDetailQty] = useState(1)
+  const [shareProduct, setShareProduct] = useState<Product | null>(null)
 
   const [cart, setCart] = useState<CartLine[]>([])
   const [cartOpen, setCartOpen] = useState(false)
@@ -820,6 +826,16 @@ export default function PublicShopPage() {
                   <MessageCircle size={18} /> Contactez-nous sur WhatsApp
                 </button>
               )}
+
+              {/* Always rendered — anyone (customer or merchant) can share this
+                  product. The share card falls back to download + copy caption
+                  when navigator.share is unavailable. */}
+              <button
+                onClick={() => setShareProduct(selectedProduct)}
+                className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/5 py-3.5 text-base font-black text-white hover:bg-white/10"
+              >
+                <Share2 size={18} /> Partager
+              </button>
             </div>
           </div>
         </div>
@@ -926,6 +942,24 @@ export default function PublicShopPage() {
             )}
           </div>
         </div>
+      )}
+
+      {/* Shareable product card overlay (customer or merchant). */}
+      {shareProduct && (
+        <ProductShareCard
+          product={{
+            id: shareProduct.id,
+            name: shareProduct.name,
+            short_description: shareProduct.short_description,
+            sell_price: priceOf(shareProduct),
+            image: imageOf(shareProduct),
+          }}
+          shopName={business.name}
+          shopSlug={business.slug || slug || ''}
+          hidePrices={hidePrices}
+          primaryColor={primary}
+          onClose={() => setShareProduct(null)}
+        />
       )}
     </main>
   )
