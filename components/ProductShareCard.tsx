@@ -83,8 +83,12 @@ export default function ProductShareCard({
   const [copied, setCopied] = useState(false)
   const [error, setError] = useState('')
 
-  const shopLink = `caissepro.app/shop/${shopSlug}`
-  const caption = `${[product.name, product.short_description?.trim() || null].filter(Boolean).join('\n')}\n\n${shopLink}`
+  // Fully-qualified URL in the caption so WhatsApp (and other apps) auto-linkify
+  // it into a tappable link — a bare "caissepro.app/..." is sent as plain text.
+  const shopUrl = `https://caissepro.app/shop/${shopSlug}`
+  // Cleaner bare domain for the on-image footer (cosmetic only, not clickable).
+  const shopLinkDisplay = `caissepro.app/shop/${shopSlug}`
+  const caption = `${[product.name, product.short_description?.trim() || null].filter(Boolean).join('\n')}\n\n${shopUrl}`
 
   // Prepare the image before any capture can run:
   //   1. Fetch the bytes and inline them as a data URL (sidesteps cross-origin
@@ -235,7 +239,7 @@ export default function ProductShareCard({
                 <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: primaryColor }} />
                 <span className="text-sm font-black">{shopName}</span>
               </div>
-              <span className="text-[11px] font-bold text-white/40">{shopLink}</span>
+              <span className="text-[11px] font-bold text-white/40">{shopLinkDisplay}</span>
             </div>
           </div>
         </div>
