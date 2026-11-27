@@ -98,6 +98,40 @@ function formatCfa(value: number) {
   return `${Number(value || 0).toLocaleString('fr-FR')} CFA`
 }
 
+// Normalize a customer phone to E.164-style digits (no leading "+"), e.g.
+// "221771234567". Rules (never double-prefix 221221):
+//   - "+<cc>..." or "00<cc>..."  -> keep the country code, strip the symbol.
+//   - already starts with "221"   -> keep as-is.
+//   - bare 9-digit Senegalese mobile (70/75/76/77/78) -> prepend "221".
+//   - anything else               -> keep the raw digits (diaspora local format).
+// Returns null when the input has no digits.
+function normalizePhone(raw: string): string | null {
+  const trimmed = (raw || '').trim()
+  if (!trimmed) return null
+
+  // International prefixes keep their own country code.
+  if (trimmed.startsWith('+')) {
+    const d = trimmed.slice(1).replace(/\D/g, '')
+    return d || null
+  }
+  if (trimmed.replace(/[\s().-]/g, '').startsWith('00')) {
+    const d = trimmed.replace(/\D/g, '').replace(/^00/, '')
+    return d || null
+  }
+
+  const digits = trimmed.replace(/\D/g, '')
+  if (!digits) return null
+  if (digits.startsWith('221')) return digits
+  if (digits.length === 9 && /^7[05678]/.test(digits)) return `221${digits}`
+  return digits
+}
+
+// A plausible phone has at least 8 digits (shortest realistic E.164 subscriber
+// number) — enough to reject obvious typos without blocking diaspora formats.
+function isValidPhone(normalized: string | null): boolean {
+  return !!normalized && normalized.length >= 8 && normalized.length <= 15
+}
+
 function priceOf(p: Product) {
   return Number(p.sell_price ?? p.price ?? 0)
 }
@@ -238,7 +272,9 @@ export default function PublicShopPage() {
   const [cartOpen, setCartOpen] = useState(false)
   const [selectedPayment, setSelectedPayment] = useState('wave')
   const [customerName, setCustomerName] = useState('')
-  const [customerPhone, setCustomerPhone] = useState('')
+  // Default to the Senegalese prefix; diaspora customers can edit it freely.
+  const [customerPhone, setCustomerPhone] = useState('+221 ')
+  const [phoneError, setPhoneError] = useState('')
   const [placing, setPlacing] = useState(false)
 
   useEffect(() => {
@@ -439,6 +475,16 @@ export default function PublicShopPage() {
 
   async function placeOrder() {
     if (!business || !cart.length || placing) return
+
+    // Phone is required at checkout. The DB column stays nullable (old rows), but
+    // every new online order must carry a reachable, normalized number.
+    const normalizedPhone = normalizePhone(customerPhone)
+    if (!isValidPhone(normalizedPhone)) {
+      setPhoneError('Entrez un numéro de téléphone valide (ex : 77 123 45 67).')
+      return
+    }
+    setPhoneError('')
+
     setPlacing(true)
     try {
       const paymentLabel = PAYMENT_METHODS.find((m) => m.id === selectedPayment)?.label || selectedPayment
@@ -455,7 +501,7 @@ export default function PublicShopPage() {
         `Total : ${formatCfa(cartTotal)}`,
         `Paiement : ${paymentLabel}`,
         customerName ? `Nom : ${customerName}` : null,
-        customerPhone ? `Téléphone : ${customerPhone}` : null,
+        `Téléphone : +${normalizedPhone}`,
         ``,
         `Merci de confirmer la disponibilité.`,
       ]
@@ -466,7 +512,7 @@ export default function PublicShopPage() {
       const orderRows = cart.map((l) => ({
         business_id: business.id,
         customer_name: customerName || 'Client en ligne',
-        customer_phone: customerPhone || null,
+        customer_phone: normalizedPhone,
         product_id: l.product.id,
         product_name: l.product.name,
         quantity: l.qty,
@@ -490,7 +536,7 @@ export default function PublicShopPage() {
         sendOrderNotification(merchantPhone, {
           id: Date.now().toString(),
           customer_name: customerName || 'Client en ligne',
-          customer_phone: customerPhone || null,
+          customer_phone: normalizedPhone,
           product_name: cart.map((l) => `${l.product.name} x${l.qty}`).join(', '),
           quantity: cartCount,
           total: cartTotal,
@@ -788,9 +834,28 @@ export default function PublicShopPage() {
 
             {cart.length > 0 && (
               <div className="space-y-4 border-t border-white/10 p-5">
-                <div className="grid grid-cols-2 gap-2">
-                  <input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="Votre nom" className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-bold outline-none placeholder:text-white/30" />
-                  <input value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} placeholder="Téléphone" className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-bold outline-none placeholder:text-white/30" />
+                <div className="space-y-2">
+                  <input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="Votre nom (optionnel)" className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-bold outline-none placeholder:text-white/30" />
+                  <div>
+                    <div
+                      className="flex items-center gap-2 rounded-2xl border bg-white/5 px-4 py-3"
+                      style={{ borderColor: phoneError ? '#fb7185' : 'rgba(255,255,255,0.1)' }}
+                    >
+                      <span className="shrink-0 text-base leading-none" aria-hidden>🇸🇳</span>
+                      <input
+                        value={customerPhone}
+                        onChange={(e) => { setCustomerPhone(e.target.value); if (phoneError) setPhoneError('') }}
+                        type="tel"
+                        inputMode="tel"
+                        required
+                        placeholder="+221 77 123 45 67"
+                        className="w-full bg-transparent text-sm font-bold outline-none placeholder:text-white/30"
+                      />
+                    </div>
+                    {phoneError
+                      ? <p className="mt-1.5 px-1 text-xs font-black text-rose-400">{phoneError}</p>
+                      : <p className="mt-1.5 px-1 text-xs font-semibold text-white/40">Téléphone requis pour confirmer la commande.</p>}
+                  </div>
                 </div>
 
                 <div>
