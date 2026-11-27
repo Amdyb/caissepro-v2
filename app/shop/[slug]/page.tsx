@@ -63,6 +63,7 @@ type Product = {
   id: string
   name: string
   category: string | null
+  short_description?: string | null
   sell_price?: number | null
   price?: number | null
   stock: number | null
@@ -320,7 +321,7 @@ export default function PublicShopPage() {
 
         const { data: productsData } = await supabase
           .from('products')
-          .select('id,name,category,sell_price,stock,image')
+          .select('id,name,category,short_description,sell_price,stock,image')
           .eq('business_id', shop.id)
           .is('deleted_at', null)
           .not('archived', 'is', true)
@@ -788,6 +789,9 @@ export default function PublicShopPage() {
             <div className="p-6">
               <p className="text-xs font-black uppercase tracking-widest text-white/40">{selectedProduct.category || 'Produit'}</p>
               <h3 className="mt-1 text-2xl font-black text-white">{selectedProduct.name}</h3>
+              {selectedProduct.short_description && (
+                <p className="mt-2 text-sm font-semibold leading-relaxed text-white/60">{selectedProduct.short_description}</p>
+              )}
               <div className="mt-3 flex items-center justify-between">
                 <p className="text-3xl font-black" style={{ color: primary }}>{hidePrices ? 'Prix sur demande' : formatCfa(priceOf(selectedProduct))}</p>
                 <StockBadge stock={selectedProduct.stock} />
@@ -985,6 +989,9 @@ function ProductCard({
         <button onClick={onOpen} className="text-left">
           <h3 className="line-clamp-2 min-h-[2.5rem] text-sm font-black leading-tight">{product.name}</h3>
         </button>
+        {product.short_description && (
+          <p className="mt-1 line-clamp-2 text-xs font-semibold leading-snug text-white/50">{product.short_description}</p>
+        )}
         <p className="mt-1 text-base font-black" style={{ color: primary }}>{hidePrices ? 'Prix sur demande' : formatCfa(priceOf(product))}</p>
         <button
           onClick={onAdd}

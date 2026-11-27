@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabaseClient'
 async function fetchProducts(businessId: string) {
   const { data } = await supabase
     .from('products')
-    .select('id, business_id, name, barcode, category, cost_price, sell_price, minimum_price, stock, image, created_at, is_active, archived, deleted_at')
+    .select('id, business_id, name, short_description, barcode, category, cost_price, sell_price, minimum_price, stock, image, created_at, is_active, archived, deleted_at')
     .eq('business_id', businessId)
     .order('created_at', { ascending: false })
   return (data || []) as any[]

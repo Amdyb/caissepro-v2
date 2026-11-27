@@ -22,6 +22,7 @@ export default function EditProductPage() {
   const [success, setSuccess] = useState('')
   const [form, setForm] = useState({
     name: '',
+    short_description: '',
     category: '',
     barcode: '',
     cost_price: '',
@@ -70,6 +71,7 @@ export default function EditProductPage() {
       setBusinessId(product.business_id || storedBiz)
       setForm({
         name: product.name || '',
+        short_description: product.short_description || '',
         category: product.category || '',
         barcode: product.barcode || '',
         cost_price: String(product.cost_price || ''),
@@ -98,6 +100,7 @@ export default function EditProductPage() {
       .from('products')
       .update({
         name: form.name.trim(),
+        short_description: form.short_description.trim() || null,
         category: cleanedCategory || null,
         barcode: form.barcode.trim() || null,
         cost_price: Number(form.cost_price || 0),
@@ -136,6 +139,18 @@ export default function EditProductPage() {
 
         <form onSubmit={saveProduct} className="space-y-5">
           <input required className="w-full rounded-2xl border border-slate-300 px-4 py-3 font-semibold outline-none focus:border-emerald-500" placeholder="Nom produit" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+
+          <div>
+            <textarea
+              placeholder="Description courte (optionnel) — visible sur votre boutique en ligne"
+              value={form.short_description}
+              onChange={(e) => setForm({ ...form, short_description: e.target.value.slice(0, 200) })}
+              maxLength={200}
+              rows={2}
+              className="w-full resize-none rounded-2xl border border-slate-300 px-4 py-3 font-semibold outline-none focus:border-emerald-500"
+            />
+            <p className="mt-1 text-right text-xs font-bold text-slate-400">{form.short_description.length}/200</p>
+          </div>
 
           <ProductImageUploader value={form.image} businessId={businessId} onChange={(url) => setForm({ ...form, image: url })} />
 

@@ -29,6 +29,7 @@ export default function NewProductPage() {
 
   const [form, setForm] = useState({
     name: '',
+    short_description: '',
     category: '',
     barcode: '',
     cost_price: '',
@@ -93,6 +94,7 @@ export default function NewProductPage() {
     const payload = {
       business_id: businessId,
       name: form.name,
+      short_description: form.short_description.trim() || null,
       category: form.category || null,
       barcode: form.barcode || null,
       cost_price: Number(form.cost_price || 0),
@@ -172,6 +174,18 @@ export default function NewProductPage() {
 
           <form onSubmit={createProduct} className="space-y-5">
             <input required placeholder="Nom produit" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full rounded-2xl border border-slate-300 px-5 py-4 font-bold outline-none" />
+
+            <div>
+              <textarea
+                placeholder="Description courte (optionnel) — visible sur votre boutique en ligne"
+                value={form.short_description}
+                onChange={(e) => setForm({ ...form, short_description: e.target.value.slice(0, 200) })}
+                maxLength={200}
+                rows={2}
+                className="w-full resize-none rounded-2xl border border-slate-300 px-5 py-4 font-semibold outline-none"
+              />
+              <p className="mt-1 text-right text-xs font-bold text-slate-400">{form.short_description.length}/200</p>
+            </div>
 
             <div className="grid gap-5 md:grid-cols-2">
               <CategoryPicker businessId={businessId} value={form.category} onChange={(name) => setForm({ ...form, category: name })} />
