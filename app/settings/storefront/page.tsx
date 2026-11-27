@@ -22,6 +22,7 @@ export default function StorefrontSettingsPage() {
     google_maps_url: '',
     primary_color: '#16a34a', online_store_enabled: true,
     age_verification_required: false,
+    hide_prices: false,
     logo_url: '', banner_url: ''
   })
 
@@ -52,6 +53,7 @@ export default function StorefrontSettingsPage() {
         primary_color: business.primary_color || '#16a34a',
         online_store_enabled: business.online_store_enabled ?? true,
         age_verification_required: business.age_verification_required ?? false,
+        hide_prices: business.hide_prices ?? false,
         logo_url: business.logo_url || '',
         banner_url: business.banner_url || ''
       })
@@ -71,6 +73,7 @@ export default function StorefrontSettingsPage() {
       business_address: form.address, google_maps_url: form.google_maps_url.trim() || null,
       primary_color: form.primary_color, online_store_enabled: form.online_store_enabled,
       age_verification_required: form.age_verification_required,
+      hide_prices: form.hide_prices,
       logo_url: form.logo_url, banner_url: form.banner_url
     }).eq('id', businessId)
     setSaving(false)
@@ -206,6 +209,7 @@ export default function StorefrontSettingsPage() {
           <div><label className="mb-2 block text-sm font-black text-slate-700">Couleur principale</label><input type="color" value={form.primary_color} onChange={(e) => setForm({ ...form, primary_color: e.target.value })} className="h-14 w-24 rounded-2xl border border-slate-200 bg-white p-2" /></div>
           <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-black text-slate-700"><input type="checkbox" checked={form.online_store_enabled} onChange={(e) => setForm({ ...form, online_store_enabled: e.target.checked })} />Publier ma boutique en ligne</label>
           <label className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-black text-slate-700"><input type="checkbox" className="mt-0.5" checked={form.age_verification_required} onChange={(e) => setForm({ ...form, age_verification_required: e.target.checked })} /><span>Exiger une vérification d&apos;âge (18 ans et plus)<span className="mt-1 block text-xs font-semibold text-slate-500">Pour les produits réservés aux adultes (vapotage, alcool…). Une page de confirmation s&apos;affiche avant la boutique.</span></span></label>
+          <label className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-black text-slate-700"><input type="checkbox" className="mt-0.5" checked={form.hide_prices} onChange={(e) => setForm({ ...form, hide_prices: e.target.checked })} /><span>Masquer les prix sur ma boutique<span className="mt-1 block text-xs font-semibold text-slate-500">Les prix restent dans le système pour vos ventes ; seul l&apos;affichage public change. Vos clients voient « Prix sur demande » et un bouton WhatsApp pour vous contacter. La commande en ligne reste possible.</span></span></label>
           <div className="flex flex-row gap-3">
             <label className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-4 text-sm font-black text-white transition hover:bg-emerald-700">
               <ImagePlus size={17} /> Ajoute ton Logo

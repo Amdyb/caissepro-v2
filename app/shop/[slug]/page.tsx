@@ -56,6 +56,7 @@ type Business = {
   google_maps_url?: string | null
   slogan?: string | null
   age_verification_required?: boolean | null
+  hide_prices?: boolean | null
 }
 
 type Product = {
@@ -299,7 +300,7 @@ export default function PublicShopPage() {
         const { data: shop, error: bizError } = await supabase
           .from('businesses')
           .select(
-            'id,name,slug,logo_url,banner_url,primary_color,secondary_color,whatsapp_number,phone,whatsapp,address,business_address,google_maps_url,slogan,age_verification_required'
+            'id,name,slug,logo_url,banner_url,primary_color,secondary_color,whatsapp_number,phone,whatsapp,address,business_address,google_maps_url,slogan,age_verification_required,hide_prices'
           )
           .eq('slug', slug)
           .eq('status', 'active')
@@ -373,6 +374,9 @@ export default function PublicShopPage() {
   const primary = business?.primary_color || '#16a34a'
   const secondary = business?.secondary_color || '#0f172a'
   const phone = (business?.whatsapp || business?.whatsapp_number || business?.phone || '').replace(/\D/g, '')
+  // Display-only: hides every price number on the storefront and swaps in a
+  // WhatsApp contact CTA. Ordering, totals, stock and reporting are untouched.
+  const hidePrices = !!business?.hide_prices
 
   // Build Netflix-style rows. Randomized (brand-aware) once per load via the
   // products dependency, so a refresh reshuffles each row.
@@ -473,6 +477,16 @@ export default function PublicShopPage() {
     window.open(url, '_blank')
   }
 
+  // Price-on-request CTA: prefill a message naming the product the customer is
+  // interested in. Used when the merchant hides prices on the storefront.
+  function whatsappProduct(product: Product) {
+    const text = `Bonjour ${business?.name}, je suis intéressé(e) par « ${product.name} ». Quel est le prix ?`
+    const url = phone
+      ? `https://wa.me/${phone}?text=${encodeURIComponent(text)}`
+      : `https://wa.me/?text=${encodeURIComponent(text)}`
+    window.open(url, '_blank')
+  }
+
   async function placeOrder() {
     if (!business || !cart.length || placing) return
 
@@ -489,7 +503,9 @@ export default function PublicShopPage() {
     try {
       const paymentLabel = PAYMENT_METHODS.find((m) => m.id === selectedPayment)?.label || selectedPayment
       const lines = cart
-        .map((l) => `- ${l.product.name} x${l.qty}  ${formatCfa(priceOf(l.product) * l.qty)}`)
+        .map((l) => hidePrices
+          ? `- ${l.product.name} x${l.qty}`
+          : `- ${l.product.name} x${l.qty}  ${formatCfa(priceOf(l.product) * l.qty)}`)
         .join('\n')
       const text = [
         `Bonjour ${business.name},`,
@@ -498,7 +514,7 @@ export default function PublicShopPage() {
         ``,
         lines,
         ``,
-        `Total : ${formatCfa(cartTotal)}`,
+        `Total : ${hidePrices ? 'Prix sur demande' : formatCfa(cartTotal)}`,
         `Paiement : ${paymentLabel}`,
         customerName ? `Nom : ${customerName}` : null,
         `Téléphone : +${normalizedPhone}`,
@@ -700,7 +716,7 @@ export default function PublicShopPage() {
             ) : (
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
                 {searchResults.map((p) => (
-                  <ProductCard key={p.id} product={p} primary={primary} onAdd={() => addToCart(p)} onOpen={() => openDetail(p)} />
+                  <ProductCard key={p.id} product={p} primary={primary} hidePrices={hidePrices} onAdd={() => addToCart(p)} onOpen={() => openDetail(p)} onContact={() => whatsappProduct(p)} />
                 ))}
               </div>
             )}
@@ -714,8 +730,10 @@ export default function PublicShopPage() {
                 key={row.key}
                 row={row}
                 primary={primary}
+                hidePrices={hidePrices}
                 onAdd={addToCart}
                 onOpen={openDetail}
+                onContact={whatsappProduct}
               />
             ))}
           </div>
@@ -771,7 +789,7 @@ export default function PublicShopPage() {
               <p className="text-xs font-black uppercase tracking-widest text-white/40">{selectedProduct.category || 'Produit'}</p>
               <h3 className="mt-1 text-2xl font-black text-white">{selectedProduct.name}</h3>
               <div className="mt-3 flex items-center justify-between">
-                <p className="text-3xl font-black" style={{ color: primary }}>{formatCfa(priceOf(selectedProduct))}</p>
+                <p className="text-3xl font-black" style={{ color: primary }}>{hidePrices ? 'Prix sur demande' : formatCfa(priceOf(selectedProduct))}</p>
                 <StockBadge stock={selectedProduct.stock} />
               </div>
 
@@ -789,6 +807,15 @@ export default function PublicShopPage() {
                   <ShoppingCart size={18} /> Ajouter au panier
                 </button>
               </div>
+
+              {hidePrices && (
+                <button
+                  onClick={() => whatsappProduct(selectedProduct)}
+                  className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#25D366] py-3.5 text-base font-black text-white shadow-xl"
+                >
+                  <MessageCircle size={18} /> Contactez-nous sur WhatsApp
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -819,7 +846,7 @@ export default function PublicShopPage() {
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-black">{line.product.name}</p>
-                      <p className="mt-0.5 text-sm font-black" style={{ color: primary }}>{formatCfa(priceOf(line.product))}</p>
+                      <p className="mt-0.5 text-sm font-black" style={{ color: primary }}>{hidePrices ? 'Prix sur demande' : formatCfa(priceOf(line.product))}</p>
                       <div className="mt-2 flex items-center gap-2">
                         <button onClick={() => changeQty(line.product.id, -1)} className="rounded-full border border-white/10 p-1.5 hover:bg-white/10"><Minus size={13} /></button>
                         <span className="w-6 text-center text-sm font-black">{line.qty}</span>
@@ -880,7 +907,7 @@ export default function PublicShopPage() {
 
                 <div className="flex items-center justify-between text-lg font-black">
                   <span className="text-white/60">Total</span>
-                  <span style={{ color: primary }}>{formatCfa(cartTotal)}</span>
+                  <span style={{ color: primary }}>{hidePrices ? 'Prix sur demande' : formatCfa(cartTotal)}</span>
                 </div>
 
                 <button
@@ -919,13 +946,17 @@ function StockBadge({ stock }: { stock: number | null }) {
 function ProductCard({
   product,
   primary,
+  hidePrices,
   onAdd,
   onOpen,
+  onContact,
 }: {
   product: Product
   primary: string
+  hidePrices?: boolean
   onAdd: () => void
   onOpen: () => void
+  onContact?: () => void
 }) {
   const img = imageOf(product)
   const out = (product.stock ?? 0) <= 0
@@ -954,7 +985,7 @@ function ProductCard({
         <button onClick={onOpen} className="text-left">
           <h3 className="line-clamp-2 min-h-[2.5rem] text-sm font-black leading-tight">{product.name}</h3>
         </button>
-        <p className="mt-1 text-base font-black" style={{ color: primary }}>{formatCfa(priceOf(product))}</p>
+        <p className="mt-1 text-base font-black" style={{ color: primary }}>{hidePrices ? 'Prix sur demande' : formatCfa(priceOf(product))}</p>
         <button
           onClick={onAdd}
           className="mt-3 inline-flex items-center justify-center gap-1.5 rounded-full py-2.5 text-xs font-black text-white"
@@ -962,6 +993,14 @@ function ProductCard({
         >
           <Plus size={15} /> Ajouter
         </button>
+        {hidePrices && onContact && (
+          <button
+            onClick={onContact}
+            className="mt-2 inline-flex items-center justify-center gap-1.5 rounded-full bg-[#25D366] py-2.5 text-xs font-black text-white"
+          >
+            <MessageCircle size={14} /> WhatsApp
+          </button>
+        )}
       </div>
     </div>
   )
@@ -970,13 +1009,17 @@ function ProductCard({
 function CategoryRow({
   row,
   primary,
+  hidePrices,
   onAdd,
   onOpen,
+  onContact,
 }: {
   row: Row
   primary: string
+  hidePrices?: boolean
   onAdd: (p: Product) => void
   onOpen: (p: Product) => void
+  onContact: (p: Product) => void
 }) {
   const scrollerRef = useRef<HTMLDivElement>(null)
 
@@ -1006,7 +1049,7 @@ function CategoryRow({
       >
         {row.products.map((p) => (
           <div key={p.id} className="snap-start flex-shrink-0 w-40 sm:w-48">
-            <ProductCard product={p} primary={primary} onAdd={() => onAdd(p)} onOpen={() => onOpen(p)} />
+            <ProductCard product={p} primary={primary} hidePrices={hidePrices} onAdd={() => onAdd(p)} onOpen={() => onOpen(p)} onContact={() => onContact(p)} />
           </div>
         ))}
       </div>
