@@ -26,6 +26,34 @@ function safeFileName(name: string) {
     .slice(0, 60) || 'produit'
 }
 
+function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onloadend = () => resolve(reader.result as string)
+    reader.onerror = reject
+    reader.readAsDataURL(blob)
+  })
+}
+
+// Load a src into a detached Image and resolve only once it is actually decoded
+// (pixels ready), with a timeout so a hung load never blocks the capture forever.
+function preloadImage(src: string, timeoutMs = 8000): Promise<boolean> {
+  return new Promise((resolve) => {
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+    let settled = false
+    const done = (ok: boolean) => { if (!settled) { settled = true; resolve(ok) } }
+    const timer = setTimeout(() => done(false), timeoutMs)
+    img.onload = async () => {
+      try { if (img.decode) await img.decode() } catch {}
+      clearTimeout(timer)
+      done(true)
+    }
+    img.onerror = () => { clearTimeout(timer); done(false) }
+    img.src = src
+  })
+}
+
 export default function ProductShareCard({
   product,
   shopName,
@@ -42,47 +70,66 @@ export default function ProductShareCard({
   onClose: () => void
 }) {
   const cardRef = useRef<HTMLDivElement>(null)
+  const imgElRef = useRef<HTMLImageElement>(null)
+  // The resolved image source actually painted into the card (a data URL when we
+  // could inline it, so the capture canvas is never cross-origin tainted).
   const [imgSrc, setImgSrc] = useState<string | null>(null)
-  // Ready = the card image has finished loading (or there is no image). Capturing
-  // before this flips comes out blank, so the Share button waits on it.
-  const [imgReady, setImgReady] = useState(!product.image)
+  // The product image could not be loaded — render a branded fallback, never a
+  // black box.
+  const [imgFailed, setImgFailed] = useState(false)
+  // Prep finished (success or failure): the image is decoded and safe to capture.
+  const [ready, setReady] = useState(false)
   const [busy, setBusy] = useState(false)
   const [copied, setCopied] = useState(false)
   const [error, setError] = useState('')
 
   const shopLink = `caissepro.app/shop/${shopSlug}`
-  const caption = [product.name, product.short_description?.trim(), '', shopLink]
-    .filter((l) => l !== undefined && l !== null)
-    .join('\n')
+  const caption = `${[product.name, product.short_description?.trim() || null].filter(Boolean).join('\n')}\n\n${shopLink}`
 
-  // Fetch the product image as a data URL first. Inlining the bytes sidesteps
-  // cross-origin canvas tainting so the capture (and download) always works;
-  // if the fetch is blocked we fall back to the raw URL + crossOrigin.
+  // Prepare the image before any capture can run:
+  //   1. Fetch the bytes and inline them as a data URL (sidesteps cross-origin
+  //      canvas tainting even if the bucket's CORS headers are imperfect).
+  //   2. If the fetch is blocked, fall back to the raw URL loaded with
+  //      crossOrigin=anonymous (works when Supabase returns Access-Control-*).
+  //   3. Await the chosen source actually decoding before marking ready.
+  //   4. If nothing loads, flag failure so the card shows a branded placeholder.
   useEffect(() => {
     let cancelled = false
-    async function load() {
-      if (!product.image) { setImgReady(true); return }
+    async function prepare() {
+      if (!product.image) { setImgFailed(true); setReady(true); return }
+
+      let candidate: string | null = null
       try {
-        const res = await fetch(product.image, { mode: 'cors' })
-        const blob = await res.blob()
-        const reader = new FileReader()
-        reader.onloadend = () => { if (!cancelled) setImgSrc(reader.result as string) }
-        reader.readAsDataURL(blob)
+        const res = await fetch(product.image, { mode: 'cors', cache: 'no-store' })
+        if (res.ok) candidate = await blobToDataUrl(await res.blob())
       } catch {
-        if (!cancelled) setImgSrc(product.image || null)
+        /* fall through to raw-URL attempt */
       }
+      if (cancelled) return
+
+      const src = candidate || product.image
+      const ok = await preloadImage(src)
+      if (cancelled) return
+
+      if (ok) { setImgSrc(src); setImgFailed(false) }
+      else { setImgFailed(true) }
+      setReady(true)
     }
-    load()
+    prepare()
     return () => { cancelled = true }
   }, [product.image])
 
   async function capture(): Promise<Blob | null> {
-    if (!cardRef.current) return null
-    return htmlToImage.toBlob(cardRef.current, {
-      pixelRatio: 3,
-      cacheBust: true,
-      backgroundColor: '#0b0b0b',
-    })
+    const node = cardRef.current
+    if (!node) return null
+    // Make sure the on-screen <img> is fully decoded before snapshotting.
+    try { await imgElRef.current?.decode?.() } catch {}
+    const opts = { pixelRatio: 3, cacheBust: false, backgroundColor: '#0b0b0b' as string }
+    // Safari/iOS frequently renders the first html-to-image pass blank; warm up
+    // with a couple of throwaway passes, then take the real capture.
+    await htmlToImage.toPng(node, opts).catch(() => {})
+    await htmlToImage.toPng(node, opts).catch(() => {})
+    return htmlToImage.toBlob(node, opts)
   }
 
   function downloadBlob(blob: Blob) {
@@ -97,7 +144,7 @@ export default function ProductShareCard({
   }
 
   async function handleShare() {
-    if (busy || !imgReady) return
+    if (busy || !ready) return
     setBusy(true)
     setError('')
     try {
@@ -120,7 +167,7 @@ export default function ProductShareCard({
   }
 
   async function handleDownload() {
-    if (busy || !imgReady) return
+    if (busy || !ready) return
     setBusy(true)
     setError('')
     try {
@@ -150,20 +197,28 @@ export default function ProductShareCard({
 
         {/* The card that gets captured to an image. */}
         <div ref={cardRef} className="overflow-hidden rounded-3xl border border-white/10 bg-[#0b0b0b] text-white">
-          <div className="relative aspect-square w-full bg-white/5">
-            {imgSrc ? (
+          <div className="relative aspect-square w-full" style={{ backgroundColor: '#0b0b0b' }}>
+            {imgSrc && !imgFailed ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
+                ref={imgElRef}
                 src={imgSrc}
                 alt={product.name}
                 crossOrigin="anonymous"
-                onLoad={() => setImgReady(true)}
-                onError={() => setImgReady(true)}
                 className="h-full w-full object-cover"
               />
+            ) : !ready ? (
+              <div className="flex h-full w-full items-center justify-center">
+                <Loader2 className="animate-spin text-white/30" size={32} />
+              </div>
             ) : (
-              <div className="flex h-full w-full items-center justify-center text-white/20">
-                <Share2 size={48} />
+              // Branded fallback — never a black rectangle when the photo fails.
+              <div
+                className="flex h-full w-full flex-col items-center justify-center gap-4 px-6 text-center"
+                style={{ background: `linear-gradient(135deg, ${primaryColor}, #0b0b0b)` }}
+              >
+                <span className="text-3xl font-black leading-tight text-white drop-shadow">{product.name}</span>
+                <span className="text-sm font-black uppercase tracking-widest text-white/70">{shopName}</span>
               </div>
             )}
           </div>
@@ -190,17 +245,17 @@ export default function ProductShareCard({
         <div className="mt-4 space-y-2.5">
           <button
             onClick={handleShare}
-            disabled={busy || !imgReady}
+            disabled={busy || !ready}
             className="flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-base font-black text-white shadow-xl disabled:opacity-60"
             style={{ backgroundColor: primaryColor }}
           >
-            {busy ? <Loader2 className="animate-spin" size={20} /> : <Share2 size={20} />}
-            {!imgReady ? 'Préparation...' : busy ? 'Génération...' : 'Partager'}
+            {busy || !ready ? <Loader2 className="animate-spin" size={20} /> : <Share2 size={20} />}
+            {!ready ? 'Préparation...' : busy ? 'Génération...' : 'Partager'}
           </button>
           <div className="grid grid-cols-2 gap-2.5">
             <button
               onClick={handleDownload}
-              disabled={busy || !imgReady}
+              disabled={busy || !ready}
               className="flex items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/5 py-3.5 text-sm font-black text-white hover:bg-white/10 disabled:opacity-60"
             >
               <Download size={17} /> Télécharger
